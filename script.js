@@ -8,7 +8,7 @@ const SKILLS = {
         id: "SKILL_RESILIENCE",
         name: "근성",
         type: "어그로",
-        description: "홀수 턴에는 [철옹성]을, 짝수 턴에는 [의지]를 획득. \n \n[철옹성]: (자신에게 현재 체력의 2배 + 방어력 2배)만큼의 보호막 부여. 해당 턴에 발생한 모든 아군의 감소한 체력을 대신 감소. 3턴 유지. \n[의지]: 자신에게 (해당 전투에서 시전 턴까지 받은 대미지의 총 합 * 2.5배)만큼의 보호막을 부여. 이후 [의지] 버프가 해제될 때에 남아 있는 보호막만큼을 자신의 체력으로 흡수. 3턴 유지. 단, [의지] 버프가 해제되면 그동안 받은 대미지의 총합을 초기화.",
+        description: "홀수 턴에는 [철옹성]을, 짝수 턴에는 [의지]를 획득. <br><br>[철옹성]: (자신에게 현재 체력의 2배 + 방어력 2배)만큼의 보호막 부여. 해당 턴에 발생한 모든 아군의 감소한 체력을 대신 감소. 3턴 유지. <br>[의지]: 자신에게 (해당 전투에서 시전 턴까지 받은 대미지의 총 합 * 2.5배)만큼의 보호막을 부여. 이후 [의지] 버프가 해제될 때에 남아 있는 보호막만큼을 자신의 체력으로 흡수. 3턴 유지. 단, [의지] 버프가 해제되면 그동안 받은 대미지의 총합을 초기화.",
         targetType: "self",
         targetSelection: "self",
         execute: (caster, allies, enemies, battleLog) => {
@@ -43,7 +43,7 @@ const SKILLS = {
         id: "SKILL_COUNTER",
         name: "반격",
         type: "카운터",
-        description: "쿨타임 1턴. [반격]이 홀수 턴에는 [응수], 짝수 턴에는 [격노]로 발동. \n \n[응수]: 해당 보호막 최대 2턴 유지. 자신이 지닌 보호막을 모든 아군에게 균등하게 나눔. 해당 턴에 자신이 공격받는다면, 가장 체력이 높은 적군(단일)에게 (받는 피해)x1.5 피해. 아군이 공격받는다면, 가장 체력이 낮은 적군(단일)에게 (받는 피해)x.0.5 피해. 만약 적군의 체력이 동일하다면, 대상 중 랜덤 피해. \n[격노]: 해당 보호막 최대 2턴 유지. 자신이 지닌 보호막을 모든 아군에게 균등하게 나눔. 해당 턴에 자신이 공격받는다면, 모든 적군에게 (받는 피해)x1.5 피해. 아군이 공격받는다면, 모든 적군에게 (받는 피해)x0.5 피해.",
+        description: "쿨타임 1턴. [반격]이 홀수 턴에는 [응수], 짝수 턴에는 [격노]로 발동. <br><br>[응수]: 해당 보호막 최대 2턴 유지. 자신이 지닌 보호막을 모든 아군에게 균등하게 나눔. 해당 턴에 자신이 공격받는다면, 가장 체력이 높은 적군(단일)에게 (받는 피해)x1.5 피해. 아군이 공격받는다면, 가장 체력이 낮은 적군(단일)에게 (받는 피해)x.0.5 피해. 만약 적군의 체력이 동일하다면, 대상 중 랜덤 피해. <br>[격노]: 해당 보호막 최대 2턴 유지. 자신이 지닌 보호막을 모든 아군에게 균등하게 나눔. 해당 턴에 자신이 공격받는다면, 모든 적군에게 (받는 피해)x1.5 피해. 아군이 공격받는다면, 모든 적군에게 (받는 피해)x0.5 피해.",
         targetType: "self",
         targetSelection: "self",
         cooldown: 2, // 사용 후 1턴간 사용 불가 (2턴째부터 사용 가능)
@@ -328,7 +328,7 @@ const SKILLS = {
         id: "SKILL_OVERTURE",
         name: "서막",
         type: "단일 공격",
-        description: "공격력 200% 물리 피해/마법 공격력 250% 마법 피해를 가하고 상대에게 [흠집]을 새긴다. \n \n[흠집]: 기본 2턴, 중첩 시 마지막 흠집 유지 시간에 따름. 3회까지 중첩. 추가 공격 이후 사라짐.",
+        description: "공격력 200% 물리 피해/마법 공격력 250% 마법 피해를 가하고 상대에게 [흠집]을 새긴다. <br><br>[흠집]: 기본 2턴, 중첩 시 마지막 흠집 유지 시간에 따름. 3회까지 중첩. 추가 공격 이후 사라짐.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
@@ -418,7 +418,7 @@ const SKILLS = {
         id: "SKILL_DISCERNMENT",
         name: "간파",
         type: "단일 공격",
-        description: "공격력 190% 물리/240% 마법 피해 (2타). 이후 공격력 50% 물리/마법 공격력 70% 마법 피해를 가하며 상대에게 [쇠약] 상태 부여. \n \n[쇠약]: 지속 2 턴. 공격 시 피해량 -20%.",
+        description: "공격력 190% 물리/240% 마법 피해 (2타). 이후 공격력 50% 물리/마법 공격력 70% 마법 피해를 가하며 상대에게 [쇠약] 상태 부여. <br><br>[쇠약]: 지속 2 턴. 공격 시 피해량 -20%.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
@@ -892,7 +892,7 @@ function logToBattleLog(message) {
     if (battleLogDiv) {
         // 메시지 앞뒤 공백 제거 테스트
         const trimmedMessage = typeof message === 'string' ? message.trim() : message;
-        battleLogDiv.innerHTML += trimmedMessage + '\n';
+        battleLogDiv.innerHTML += trimmedmessage + '<br>'; //띄쓰
         battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
     } else {
         console.error("battleLogDiv is not defined.");
