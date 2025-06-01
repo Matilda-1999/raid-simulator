@@ -417,6 +417,7 @@ let isBattleStarted = false;
 let currentActingCharacterIndex = 0;
 let playerActionsQueue = [];
 let characterPositions = {}; // 캐릭터 위치 추적: { "x,y": characterId }
+let actedAlliesThisTurn = []; // 이번 턴에 행동을 마친 아군 ID 목록
 
 // 스킬/행동 선택 관련 전역 변수
 let selectedAction = {
@@ -894,21 +895,18 @@ function prepareNewTurnCycle() {
     currentTurn++;
     logToBattleLog(`\n=== ${currentTurn} 턴 행동 선택 시작 ===`);
     playerActionsQueue = [];
-    currentActingCharacterIndex = 0;
+    // currentActingCharacterIndex = 0; // 더 이상 이 방식으로 사용하지 않음
+    actedAlliesThisTurn = []; // 행동 완료 아군 목록 초기화
 
-    skillSelectionArea.style.display = 'none'; // 이전 턴의 선택 UI는 숨김
+    skillSelectionArea.style.display = 'none';
     executeTurnButton.style.display = 'none';
-    nextTurnButton.style.display = 'block';    // '다음 턴 (스킬/이동 선택)' 버튼 표시 (실제로는 행동 선택 시작 버튼)
+    // nextTurnButton.style.display = 'block'; // 이 버튼의 역할이 변경되거나, 새로운 UI로 대체될 수 있음
 
-    if(skillSelectionArea) skillSelectionArea.style.display = 'none';
-    if(executeTurnButton) executeTurnButton.style.display = 'none';
-    if(nextTurnButton) nextTurnButton.style.display = 'block';
-    if(skillDescriptionArea) skillDescriptionArea.innerHTML = ''; // 새 턴 준비 시 설명 영역 초기화
-    
-    // 첫 번째 아군의 행동 선택 UI를 보여주도록
-    showSkillSelectionForNextAlly();
+    if(skillDescriptionArea) skillDescriptionArea.innerHTML = '';
+
+    // 아군 선택 UI를 직접 호출
+    promptAllySelection();
 }
-
 
 function prepareNextTurn() { // 이 함수는 이제 '다음 아군 행동 선택 UI 표시' 또는 '턴 실행 버튼 표시' 역할
     if (!isBattleStarted) { alert('전투를 시작해 주세요. (prepareNextTurn)'); return; }
