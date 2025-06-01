@@ -398,7 +398,7 @@ const SKILLS = {
             return true;
         }
     }
-
+};
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
 function getElement(id) {
