@@ -1718,8 +1718,8 @@ async function performEnemyAction(enemyChar) {
 }
 
 function checkBattleEnd() {
-    const allEnemiesDead = enemyCharacters.every(char => .char.isAlive);
-    const allAlliesDead = allyCharacters.every(char => .char.isAlive);
+    const allEnemiesDead = enemyCharacters.every(char => !char.isAlive);
+    const allAlliesDead = allyCharacters.every(char => !char.isAlive);
 
     if (enemyCharacters.length > 0 && allEnemiesDead) { 
         logToBattleLog('--- 모든 적을 물리쳤습니다. 전투 승리. 🎉 ---');
