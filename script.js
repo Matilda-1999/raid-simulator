@@ -397,7 +397,7 @@ const SKILLS = {
             caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] = currentTurn; // 스킬 사용 턴 기록
             return true;
         }
-    };
+    }
 
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
