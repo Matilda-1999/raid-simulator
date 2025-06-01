@@ -52,7 +52,7 @@ const SKILLS = {
 
             // 쿨타임 확인
             const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_COUNTER.id] || 0;
-            if (lastUsed .== 0 && currentTurn - lastUsed < SKILLS.SKILL_COUNTER.cooldown) {
+            if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_COUNTER.cooldown) {
                 battleLog(`✦정보✦ ${caster.name}, [${skillName}] 사용 불가: 쿨타임 ${SKILLS.SKILL_COUNTER.cooldown - (currentTurn - lastUsed)}턴 남음.`);
                 return false;
             }
