@@ -162,6 +162,7 @@ const SKILLS = {
             battleLog(`✦버프✦ ${target.name}: [허무 효과] [${chosenBuff.name}] 획득 (2턴).`);
             return true;
         }
+    },
     
     // [실존]
     SKILL_REALITY: {
