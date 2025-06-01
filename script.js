@@ -897,13 +897,7 @@ function logToBattleLog(message) {
     } else {
         console.error("battleLogDiv is not defined.");
     }
-    
-    if (battleLogDiv) {
-        battleLogDiv.innerHTML += message + '\n';
-        battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
-    } else {
-        console.error("battleLogDiv is not defined.");
-    }
+
 }
 
 function getRandomEmptyCell() {
@@ -948,11 +942,11 @@ function addCharacter(team) {
         if (team === 'ally') {
         allyCharacters.push(newChar);
         console.log('[DEBUG] 아군 합류 logToBattleLog 호출 직전'); // 첫 번째 로그 호출 지점
-        logToBattleLog(`✦합류✦ 아군 [<span class="math-inline">\{name\} \(</span>{type})] (HP: <span class="math-inline">\{newChar\.currentHp\}/</span>{newChar.maxHp}), [<span class="math-inline">\{newChar\.posX\},</span>{newChar.posY}].`);
+        logToBattleLog(`✦합류✦ 아군 [${name}, ${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
         } else if (team === 'enemy') {
             enemyCharacters.push(newChar);
             console.log('[DEBUG] 적군 합류 logToBattleLog 호출 직전'); // 두 번째 로그 호출 지점
-            logToBattleLog(`✦합류✦ 적군 [<span class="math-inline">\{name\} \(</span>{type})] (HP: <span class="math-inline">\{newChar\.currentHp\}/</span>{newChar.maxHp}), [<span class="math-inline">\{newChar\.posX\},</span>{newChar.posY}].`);
+            logToBattleLog(`✦합류✦ 적군 [${name}, ${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
         }
         nameInput.value = '';
         hpInput.value = '';
