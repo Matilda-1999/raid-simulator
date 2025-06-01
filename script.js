@@ -535,6 +535,14 @@ class Character {
                     reversalDamageType = 'magical';
                 }
                 if (reversalDamage > 0) {
+                    let reversalDamageTypeKr = ''; // 한글 타입 저장용 변수
+                    if (reversalDamageTypeEn === 'physical') {
+                        reversalDamageTypeKr = '물리';
+                    } else if (reversalDamageTypeEn === 'magical') {
+                        reversalDamageTypeKr = '마법';
+                    } else {
+                        reversalDamageTypeKr = reversalDamageTypeEn;
+                    }
                     logFn(`✦역습✦ ${this.name}: ${attacker.name}에게 ${reversalDamage.toFixed(0)} ${reversalDamageType} 피해.`);
                     attacker.takeDamage(reversalDamage, logFn, this);
                 }
