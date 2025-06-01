@@ -700,7 +700,7 @@ class Character {
         }
     }
 
-    takeDamage(rawDamage, logFn, attacker = null) {
+    takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
         if (!this.isAlive) return;
 
         // [철옹성] 피해 이전 로직
