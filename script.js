@@ -290,8 +290,8 @@ const SKILLS = {
             // [쇠약] 부여 로직 제거
             return true;
         }
-        },
-    }
+    },
+    
     // [간파]
     SKILL_DISCERNMENT: {
         id: "SKILL_DISCERNMENT",
@@ -323,6 +323,7 @@ const SKILLS = {
             return true;
         }
     },
+    
         // [파열]
     SKILL_RUPTURE: {
         id: "SKILL_RUPTURE",
@@ -401,8 +402,6 @@ const SKILLS = {
         }
     }
     };
-    }
-}
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
 function getElement(id) {
