@@ -1215,7 +1215,7 @@ function promptAllySelection() {
 }
 
 function showSkillSelectionForCharacter(actingChar) {
-    if (!actingChar || .actingChar.isAlive) {
+    if (!actingChar || !actingChar.isAlive) {
         logToBattleLog("선택된 캐릭터가 없거나 전투 불능입니다.");
         promptAllySelection(); 
         return;
