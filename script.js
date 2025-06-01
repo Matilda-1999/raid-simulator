@@ -921,6 +921,7 @@ function getRandomEmptyCell() {
 }
 
 function addCharacter(team) {
+    console.log(`addCharacter 함수 호출됨 - 팀: ${team}, 이름: ${getElement('charName').value}`); // 디버깅 로그 추가
     const nameInput = getElement('charName');
     const typeInput = getElement('charType');
     const hpInput = getElement('charCurrentHp');
