@@ -1350,7 +1350,7 @@ function selectMove(moveDelta, caster) {
 }
 
 function selectTarget(targetCharId) {
-    if (selectedAction.type !== 'skill' || .selectedAction.skillId) return;
+    if (selectedAction.type !== 'skill' || !selectedAction.skillId) return;
 
     const caster = findCharacterById(selectedAction.casterId);
     const skill = SKILLS[selectedAction.skillId];
@@ -1411,7 +1411,7 @@ function selectTarget(targetCharId) {
             selectedTargetName.textContent = targetChar.name;
             logToBattleLog(`[${skill.name}] 첫 번째 대상: ${targetChar.name}. 두 번째 대상을 선택해 주세요.`);
             // 아직 확정 불가
-        } else if (selectedAction.targetId !== targetCharId && .selectedAction.subTargetId) { // 두 번째 대상 선택
+        } else if (selectedAction.targetId !== targetCharId && !selectedAction.subTargetId) { // 두 번째 대상 선택
             selectedAction.subTargetId = targetCharId;
             const mainTargetName = findCharacterById(selectedAction.targetId).name;
             selectedTargetName.textContent = `${mainTargetName}, ${targetChar.name}`;
