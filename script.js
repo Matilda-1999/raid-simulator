@@ -132,7 +132,7 @@ const SKILLS = {
         execute: (caster, allies, enemies, battleLog) => {
             // 쿨타임 확인
             const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_REVERSAL.id] || 0;
-            if (lastUsed .== 0 && currentTurn - lastUsed < SKILLS.SKILL_REVERSAL.cooldown) {
+            if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_REVERSAL.cooldown) {
                 battleLog(`✦정보✦ ${caster.name}, [역습] 사용 불가: 쿨타임 ${SKILLS.SKILL_REVERSAL.cooldown - (currentTurn - lastUsed)}턴 남음.`);
                 return false;
             }
