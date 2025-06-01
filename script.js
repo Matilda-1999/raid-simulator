@@ -958,13 +958,13 @@ function prepareNextTurn() { // '다음 행동 선택' 버튼에 연결된 함�
     // if (currentActingCharacterIndex >= aliveAllies.length) { ... } // 이 로직은 불필요
 
     if (!actingChar || !actingChar.isAlive) {
-        logToBattleLog("선택된 캐릭터가 없거나 전투 불능입니다.");
+        logToBattleLog("❗ 선택된 캐릭터가 없거나 전투 불능입니다.");
         promptAllySelection(); // 다시 아군 선택으로
         return;
     }
     // 이미 행동을 마친 아군인지 확인 (confirmAction에서 주로 처리되지만, 방어적으로 추가)
     if (actedAlliesThisTurn.includes(actingChar.id)) {
-        logToBattleLog(`${actingChar.name}은(는) 이미 이번 턴에 행동했습니다. 다른 아군을 선택하세요.`);
+        logToBattleLog(`❗ ${actingChar.name}은(는) 이미 이번 턴에 행동했습니다. 다른 아군을 선택하세요.`);
         promptAllySelection();
         return;
     }
@@ -1135,13 +1135,13 @@ function confirmAction() {
 
     const caster = findCharacterById(selectedAction.casterId); //
     if (!caster) { //
-        alert('시전자를 찾을 수 없습니다.'); //
+        alert('❗시전자를 찾을 수 없습니다.'); //
         return; //
     } //
 
     // 이미 해당 캐릭터의 행동이 이번 턴에 확정되었는지 확인 (중복 방지)
     if (actedAlliesThisTurn.includes(caster.id)) {
-        alert(`${caster.name}은(는) 이미 이번 턴에 행동을 확정했습니다.`);
+        alert(`❗${caster.name}은(는) 이미 이번 턴에 행동을 확정했습니다.`);
         return;
     }
     // playerActionsQueue에 추가하기 전에, 동일 캐릭터의 이전 행동이 있는지 확인하고 제거 (선택 변경 시)
@@ -1184,13 +1184,13 @@ function confirmAction() {
         } else { //
             targetDescription = "대상 미선택"; //
         } //
-        logToBattleLog(`✦준비✦ <span class="math-inline">\{caster\.name\}, \[</span>{skill.name}] 스킬 사용 준비. (대상: ${targetDescription})`); //
+        logToBattleLog(`✦준비✦ ${caster.name}, [${skill.name}] 주문 준비. (대상: ${targetDescription})`); //
 
     } else if (selectedAction.type === 'move') { //
         actionDetails.moveDelta = selectedAction.moveDelta; //
         if (!selectedAction.moveDelta) { //
              console.error("confirmAction: Move action selected, but moveDelta is null!"); //
-             alert("이동 정보 오류. 다시 선택해주세요."); //
+             alert("❗ 이동 정보 오류. 다시 선택해 주세요."); //
              selectedAction = { type: null, casterId: caster.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null }; //
              showSkillSelectionForCharacter(caster); // 현재 캐릭터의 선택창 다시 표시
              return; //
@@ -1199,7 +1199,7 @@ function confirmAction() {
         const targetX = caster.posX + selectedAction.moveDelta.dx; //
         const targetY = caster.posY + selectedAction.moveDelta.dy; //
         // 유효성 검사는 selectMove에서 이미 수행되었으므로 여기서는 생략 가능, 또는 간소화
-        logToBattleLog(`✦준비✦ <span class="math-inline">\{caster\.name\}, \(</span>{targetX},${targetY})(으)로 이동 준비.`); //
+        logToBattleLog(`✦준비✦ ${caster.name}, (${targetX},${targetY})(으)로 이동 준비.`); //
     } //
 
     playerActionsQueue.push(actionDetails);
@@ -1225,7 +1225,7 @@ async function executeSingleAction(action) {
 
     if (action.type === 'skill') {
         const skill = action.skill;
-        logToBattleLog(`✦스킬✦ ${caster.name}, ${skill.name} 주문 발동.`);
+        logToBattleLog(`✦스킬✦ ${caster.name}, [${skill.name}] 주문 발동.`);
         let skillSuccess = true; // 기본값을 true로. 스킬 실행 결과가 false일 때만 false로.
         if (skill.execute) {
             let mainTarget = action.mainTarget;
@@ -1281,7 +1281,7 @@ console.log(`[DEBUG] executeSingleAction: Attempting to execute skill: ${skill.n
 
         // skillSuccess가 명시적으로 false인 경우만 실패로 간주
         if (skillSuccess === false) {
-            logToBattleLog(`${skill.name} 사용에 실패했습니다.`);
+            logToBattleLog(`❗ ${skill.name} 사용에 실패했습니다.`);
         } else {
             // undefined 이거나 true인 경우 (즉, 명시적 실패가 아닌 경우)
             caster.lastSkillTurn[skill.id] = currentTurn;
@@ -1375,7 +1375,7 @@ async function executeBattleTurn() {
 async function performEnemyAction(enemyChar) {
     applyTurnStartEffects(enemyChar); // 턴 시작 효과 적용 (내부 로그는 이미 수정됨)
     // 수정된 로그:
-    logToBattleLog(`\n--- ${enemyChar.name} (AI) 행동 (${currentTurn}턴) ---`);
+    logToBattleLog(`\n--- ${enemyChar.name} 행동: ${currentTurn}턴 ---`);
 
     let targetAlly = null; // 플레이어의 아군 중 공격 대상
     const provokeDebuffOnEnemy = enemyChar.debuffs.find(d => d.id === 'provoked' && d.turnsLeft > 0);
@@ -1383,9 +1383,9 @@ async function performEnemyAction(enemyChar) {
         targetAlly = findCharacterById(provokeDebuffOnEnemy.effect.targetId);
         if (!targetAlly || !targetAlly.isAlive) {
             targetAlly = null; // 도발 대상이 죽었거나 유효하지 않으면 타겟 해제
-            logToBattleLog(`✦정보✦ ${enemyChar.name} (AI): 도발 대상이 유효하지 않아 새로운 대상을 탐색합니다.`);
+            logToBattleLog(`✦정보✦ ${enemyChar.name}: 도발 대상이 유효하지 않아 새로운 대상을 탐색합니다.`);
         } else {
-            logToBattleLog(`✦정보✦ ${enemyChar.name} (AI): [도발] 효과로 ${targetAlly.name}을(를) 우선 공격합니다.`);
+            logToBattleLog(`✦정보✦ ${enemyChar.name}: [도발] 효과로 ${targetAlly.name}을(를) 우선 공격합니다.`);
         }
     }
 
@@ -1414,7 +1414,7 @@ async function performEnemyAction(enemyChar) {
 
         if (skillToUse) {
             // 수정된 로그:
-            logToBattleLog(`🔥 ${enemyChar.name} (AI), [${skillToUse.name}] 시전! (대상: ${skillToUse.targetType.includes("enemy") || skillToUse.targetType.includes("multi") ? aiTargetName : (skillToUse.targetType.includes("ally") ? "아군(적)" : "자신") })`);
+            logToBattleLog(`🔥 ${enemyChar.name}, [${skillToUse.name}] 주문 발동. (대상: ${skillToUse.targetType.includes("enemy") || skillToUse.targetType.includes("multi") ? aiTargetName : (skillToUse.targetType.includes("ally") ? "아군(적)" : "자신") })`);
             
             let alliesForEnemySkill = allyCharacters.filter(a => a.isAlive); // 적의 입장에서는 플레이어 아군들이 '적 리스트'
             let enemiesForEnemySkill = enemyCharacters.filter(e => e.isAlive); // 적의 입장에서는 다른 적들이 '아군 리스트'
@@ -1467,7 +1467,7 @@ async function performEnemyAction(enemyChar) {
                     if (friendlyEnemyTarget) {
                          skillToUse.execute(enemyChar, friendlyEnemyTarget, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
                     } else {
-                         logToBattleLog(`✦정보✦ ${enemyChar.name} (AI) [${skillToUse.name}]: 대상 아군(적)을 찾을 수 없습니다.`);
+                         logToBattleLog(`✦정보✦ ${enemyChar.name}: [${skillToUse.name}]의 대상을 찾을 수 없습니다.`);
                     }
                     break;
                 case 'multi_enemy': // 주 대상은 targetAlly, 부 대상은 다른 플레이어 아군
@@ -1475,20 +1475,20 @@ async function performEnemyAction(enemyChar) {
                     skillToUse.execute(enemyChar, targetAlly, subTargetForMulti, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
                     break;
                 default:
-                    logToBattleLog(`✦정보✦ ${enemyChar.name} (AI) [${skillToUse.name}]: 스킬 대상 타입(${skillToUse.targetType}) AI 실행 미지원. ${aiTargetName}에게 기본 공격.`);
+                    logToBattleLog(`✦정보✦ ${enemyChar.name} [${skillToUse.name}]: 스킬 대상 타입(${skillToUse.targetType}) AI 실행 미지원. ${aiTargetName}에게 기본 공격.`);
                     const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
                     targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
                     break;
             }
         } else if (targetAlly) { // 사용할 스킬이 없으면 기본 공격
-            logToBattleLog(`✦정보✦ ${enemyChar.name} (AI), ${aiTargetName}에게 기본 공격.`);
+            logToBattleLog(`✦정보✦ ${enemyChar.name}, ${aiTargetName}에게 기본 공격.`);
             const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
             targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
         } else {
-            logToBattleLog(`✦정보✦ ${enemyChar.name} (AI): 공격할 대상이 없습니다.`);
+            logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
         }
     } else { // 공격할 플레이어 아군이 없음
-        logToBattleLog(`✦정보✦ ${enemyChar.name} (AI): 공격할 대상(플레이어 아군)이 없습니다.`);
+        logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상(플레이어 아군)이 없습니다.`);
     }
 
     // enemyChar.nextSkillToUse = null; // Mapdata.js 스킬 예고 기능 사용 시 주석 해제
