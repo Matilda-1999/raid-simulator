@@ -1339,13 +1339,25 @@ async function performEnemyAction(enemyChar) {
             // 이 부분은 executeSingleAction의 스킬 호출 switch문과 매우 유사하게 구성되어야 합니다.
             // 각 스킬의 execute 함수가 기대하는 파라미터 순서대로 전달해야 합니다.
             switch (skillToUse.targetType) {
-                case 'self':
-                    if (skillToUse.id === SKILLS.SKILL_PROVOKE.id || skillToUse.id === SKILLS.SKILL_REALITY.id) {
-                        skillToUse.execute(enemyChar, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
-                    } else { 
-                        skillToUse.execute(enemyChar, enemyChar, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
-                    }
-                    break;
+               case 'self':
+                // 이 스킬들은 모두 execute(caster, (caster의)allies, (caster의)enemies, battleLog) 시그니처를 가집니다.
+                // 적 AI(enemyChar) 입장에서 allies는 다른 적들(enemiesForEnemySkill), enemies는 플레이어들(alliesForEnemySkill) 입니다.
+                if (skillToUse.id === SKILLS.SKILL_PROVOKE.id ||
+                    skillToUse.id === SKILLS.SKILL_REALITY.id ||
+                    skillToUse.id === SKILLS.SKILL_RESILIENCE.id || // 이 스킬들은 allies, enemies 파라미터를 사용
+                    skillToUse.id === SKILLS.SKILL_REVERSAL.id) {   // 이 스킬들은 allies, enemies 파라미터를 사용
+                    skillToUse.execute(enemyChar, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
+                } else {
+                    // 만약 targetType: 'self' 이면서 execute(caster, battleLog) 와 같이 더 적은 파라미터를 받는 스킬이 있다면
+                    // 여기서 분기 처리를 해야 합니다. 현재는 그러한 스킬이 없어 보입니다.
+                    console.warn(`[WARN AI Action] Unhandled self-target skill in AI: ${skillToUse.name} (ID: ${skillToUse.id}). Defaulting to (caster, caster's allies, caster's enemies, log) signature.`);
+                    // 대부분의 self 스킬이 아군/적군 전체 목록을 필요로 하므로 위와 동일하게 호출합니다.
+                    // (예: 도발은 적군 전체에게 디버프, 실존은 아군 전체에게 버프 - 비록 targetType이 self여도)
+                    // SKILL_COUNTER의 execute 설명에 "self 타입이지만, executeSingleAction에서 allies, enemies도 전달받을 수 있음" 코멘트가 있는 것처럼,
+                    // self 타겟 스킬도 전체 목록을 필요로 할 수 있습니다.
+                    skillToUse.execute(enemyChar, enemiesForEnemySkill, alliesForEnemySkill, logToBattleLog);
+                }
+                break;
                 case 'all_enemies': // 적 AI의 '모든 적'은 플레이어의 아군들
                     skillToUse.execute(enemyChar, alliesForEnemySkill, logToBattleLog);
                     break;
