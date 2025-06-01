@@ -1055,7 +1055,7 @@ function applyTurnStartEffects(character) {
             buff.turnsLeft--;
         }
 
-        if (buff.turnsLeft <= 0 && .buff.unremovable) {
+        if (buff.turnsLeft <= 0 && !buff.unremovable) {
             if (buff.effect.shieldAmount) { // 보호막 버프 만료
                 character.shield = Math.max(0, character.shield - buff.effect.shieldAmount);
                 logToBattleLog(`✦효과 만료✦ ${character.name}: [${buff.name}] 효과 만료, 보호막 -${buff.effect.shieldAmount.toFixed(0)}. (현재 총 보호막: ${character.shield.toFixed(0)})`);
