@@ -162,7 +162,7 @@ const SKILLS = {
             battleLog(`✦버프✦ ${target.name}: [허무 효과] [${chosenBuff.name}] 획득 (2턴).`);
             return true;
         }
-    },
+    
     // [실존]
     SKILL_REALITY: {
         id: "SKILL_REALITY",
@@ -229,7 +229,8 @@ const SKILLS = {
             battleLog(`✦디버프✦ ${target.name}, [흠집] 효과 적용 (현재 ${target.getDebuffStacks('scratch')}스택).`);
             return true;
         }
-    },
+        },
+    }
      // [절정]
     SKILL_CLIMAX: {
         id: "SKILL_CLIMAX",
@@ -289,7 +290,8 @@ const SKILLS = {
             // [쇠약] 부여 로직 제거
             return true;
         }
-    },
+        },
+    }
     // [간파]
     SKILL_DISCERNMENT: {
         id: "SKILL_DISCERNMENT",
@@ -398,7 +400,9 @@ const SKILLS = {
             return true;
         }
     }
-};
+    };
+    }
+}
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
 function getElement(id) {
