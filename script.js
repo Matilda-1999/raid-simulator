@@ -236,7 +236,7 @@ const SKILLS = {
         id: "SKILL_CLIMAX",
         name: "절정",
         type: "단일 공격",
-        description: "시전자의 타입에 따라 공격력 또는 마법 공격력의 270% 피해. 이후 상대에게 새겨진 [흠집] 수에 따라 각각 공격력/마법 공격력의 25%(1개)/35%(2개)/45%(3개) 추가 공격 2회. [흠집]은 추가 공격 후 소멸.",
+        description: "시전자의 타입에 따라 공격력 또는 마법 공격력의 270% 피해. 이후 상대에게 새겨진 [흠집] 수에 따라 각각 공격력/마법 공격력의 25%(1개)/35%(2개)/45%(3개) 추가 공격 2회. [흠집]은 추가 공격 후 소멸. *[흠집]: 기본 지속 2 턴. 중첩될 시 마지막에 새겨진 흠집의 유지 시간에 따른다. 3 회까지 중첩된다. 추가 공격 이후 사라진다.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
@@ -297,7 +297,7 @@ const SKILLS = {
         id: "SKILL_DISCERNMENT",
         name: "간파",
         type: "단일 공격",
-        description: "공격력 190% 물리/240% 마법 피해 (2타). 이후 공격력 50% 물리/마법 공격력 70% 마법 피해를 가하며 상대에게 [쇠약] 상태 부여.",
+        description: "공격력 190% 물리/240% 마법 피해 (2타). 이후 공격력 50% 물리/마법 공격력 70% 마법 피해를 가하며 상대에게 [쇠약] 상태 부여. *[쇠약]: 지속 2 턴. 공격 시 피해량 -20%. 디버프 시전자와 관계없이 사용 가능하다.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
