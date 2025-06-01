@@ -1658,7 +1658,7 @@ async function performEnemyAction(enemyChar) {
             if (!skill) return false;
             if (skill.cooldown && skill.cooldown > 0) {
                 const lastUsed = enemyChar.lastSkillTurn[skill.id] || 0;
-                return .(lastUsed !== 0 && currentTurn - lastUsed < skill.cooldown);
+                return !(lastUsed !== 0 && currentTurn - lastUsed < skill.cooldown);
             }
             return true; // 쿨타임 없는 스킬은 사용 가능
         });
