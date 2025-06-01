@@ -945,17 +945,22 @@ function addCharacter(team) {
         logToBattleLog(`✦경고✦: ${name}을(를) 배치할 빈 공간이 맵에 없습니다.`);
     }
 
-    if (team === 'ally') {
+        if (team === 'ally') {
         allyCharacters.push(newChar);
-        logToBattleLog(`✦합류✦ 아군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
-    } else if (team === 'enemy') {
-        enemyCharacters.push(newChar);
-        logToBattleLog(`✦합류✦ 적군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
+        console.log('[DEBUG] 아군 합류 logToBattleLog 호출 직전'); // 첫 번째 로그 호출 지점
+        logToBattleLog(`✦합류✦ 아군 [<span class="math-inline">\{name\} \(</span>{type})] (HP: <span class="math-inline">\{newChar\.currentHp\}/</span>{newChar.maxHp}), [<span class="math-inline">\{newChar\.posX\},</span>{newChar.posY}].`);
+        } else if (team === 'enemy') {
+            enemyCharacters.push(newChar);
+            console.log('[DEBUG] 적군 합류 logToBattleLog 호출 직전'); // 두 번째 로그 호출 지점
+            logToBattleLog(`✦합류✦ 적군 [<span class="math-inline">\{name\} \(</span>{type})] (HP: <span class="math-inline">\{newChar\.currentHp\}/</span>{newChar.maxHp}), [<span class="math-inline">\{newChar\.posX\},</span>{newChar.posY}].`);
+        }
+        nameInput.value = '';
+        hpInput.value = '';
+    
+        console.log('[DEBUG] displayCharacters 호출 직전'); // displayCharacters 호출 지점
+        displayCharacters();
+        console.log(`[DEBUG] addCharacter 종료 - team: ${team}`); // 함수 종료점
     }
-    nameInput.value = ''; // 이름 입력 필드 초기화
-    hpInput.value = '';   // 체력 입력 필드 초기화
-    displayCharacters();
-}
 
 function deleteCharacter(characterId, team) {
     let targetArray = team === 'ally' ? allyCharacters : enemyCharacters;
