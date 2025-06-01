@@ -675,7 +675,7 @@ class Character {
     }
 
     removeBuffById(id) {
-        const buffIndex = this.buffs.findIndex(b => b.id === id && .b.unremovable);
+        const buffIndex = this.buffs.findIndex(b => b.id === id && !b.unremovable);
         if (buffIndex > -1) {
             const removedBuff = this.buffs[buffIndex];
     
