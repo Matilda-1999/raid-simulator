@@ -1177,7 +1177,7 @@ function prepareNewTurnCycle() {
 
 function promptAllySelection() {
     const aliveAllies = allyCharacters.filter(char => char.isAlive);
-    const availableAllies = aliveAllies.filter(char => .actedAlliesThisTurn.includes(char.id));
+    const availableAllies = aliveAllies.filter(char => !actedAlliesThisTurn.includes(char.id));
     
     if (allySelectionButtonsDiv) allySelectionButtonsDiv.innerHTML = ''; 
     if (skillSelectionArea) skillSelectionArea.style.display = 'none';
