@@ -2,7 +2,7 @@
 const MAP_WIDTH = 5;
 const MAP_HEIGHT = 5;
 
-const SKILLS = { // 이전 답변에서 이미 로그 스타일 수정된 내용 반영된 것으로 가정
+const SKILLS = {
     // [근성]
     SKILL_RESILIENCE: {
         id: "SKILL_RESILIENCE",
@@ -636,15 +636,15 @@ function addCharacter(team) {
         newChar.posY = cell.y;
         characterPositions[`${cell.x},${cell.y}`] = newChar.id;
     } else {
-        logToBattleLog(`경고: ${name}을(를) 배치할 빈 공간이 맵에 없습니다.`);
+        logToBattleLog(`✦경고✦: ${name}을(를) 배치할 빈 공간이 맵에 없습니다.`);
     }
 
     if (team === 'ally') {
         allyCharacters.push(newChar);
-        logToBattleLog(`✅ 아군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}) [${newChar.posX},${newChar.posY}] 합류.`);
+        logToBattleLog(`✦합류✦ 아군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
     } else if (team === 'enemy') {
         enemyCharacters.push(newChar);
-        logToBattleLog(`🔥 적군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}) [${newChar.posX},${newChar.posY}] 등장.`);
+        logToBattleLog(`✦합류✦ 적군 [${name} (${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
     }
     hpInput.value = '';
     displayCharacters();
@@ -1048,7 +1048,7 @@ function confirmAction() {
         }
         actionDetails.skill = skill;
 
-        // ⭐ 2. 선택된 대상에 따라 targetDescription 값 설정 ⭐
+        // 2. 선택된 대상에 따라 targetDescription 값 설정
         if (skill.targetSelection === 'self') {
             targetDescription = caster.name; // 자신 대상
             actionDetails.mainTarget = caster;
@@ -1075,7 +1075,7 @@ function confirmAction() {
             // 대상을 선택해야 하는 스킬인데 targetId가 없는 경우
             targetDescription = "대상 미선택";
         }
-        // ⭐ 4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거) ⭐
+        // 4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거)
         logToBattleLog(`✦준비✦ ${caster.name}, [${skill.name}] 스킬 사용 준비. (대상: ${targetDescription})`);
 
     } else if (selectedAction.type === 'move') {
@@ -1092,7 +1092,7 @@ function confirmAction() {
         const targetX = caster.posX + selectedAction.moveDelta.dx;
         const targetY = caster.posY + selectedAction.moveDelta.dy;
 
-        // ⭐ 3. 이동(move) 타입 처리 시에는 스킬 대상 설정 로직이 필요 없음 (제거) ⭐
+        // 3. 이동(move) 타입 처리 시에는 스킬 대상 설정 로직이 필요 없음 (제거)
         // 아래 유효성 검사는 유지하거나, selectMove에서 이미 처리했다면 간소화 가능
         if (targetX < 1 || targetX > MAP_WIDTH || targetY < 1 || targetY > MAP_HEIGHT) { // 1기반 좌표계 가정
             logToBattleLog(`✦정보✦ ${caster.name}, 이동 불가: (${targetX},${targetY}) 맵 범위 이탈.`);
@@ -1108,7 +1108,7 @@ function confirmAction() {
             showSkillSelectionForNextAlly(); 
             return;
         }
-        // ⭐ 4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거) ⭐
+        //  4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거) 
         logToBattleLog(`✦준비✦ ${caster.name}, (${targetX},${targetY})(으)로 이동 준비.`);
     }
 
@@ -1129,11 +1129,11 @@ async function executeSingleAction(action) {
 
     applyTurnStartEffects(caster);
 
-    logToBattleLog(`\n--- <span class="math-inline">\{caster\.name\} 행동 \(</span>{currentTurn}턴) ---`);
+    logToBattleLog(`\n--- ${caster.name} 행동 / (${currentTurn}턴) ---`);
 
     if (action.type === 'skill') {
         const skill = action.skill;
-        logToBattleLog(`✦스킬✦ <span class="math-inline">\{caster\.name\}, \[</span>{skill.name}] 주문 발동!`);
+        logToBattleLog(`✦스킬✦ ${caster.name}, ${skill.name} 주문 발동.`);
         let skillSuccess = true; // 기본값을 true로. 스킬 실행 결과가 false일 때만 false로.
         if (skill.execute) {
             let mainTarget = action.mainTarget;
@@ -1146,10 +1146,14 @@ console.log(`[DEBUG] executeSingleAction: Attempting to execute skill: ${skill.n
 
             switch (skill.targetType) {
                 case 'self':
-                    if (skill.id === SKILLS.SKILL_PROVOKE.id || skill.id === SKILLS.SKILL_REALITY.id) {
+                    if (skill.id === SKILLS.SKILL_PROVOKE.id ||
+                        skill.id === SKILLS.SKILL_REALITY.id ||
+                        skill.id === SKILLS.SKILL_REVERSAL.id ||
+                        skill.id === SKILLS.SKILL_RESILIENCE.id){
                         // 이 스킬들은 execute(caster, allies, enemies, battleLog) 시그니처를 사용
                         skillSuccess = skill.execute(caster, actualAllies, actualEnemies, logToBattleLog);
                     } else { // SKILL_RESILIENCE, SKILL_REVERSAL 등. 이들은 execute(caster, target=caster, allies, enemies, battleLog)
+                        console.warn(`[WARN] Unhandled self-target skill: ${skill.name}. Using generic self call.`);
                         skillSuccess = skill.execute(caster, caster, actualAllies, actualEnemies, logToBattleLog);
                     }
                     break;
