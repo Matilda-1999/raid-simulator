@@ -462,8 +462,8 @@ const SKILLS = {
         targetSelection: "enemy",
         cooldown: 3, 
         execute: (caster, mainTarget, allies, enemies, battleLog) => { 
-            if (.mainTarget) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상을 찾을 수 없습니다.`); return false; }
-            if (.mainTarget.isAlive) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상 ${mainTarget.name}은(는) 이미 쓰러져 있습니다.`); return false;}
+            if (!mainTarget) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상을 찾을 수 없습니다.`); return false; }
+            if (!mainTarget.isAlive) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상 ${mainTarget.name}은(는) 이미 쓰러져 있습니다.`); return false;}
 
             const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] || 0;
             if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_RUPTURE.cooldown) {
@@ -504,7 +504,7 @@ const SKILLS = {
                 battleLog(`  ✦파열 부가 대상 공격 시작 (총 ${subTargets.length}명)`);
                 const subSkillPower = 1.4;
                 subTargets.forEach(subTarget => {
-                    if (.subTarget.isAlive) return;
+                    if (!subTarget.isAlive) return;
                     const subDamage = calculateDamage(caster, subTarget, subSkillPower, damageType, statTypeToUse);
                     subTarget.takeDamage(subDamage, battleLog, caster);
                     battleLog(`    ✦피해✦ [파열 부 대상] ${subTarget.name}: ${subDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
@@ -701,7 +701,7 @@ class Character {
     }
 
     takeDamage(rawDamage, logFn, attacker = null) {
-        if (.this.isAlive) return;
+        if (!this.isAlive) return;
 
         // [철옹성] 피해 이전 로직
         if (this.isAlive && attacker && allyCharacters.includes(this)) { // 자신이 아군일 때만 다른 아군에게 이전 시도
@@ -902,7 +902,7 @@ function getRandomEmptyCell() {
     const emptyCells = [];
     for (let y = 0; y < MAP_HEIGHT; y++) {
         for (let x = 0; x < MAP_WIDTH; x++) {
-            if (.occupiedCells.has(`${x},${y}`)) {
+            if (!occupiedCells.has(`${x},${y}`)) {
                 emptyCells.push({ x, y });
             }
         }
@@ -920,7 +920,7 @@ function addCharacter(team) {
     const type = typeInput.value;
     let currentHp = hpInput.value.trim() === '' ? null : parseInt(hpInput.value);
 
-    if (.name) { alert('캐릭터 이름을 입력해 주세요.'); nameInput.focus(); return; }
+    if (!name) { alert('캐릭터 이름을 입력해 주세요.'); nameInput.focus(); return; }
     if (currentHp !== null && (isNaN(currentHp) || currentHp <= 0)) {
         alert('유효한 현재 체력을 입력하거나 비워 두세요.'); hpInput.focus(); return;
     }
@@ -1051,7 +1051,7 @@ function applyTurnStartEffects(character) {
             logToBattleLog(`✦회복✦ ${character.name}, [${buff.name} 효과]: HP ${healAmount.toFixed(0)} 회복. (현재 HP: ${character.currentHp.toFixed(0)})`);
         }
 
-        if (.buff.unremovable) {
+        if (!buff.unremovable) {
             buff.turnsLeft--;
         }
 
@@ -1158,7 +1158,7 @@ function startBattle() {
 }
 
 function prepareNewTurnCycle() {
-    if (.isBattleStarted) {
+    if (!isBattleStarted) {
          alert('전투를 시작해 주세요. (prepareNewTurnCycle)');
          return;
     }
@@ -1215,7 +1215,7 @@ function promptAllySelection() {
 }
 
 function showSkillSelectionForCharacter(actingChar) {
-    if (.actingChar || .actingChar.isAlive) {
+    if (!actingChar || .actingChar.isAlive) {
         logToBattleLog("선택된 캐릭터가 없거나 전투 불능입니다.");
         promptAllySelection(); 
         return;
@@ -1404,9 +1404,9 @@ function selectTarget(targetCharId) {
             canConfirm = true;
         } else alert('아군 또는 자신을 대상으로 선택해야 합니다.');
     } else if (skill.targetSelection === 'two_enemies') {
-        if (.enemyCharacters.includes(targetChar)) { alert('적군을 선택해야 합니다.'); return; }
+        if (!enemyCharacters.includes(targetChar)) { alert('적군을 선택해야 합니다.'); return; }
         
-        if (.selectedAction.targetId) { // 첫 번째 대상 선택
+        if (!selectedAction.targetId) { // 첫 번째 대상 선택
             selectedAction.targetId = targetCharId;
             selectedTargetName.textContent = targetChar.name;
             logToBattleLog(`[${skill.name}] 첫 번째 대상: ${targetChar.name}. 두 번째 대상을 선택해 주세요.`);
@@ -1428,10 +1428,10 @@ function selectTarget(targetCharId) {
 }
 
 function confirmAction() {
-    if (.selectedAction.type) { alert('행동을 선택해 주세요.'); return; }
+    if (!selectedAction.type) { alert('행동을 선택해 주세요.'); return; }
 
     const caster = findCharacterById(selectedAction.casterId);
-    if (.caster) { alert('시전자를 찾을 수 없습니다.'); return; }
+    if (!caster) { alert('시전자를 찾을 수 없습니다.'); return; }
 
     // 중복 확정 방지
     if (actedAlliesThisTurn.includes(caster.id)) {
@@ -1445,7 +1445,7 @@ function confirmAction() {
 
     if (selectedAction.type === 'skill') {
         const skill = SKILLS[selectedAction.skillId];
-        if (.skill) { alert('선택된 스킬 정보를 찾을 수 없습니다.'); return; }
+        if (!skill) { alert('선택된 스킬 정보를 찾을 수 없습니다.'); return; }
         actionDetails.skill = skill;
 
         if (skill.targetSelection === 'self') {
@@ -1455,14 +1455,14 @@ function confirmAction() {
             targetDescription = "전체 대상";
         } else if (selectedAction.targetId) { 
             const mainTargetObj = findCharacterById(selectedAction.targetId);
-            if (.mainTargetObj) { alert('첫 번째 대상을 찾을 수 없습니다.'); return; }
+            if (!mainTargetObj) { alert('첫 번째 대상을 찾을 수 없습니다.'); return; }
             targetDescription = mainTargetObj.name;
             actionDetails.mainTarget = mainTargetObj;
 
             if (skill.targetSelection === 'two_enemies') {
                 if (selectedAction.subTargetId) {
                     const subTargetObj = findCharacterById(selectedAction.subTargetId);
-                    if (.subTargetObj) { alert('두 번째 대상을 찾을 수 없습니다.'); return; }
+                    if (!subTargetObj) { alert('두 번째 대상을 찾을 수 없습니다.'); return; }
                     targetDescription += `, ${subTargetObj.name}`; 
                     actionDetails.subTarget = subTargetObj;
                 } else {
@@ -1477,7 +1477,7 @@ function confirmAction() {
 
     } else if (selectedAction.type === 'move') {
         actionDetails.moveDelta = selectedAction.moveDelta;
-        if (.selectedAction.moveDelta) {
+        if (!selectedAction.moveDelta) {
              alert("이동 정보 오류. 다시 선택해 주세요.");
              showSkillSelectionForCharacter(caster); 
              return;
@@ -1497,7 +1497,7 @@ function confirmAction() {
 
 async function executeSingleAction(action) {
     const caster = action.caster;
-    if (.caster || .caster.isAlive) {
+    if (!caster || .caster.isAlive) {
         console.log(`[DEBUG] executeSingleAction: Caster ${caster ? caster.name : 'N/A'} is not alive or not found. Returning false.`);
         return false; 
     }
@@ -1577,7 +1577,7 @@ async function executeSingleAction(action) {
 }
 
 async function executeBattleTurn() {
-    if (.isBattleStarted) { alert('전투를 시작해 주세요.'); return; }
+    if (!isBattleStarted) { alert('전투를 시작해 주세요.'); return; }
     
     const aliveAlliesCount = allyCharacters.filter(c => c.isAlive).length;
     if (playerActionsQueue.length < aliveAlliesCount && aliveAlliesCount > 0) { // 살아 있는 아군이 있는데 행동큐가 비어있으면 안됨
@@ -1595,7 +1595,7 @@ async function executeBattleTurn() {
     logToBattleLog(`\n--- ${currentTurn} 턴 아군 행동 실행 ---`);
     // 플레이어 행동 순서는 playerActionsQueue에 담긴 순서대로 (사용자가 선택한 순서)
     for (const action of playerActionsQueue) {
-        if (.action.caster.isAlive) continue; // 행동 전 이미 쓰러진 경우 스킵
+        if (!action.caster.isAlive) continue; // 행동 전 이미 쓰러진 경우 스킵
         if (await executeSingleAction(action)) {
             return; // 전투 종료 시 즉시 함수 종료
         }
@@ -1614,20 +1614,20 @@ async function executeBattleTurn() {
     }
     
     // 전투 종료 최종 확인
-    if (.checkBattleEnd() && isBattleStarted) { 
+    if (!checkBattleEnd() && isBattleStarted) { 
         prepareNewTurnCycle(); // 다음 턴 준비
     } else {
         // 전투가 여기서 끝났거나, 이미 시작되지 않은 상태면 아무것도 안 함
-        if (.isBattleStarted && startButton) startButton.style.display = 'block'; // 전투가 완전히 끝났다면 시작 버튼 다시 표시
+        if (!isBattleStarted && startButton) startButton.style.display = 'block'; // 전투가 완전히 끝났다면 시작 버튼 다시 표시
         // nextTurnButton, executeTurnButton 등은 이미 숨겨져 있을 것임
     }
 }
 
 async function performEnemyAction(enemyChar) {
-    if (.enemyChar.isAlive) return false; // 이미 죽었으면 행동 안함
+    if (!enemyChar.isAlive) return false; // 이미 죽었으면 행동 안함
 
     applyTurnStartEffects(enemyChar); 
-    if (.enemyChar.isAlive) return checkBattleEnd(); // 턴 시작 효과로 죽을 수 있음
+    if (!enemyChar.isAlive) return checkBattleEnd(); // 턴 시작 효과로 죽을 수 있음
 
     logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
 
@@ -1655,7 +1655,7 @@ async function performEnemyAction(enemyChar) {
     if (targetAlly) {
         // 사용 가능한 스킬 중 랜덤 선택 (쿨타임 고려)
         const usableSkills = enemyChar.skills.map(id => SKILLS[id]).filter(skill => {
-            if (.skill) return false;
+            if (!skill) return false;
             if (skill.cooldown && skill.cooldown > 0) {
                 const lastUsed = enemyChar.lastSkillTurn[skill.id] || 0;
                 return .(lastUsed !== 0 && currentTurn - lastUsed < skill.cooldown);
