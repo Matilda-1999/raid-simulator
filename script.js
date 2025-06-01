@@ -1497,7 +1497,7 @@ function confirmAction() {
 
 async function executeSingleAction(action) {
     const caster = action.caster;
-    if (!caster || .caster.isAlive) {
+    if (!caster || !caster.isAlive) {
         console.log(`[DEBUG] executeSingleAction: Caster ${caster ? caster.name : 'N/A'} is not alive or not found. Returning false.`);
         return false; 
     }
