@@ -1129,7 +1129,7 @@ async function executeSingleAction(action) {
 
     applyTurnStartEffects(caster);
 
-    logToBattleLog(`\n--- ${caster.name} 행동 / (${currentTurn}턴) ---`);
+    logToBattleLog(`\n--- ${caster.name}, 행동 시작: ${currentTurn}턴) ---`);
 
     if (action.type === 'skill') {
         const skill = action.skill;
@@ -1146,14 +1146,17 @@ console.log(`[DEBUG] executeSingleAction: Attempting to execute skill: ${skill.n
 
             switch (skill.targetType) {
                 case 'self':
+                    console.log(`[DEBUG executeSingleAction SELF] Skill ID: ${skill.id}, Skill Name: ${skill.name}`); // ⭐ skill.id 확인 로그
+                    
                     if (skill.id === SKILLS.SKILL_PROVOKE.id ||
                         skill.id === SKILLS.SKILL_REALITY.id ||
                         skill.id === SKILLS.SKILL_REVERSAL.id ||
                         skill.id === SKILLS.SKILL_RESILIENCE.id){
                         // 이 스킬들은 execute(caster, allies, enemies, battleLog) 시그니처를 사용
+                        console.log(`[DEBUG executeSingleAction SELF] Correctly identified skill ${skill.name} for specific self-handling.`); // ⭐ if문 진입 확인 로그
                         skillSuccess = skill.execute(caster, actualAllies, actualEnemies, logToBattleLog);
                     } else { // SKILL_RESILIENCE, SKILL_REVERSAL 등. 이들은 execute(caster, target=caster, allies, enemies, battleLog)
-                        console.warn(`[WARN] Unhandled self-target skill: ${skill.name}. Using generic self call.`);
+                        console.warn(`[WARN executeSingleAction SELF] Unhandled self-target skill: ${skill.name} (ID: ${skill.id}). Falling into generic self call.`);
                         skillSuccess = skill.execute(caster, caster, actualAllies, actualEnemies, logToBattleLog);
                     }
                     break;
