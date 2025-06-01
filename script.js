@@ -230,8 +230,7 @@ const SKILLS = {
             battleLog(`✦디버프✦ ${target.name}, [흠집] 효과 적용 (현재 ${target.getDebuffStacks('scratch')}스택).`);
             return true;
         }
-        },
-    }
+    },
      // [절정]
     SKILL_CLIMAX: {
         id: "SKILL_CLIMAX",
@@ -376,7 +375,7 @@ const SKILLS = {
                 battleLog(`  ✦추가 피해✦ ${mainTarget.name} ([쇠약] 대상): ${actualBonusFixedDamage.toFixed(0)} 추가 고정 피해.`);
             }
 
-            // 부 목표 공격 (주 목표를 제외한 모든 살아있는 적)
+            // 부 목표 공격 (주 목표를 제외한 모든 살아 있는 적)
             const subTargets = enemies.filter(e => e.isAlive && e.id !== mainTarget.id);
             if (subTargets.length > 0) {
                 battleLog(`  ✦파열 부가 대상 공격 시작 (총 ${subTargets.length}명)`);
