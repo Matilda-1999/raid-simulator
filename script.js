@@ -172,14 +172,15 @@ const SKILLS = {
         description: "모든 아군 방어력 x0.3 증가 (2턴). 자신은 [실재] 4스택 추가 획득 (2턴, 해제 불가). 연속 사용 시 추가 2스택 획득. 3턴 연속 사용 불가.",
         targetType: "all_allies",
         targetSelection: "all_allies",
+        cooldown: 3, // 3턴 쿨타임 (사용 후 2턴 동안 사용 불가, 3턴째부터 사용 가능)
         execute: (caster, allies, enemies, battleLog) => {
             const currentTurnNum = currentTurn;
             const lastUsedTurn = caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] || 0;
 
-            if (lastUsedTurn !== 0 && currentTurnNum - lastUsedTurn < 3) {
-                 battleLog(`✦정보✦ ${caster.name}, [실존] 사용 불가: 쿨타임 ${3 - (currentTurnNum - lastUsedTurn)}턴 남음.`);
-                 return false;
-            }
+            if (lastUsedTurn !== 0 && currentTurnNum - lastUsedTurn < SKILLS.SKILL_REALITY.cooldown) { //
+             battleLog(`✦정보✦ ${caster.name}, [실존] 사용 불가: 쿨타임 ${SKILLS.SKILL_REALITY.cooldown - (currentTurnNum - lastUsedTurn)}턴 남음.`); //
+             return false; //
+               }
             battleLog(`✦스킬✦ ${caster.name}, [실존] 사용: 모든 아군 방어력 증가 및 자신에게 [실재] 스택 부여.`);
             allies.filter(a => a.isAlive).forEach(ally => {
                 ally.addBuff('reality_def_boost', '방어력 증가 (실존)', 2, { defBoostMultiplier: 0.3 });
@@ -190,7 +191,7 @@ const SKILLS = {
             battleLog(`✦버프✦ ${caster.name}: [실재] ${realityStacks}스택 추가 획득 (2턴, 해제 불가).`);
             caster.addBuff('reality_stacks', '실재', 2, { atkBoostPerStack: 0.4, stacks: realityStacks, unremovable: true });
             caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] = currentTurnNum;
-            return true;
+        return true;
         }
     },
     // [진리]
@@ -332,17 +333,16 @@ const SKILLS = {
         description: "사용 쿨타임: 2턴. 시전자 타입 기반 주 목표에게 공/마공 210% 피해, 주 목표 제외 모든 적에게 공/마공 140% 피해. [쇠약] 상태 적에게 적중 시 추가로 공/마공 30% 고정 피해.",
         targetType: "single_enemy", // 주 목표를 선택하고, 나머지는 자동으로 부 목표가 됨
         targetSelection: "enemy",
+        cooldown: 3, // 3턴 쿨타임 (사용 후 2턴 동안 사용 불가, 3턴째부터 사용 가능)
         execute: (caster, mainTarget, allies, enemies, battleLog) => { // subTarget은 내부에서 결정
             if (!mainTarget) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상을 찾을 수 없습니다.`); return false; }
             if (!mainTarget.isAlive) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상 ${mainTarget.name}은(는) 이미 쓰러져 있습니다.`); return false;}
 
-            // 쿨타임 확인 (2턴 쿨타임: 사용 후 2턴 동안 사용 불가 -> T, T+1, T+2 사용불가, T+3부터 사용가능)
-            // 즉, currentTurn - lastUsedTurn < 3 이면 쿨타임 중
-            const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] || 0;
-            if (lastUsed !== 0 && currentTurn - lastUsed < 3) {
-                battleLog(`✦정보✦ ${caster.name}, [파열] 사용 불가: 쿨타임 ${3 - (currentTurn - lastUsed)}턴 남음.`);
-                return false; // 스킬 사용 실패
-            }
+            const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] || 0; 
+            if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_RUPTURE.cooldown) { //
+            battleLog(`✦정보✦ ${caster.name}, [파열] 사용 불가: 쿨타임 ${SKILLS.SKILL_RUPTURE.cooldown - (currentTurn - lastUsed)}턴 남음.`); //
+            return false; //
+                }
 
             let statTypeToUse;
             let damageType;
@@ -397,7 +397,7 @@ const SKILLS = {
                     }
                 });
             }
-            caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] = currentTurn; // 스킬 사용 턴 기록
+            caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] = currentTurn; // 성공 시 쿨타임 기록
             return true;
         }
     }
@@ -908,41 +908,67 @@ function prepareNewTurnCycle() {
     promptAllySelection();
 }
 
-function prepareNextTurn() { // 이 함수는 이제 '다음 아군 행동 선택 UI 표시' 또는 '턴 실행 버튼 표시' 역할
-    if (!isBattleStarted) { alert('전투를 시작해 주세요. (prepareNextTurn)'); return; }
+function promptAllySelection() {
+    const aliveAllies = allyCharacters.filter(char => char.isAlive);
+    const availableAllies = aliveAllies.filter(char => !actedAlliesThisTurn.includes(char.id));
+    const allySelectionButtonsDiv = getElement('allySelectionButtons');
 
-    // 이 함수는 '다음 턴 (스킬/이동 선택)' 버튼 클릭 시 또는 confirmAction 후 호출됨
-    // 즉, 다음 아군의 행동을 선택하게 하거나, 모든 아군 선택이 끝났으면 '턴 실행' 버튼을 보여줌.
-    // currentTurn 증가나 playerActionsQueue 초기화는 여기서 하지 않음. (prepareNewTurnCycle에서 담당)
+    skillSelectionArea.style.display = 'none'; // 이전 캐릭터의 스킬 선택 UI 숨김
+    if (allySelectionButtonsDiv) allySelectionButtonsDiv.innerHTML = ''; // 이전 선택 버튼들 초기화
 
-    const aliveAllies = allyCharacters.filter(a => a.isAlive);
-    if (currentActingCharacterIndex >= aliveAllies.length) {
-        // 모든 아군 행동 선택 완료
+    if (availableAllies.length === 0) {
         logToBattleLog('모든 아군 캐릭터의 행동 선택이 완료되었습니다. 턴을 실행하세요.');
-        skillSelectionArea.style.display = 'none';
-        executeTurnButton.style.display = 'block';
-        nextTurnButton.style.display = 'none';
+        if (allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'none';
+        if (executeTurnButton) executeTurnButton.style.display = 'block';
+        if (nextTurnButton) nextTurnButton.style.display = 'none'; // '다음 행동 선택' 버튼 숨김
     } else {
-        // 다음 아군 행동 선택 UI 표시
-        showSkillSelectionForNextAlly();
+        logToBattleLog(`행동할 아군을 선택하세요: ${availableAllies.map(a => a.name).join(', ')}`);
+        if (allySelectionButtonsDiv) {
+            allySelectionButtonsDiv.style.display = 'block';
+            availableAllies.forEach(ally => {
+                const button = document.createElement('button');
+                button.textContent = `${ally.name} 행동 선택`;
+                button.className = 'button'; // index.html의 .button 스타일 적용
+                button.style.margin = '5px';
+                button.onclick = () => {
+                    if (allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'none'; // 선택 후 버튼 영역 숨김
+                    showSkillSelectionForCharacter(ally);
+                };
+                allySelectionButtonsDiv.appendChild(button);
+            });
+        }
+        if (executeTurnButton) executeTurnButton.style.display = 'none';
+        if (nextTurnButton) nextTurnButton.style.display = 'none'; // '다음 행동 선택' 버튼은 여기서는 불필요
     }
 }
 
-function showSkillSelectionForNextAlly() {
-    const aliveAllies = allyCharacters.filter(char => char.isAlive);
-    if (currentActingCharacterIndex >= aliveAllies.length) {
-        if (skillDescriptionArea) skillDescriptionArea.innerHTML = ''; // ⭐ 설명 영역 초기화
+function prepareNextTurn() { // '다음 행동 선택' 버튼에 연결된 함수
+    if (!isBattleStarted) { alert('전투를 시작해 주세요.'); return; }
+    // 이 버튼은 이제 아군 선택 화면으로 돌아가는 역할을 할 수 있음
+    skillSelectionArea.style.display = 'none'; // 현재 스킬 선택 UI 숨김
+    const allySelectionButtonsDiv = getElement('allySelectionButtons');
+    if(allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'block'; // 아군 선택 버튼 다시 표시
+    promptAllySelection();
+}
+
+
+//function showSkillSelectionForNextAlly() { 이전 함수 이름
+    function showSkillSelectionForCharacter(actingChar) { // 새 함수 이름 및 파라미터
+    // const aliveAllies = allyCharacters.filter(char => char.isAlive); // 이 부분은 promptAllySelection에서 처리
+    // if (currentActingCharacterIndex >= aliveAllies.length) { ... } // 이 로직은 불필요
+
+    if (!actingChar || !actingChar.isAlive) {
+        logToBattleLog("선택된 캐릭터가 없거나 전투 불능입니다.");
+        promptAllySelection(); // 다시 아군 선택으로
         return;
-        // 이 경우는 prepareNextTurn에서 이미 처리함.
-        // 방어적으로 여기서도 UI 처리.
-        logToBattleLog('모든 아군 캐릭터의 행동 선택이 완료. (showSkillSelectionForNextAlly)');
-        skillSelectionArea.style.display = 'none';
-        executeTurnButton.style.display = 'block';
-        nextTurnButton.style.display = 'none';
+    }
+    // 이미 행동을 마친 아군인지 확인 (confirmAction에서 주로 처리되지만, 방어적으로 추가)
+    if (actedAlliesThisTurn.includes(actingChar.id)) {
+        logToBattleLog(`${actingChar.name}은(는) 이미 이번 턴에 행동했습니다. 다른 아군을 선택하세요.`);
+        promptAllySelection();
         return;
     }
 
-    const actingChar = aliveAllies[currentActingCharacterIndex];
     currentActingCharName.textContent = actingChar.name;
     selectedAction = { type: null, casterId: actingChar.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null };
 
@@ -953,43 +979,36 @@ function showSkillSelectionForNextAlly() {
             const button = document.createElement('button');
             button.textContent = skill.name;
             let cooldownMessage = "";
-            let disabledByCooldown = false; // 각 버튼에 대해 쿨타임 여부 플래그 초기화
+            let disabledByCooldown = false;
 
-            //실재 쿨타임
-            if (skill.id === SKILLS.SKILL_REALITY.id) {
-                const lastUsed = actingChar.lastSkillTurn[skill.id] || 0;
-                if (lastUsed !== 0 && currentTurn - lastUsed < 3) { // currentTurn은 현재 진행 중인 턴
-                    button.disabled = true;
-                    cooldownMessage = ` (${3-(currentTurn-lastUsed)}턴 남음)`;
-                }
-            }
-
-            // 파열 쿨타임
-        if (skill.id === SKILLS.SKILL_RUPTURE.id) {
+            if (skill.cooldown && skill.cooldown > 0) { // 스킬에 cooldown 속성이 있고 0보다 큰 경우
             const lastUsed = actingChar.lastSkillTurn[skill.id] || 0;
-            if (lastUsed !== 0 && currentTurn - lastUsed < 3) {
+            if (lastUsed !== 0 && currentTurn - lastUsed < skill.cooldown) {
                 disabledByCooldown = true;
-                cooldownMessage = ` (${3 - (currentTurn - lastUsed)}턴 남음)`;
+                cooldownMessage = ` (${skill.cooldown - (currentTurn - lastUsed)}턴 남음)`;
             }
         }
 
-        button.textContent += cooldownMessage; // 쿨타임 메시지가 있다면 버튼 텍스트에 추가
+            button.textContent += cooldownMessage;
 
-        // disabledByCooldown 플래그 값에 따라 버튼 상태 및 스타일 클래스 적용
-        if (disabledByCooldown) {
-            button.disabled = true; // 버튼 비활성화
-            button.classList.add('on-cooldown'); // 'on-cooldown' CSS 클래스 추가
-        } else {
-            button.disabled = false; // 버튼 활성화 (혹시 이전 상태가 disabled였을 수 있으므로 명시)
-            button.classList.remove('on-cooldown'); // 'on-cooldown' CSS 클래스 제거
+                 if (disabledByCooldown) {
+                button.disabled = true; //
+          
+                     
+                     button.classList.add('on-cooldown'); //
+            } else {
+                button.disabled = false; //
+                button.classList.remove('on-cooldown'); //
+            }
+
+            button.onclick = () => selectSkill(skill.id, actingChar);
+            availableSkillsDiv.appendChild(button);
         }
+    });
 
-        button.onclick = () => selectSkill(skill.id, actingChar);
-        availableSkillsDiv.appendChild(button);
-    }
-});
-
-    movementControlsArea.innerHTML = '<h4>이동 (선택 시 턴 종료)</h4>';
+    // ... (movementControlsArea 생성 로직은 동일하게 유지) ...
+    // 기존 코드와 동일하게 이동 버튼 생성
+    movementControlsArea.innerHTML = '<h4><span class="material-icons-outlined">open_with</span>이동 (선택 시 턴 종료)</h4>';
     const directions = [
         [-1, -1, '↖'], [0, -1, '↑'], [1, -1, '↗'],
         [-1,  0, '←'],             [1,  0, '→'],
@@ -1000,18 +1019,19 @@ function showSkillSelectionForNextAlly() {
         button.textContent = dir[2];
         const targetX = actingChar.posX + dir[0];
         const targetY = actingChar.posY + dir[1];
-        if (targetX < 0 || targetX >= MAP_WIDTH || targetY < 0 || targetY >= MAP_HEIGHT || characterPositions[`${targetX},${targetY}`]) {
+        if (targetX < 0 || targetX >= MAP_WIDTH || targetY < 0 || targetY >= MAP_HEIGHT || characterPositions[`<span class="math-inline">\{targetX\},</span>{targetY}`]) {
             button.disabled = true;
         }
         button.onclick = () => selectMove({ dx: dir[0], dy: dir[1] }, actingChar);
         movementControlsArea.appendChild(button);
     });
 
+
     selectedTargetName.textContent = '없음';
     confirmActionButton.style.display = 'none';
     skillSelectionArea.style.display = 'block';
-    executeTurnButton.style.display = 'none'; // 행동 선택 중에는 턴 실행 버튼 숨김
-    nextTurnButton.style.display = 'block';   // 다음 행동 선택자/턴 실행 UI로 넘어가는 버튼
+    executeTurnButton.style.display = 'none';
+    // nextTurnButton.style.display = 'block'; // 이 버튼은 이제 confirmAction 후의 흐름을 담당하지 않음
     displayCharacters();
 }
 
@@ -1112,97 +1132,83 @@ function selectTarget(targetCharId) {
 }
 
 function confirmAction() {
-    if (!selectedAction.type) {
-        alert('행동을 선택해 주세요.');
+
+    const caster = findCharacterById(selectedAction.casterId); //
+    if (!caster) { //
+        alert('시전자를 찾을 수 없습니다.'); //
+        return; //
+    } //
+
+    // 이미 해당 캐릭터의 행동이 이번 턴에 확정되었는지 확인 (중복 방지)
+    if (actedAlliesThisTurn.includes(caster.id)) {
+        alert(`${caster.name}은(는) 이미 이번 턴에 행동을 확정했습니다.`);
         return;
     }
+    // playerActionsQueue에 추가하기 전에, 동일 캐릭터의 이전 행동이 있는지 확인하고 제거 (선택 변경 시)
+    playerActionsQueue = playerActionsQueue.filter(action => action.caster.id !== caster.id);
 
-    const caster = findCharacterById(selectedAction.casterId);
-    if (!caster) {
-        alert('시전자를 찾을 수 없습니다.');
-        return;
-    }
 
-    let actionDetails = { caster: caster, type: selectedAction.type };
-    let targetDescription = "정보 없음"; // ⭐ 1. 변수 선언 및 초기값 할당
+    // actionDetails 생성
+    let actionDetails = { caster: caster, type: selectedAction.type }; //
+    let targetDescription = "정보 없음"; //
 
-    if (selectedAction.type === 'skill') {
-        const skill = SKILLS[selectedAction.skillId];
-        if (!skill) {
-            alert('선택된 스킬 정보를 찾을 수 없습니다.');
-            return;
-        }
-        actionDetails.skill = skill;
+    if (selectedAction.type === 'skill') { //
+        const skill = SKILLS[selectedAction.skillId]; //
+        if (!skill) { //
+            alert('선택된 스킬 정보를 찾을 수 없습니다.'); //
+            return; //
+        } //
+        actionDetails.skill = skill; //
 
-        // 2. 선택된 대상에 따라 targetDescription 값 설정
-        if (skill.targetSelection === 'self') {
-            targetDescription = caster.name; // 자신 대상
-            actionDetails.mainTarget = caster;
-        } else if (skill.targetSelection === 'all_allies' || skill.targetSelection === 'all_enemies') {
-            targetDescription = "전체 대상";
-            // mainTarget 등은 execute 함수 내에서 allies/enemies 리스트로 처리됨
-        } else if (selectedAction.targetId) { // 단일 대상 또는 다중 대상의 첫 번째 대상
-            const mainTargetObj = findCharacterById(selectedAction.targetId);
-            if (mainTargetObj) {
-                targetDescription = mainTargetObj.name;
-            } else {
-                targetDescription = "알 수 없는 대상"; // 대상 ID는 있지만 객체를 찾지 못한 경우
-            }
-            actionDetails.mainTarget = mainTargetObj;
+        if (skill.targetSelection === 'self') { //
+            targetDescription = caster.name; //
+            actionDetails.mainTarget = caster; //
+        } else if (skill.targetSelection === 'all_allies' || skill.targetSelection === 'all_enemies') { //
+            targetDescription = "전체 대상"; //
+        } else if (selectedAction.targetId) { //
+            const mainTargetObj = findCharacterById(selectedAction.targetId); //
+            if (mainTargetObj) { //
+                targetDescription = mainTargetObj.name; //
+            } else { //
+                targetDescription = "알 수 없는 대상"; //
+            } //
+            actionDetails.mainTarget = mainTargetObj; //
 
-            if (skill.targetSelection === 'two_enemies' && selectedAction.subTargetId) {
-                const subTargetObj = findCharacterById(selectedAction.subTargetId);
-                if (subTargetObj) {
-                    targetDescription += `, ${subTargetObj.name}`; // 부가 대상 이름 추가
-                }
-                actionDetails.subTarget = subTargetObj;
-            }
-        } else {
-            // 대상을 선택해야 하는 스킬인데 targetId가 없는 경우
-            targetDescription = "대상 미선택";
-        }
-        // 4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거)
-        logToBattleLog(`✦준비✦ ${caster.name}, [${skill.name}] 스킬 사용 준비. (대상: ${targetDescription})`);
+            if (skill.targetSelection === 'two_enemies' && selectedAction.subTargetId) { //
+                const subTargetObj = findCharacterById(selectedAction.subTargetId); //
+                if (subTargetObj) { //
+                    targetDescription += `, ${subTargetObj.name}`; //
+                } //
+                actionDetails.subTarget = subTargetObj; //
+            } //
+        } else { //
+            targetDescription = "대상 미선택"; //
+        } //
+        logToBattleLog(`✦준비✦ <span class="math-inline">\{caster\.name\}, \[</span>{skill.name}] 스킬 사용 준비. (대상: ${targetDescription})`); //
 
-    } else if (selectedAction.type === 'move') {
-        actionDetails.moveDelta = selectedAction.moveDelta;
-        // 이동 시에는 selectedAction.moveDelta가 null이 아닌지 확인하는 것이 중요
-        if (!selectedAction.moveDelta) {
-             console.error("confirmAction: Move action selected, but moveDelta is null!");
-             alert("이동 정보 오류. 다시 선택해주세요.");
-             selectedAction = { type: null, casterId: caster.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null };
-             showSkillSelectionForNextAlly();
-             return;
-        }
+    } else if (selectedAction.type === 'move') { //
+        actionDetails.moveDelta = selectedAction.moveDelta; //
+        if (!selectedAction.moveDelta) { //
+             console.error("confirmAction: Move action selected, but moveDelta is null!"); //
+             alert("이동 정보 오류. 다시 선택해주세요."); //
+             selectedAction = { type: null, casterId: caster.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null }; //
+             showSkillSelectionForCharacter(caster); // 현재 캐릭터의 선택창 다시 표시
+             return; //
+        } //
 
-        const targetX = caster.posX + selectedAction.moveDelta.dx;
-        const targetY = caster.posY + selectedAction.moveDelta.dy;
+        const targetX = caster.posX + selectedAction.moveDelta.dx; //
+        const targetY = caster.posY + selectedAction.moveDelta.dy; //
+        // 유효성 검사는 selectMove에서 이미 수행되었으므로 여기서는 생략 가능, 또는 간소화
+        logToBattleLog(`✦준비✦ <span class="math-inline">\{caster\.name\}, \(</span>{targetX},${targetY})(으)로 이동 준비.`); //
+    } //
 
-        // 3. 이동(move) 타입 처리 시에는 스킬 대상 설정 로직이 필요 없음 (제거)
-        // 아래 유효성 검사는 유지하거나, selectMove에서 이미 처리했다면 간소화 가능
-        if (targetX < 1 || targetX > MAP_WIDTH || targetY < 1 || targetY > MAP_HEIGHT) { // 1기반 좌표계 가정
-            logToBattleLog(`✦정보✦ ${caster.name}, 이동 불가: (${targetX},${targetY}) 맵 범위 이탈.`);
-            alert("맵 경계를 벗어나는 이동은 확정할 수 없습니다.");
-            selectedAction = { type: null, casterId: caster.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null };
-            showSkillSelectionForNextAlly(); 
-            return;
-        }
-        if (characterPositions[`${targetX},${targetY}`] && characterPositions[`${targetX},${targetY}`] !== caster.id) {
-            logToBattleLog(`✦정보✦ ${caster.name}, 이동 불가: (${targetX},${targetY}) 위치에 다른 캐릭터 있음.`);
-            alert("다른 캐릭터가 있는 곳으로 이동은 확정할 수 없습니다.");
-            selectedAction = { type: null, casterId: caster.id, skillId: null, targetId: null, subTargetId: null, moveDelta: null };
-            showSkillSelectionForNextAlly(); 
-            return;
-        }
-        //  4. 로그 메시지 수정 (HTML 태그 및 불필요한 이스케이프 문자 제거) 
-        logToBattleLog(`✦준비✦ ${caster.name}, (${targetX},${targetY})(으)로 이동 준비.`);
-    }
-
-    if (skillDescriptionArea) skillDescriptionArea.innerHTML = ''; 
-    
     playerActionsQueue.push(actionDetails);
-    currentActingCharacterIndex++;
-    prepareNextTurn(); 
+    actedAlliesThisTurn.push(caster.id); // 행동 완료 목록에 추가
+
+    if (skillDescriptionArea) skillDescriptionArea.innerHTML = ''; //
+    // currentActingCharacterIndex++; // 더 이상 사용 안 함
+    // prepareNextTurn(); // 이 함수 대신 promptAllySelection 호출
+    promptAllySelection(); // 다음 아군 선택 UI 표시
 }
 
 async function executeSingleAction(action) {
@@ -1215,7 +1221,7 @@ async function executeSingleAction(action) {
 
     applyTurnStartEffects(caster);
 
-    logToBattleLog(`\n--- ${caster.name}, 행동 시작: ${currentTurn}턴) ---`);
+    logToBattleLog(`\n--- ${caster.name}, 행동 시작: ${currentTurn}턴 ---`);
 
     if (action.type === 'skill') {
         const skill = action.skill;
@@ -1296,7 +1302,7 @@ console.log(`[DEBUG] executeSingleAction: Attempting to execute skill: ${skill.n
             if (oldX !== -1 && oldY !== -1) delete characterPositions[`${oldX},${oldY}`];
             caster.posX = newX; caster.posY = newY;
             characterPositions[`${newX},${newY}`] = caster.id;
-            logToBattleLog(`✦이동✦ ${caster.name}, (${oldX},${oldY})에서 (${newX},${newY})(으)로 이동 완료.`);
+            logToBattleLog(`✦이동✦ ${caster.name}, (${oldX},${oldY}) → (${newX},${newY}) 이동 완료.`);
             console.log(`[DEBUG] executeSingleAction: Character ${caster.name} moved to (${newX},${newY}).`);
         }
     }
