@@ -956,6 +956,7 @@ function showSkillSelectionForNextAlly() {
             const button = document.createElement('button');
             button.textContent = skill.name;
             let cooldownMessage = "";
+            let disabledByCooldown = false; // 각 버튼에 대해 쿨타임 여부 플래그 초기화
 
             //실재 쿨타임
             if (skill.id === SKILLS.SKILL_REALITY.id) {
@@ -975,12 +976,21 @@ function showSkillSelectionForNextAlly() {
             }
         }
 
-            
-            button.textContent += cooldownMessage;
-            button.onclick = () => selectSkill(skill.id, actingChar);
-            availableSkillsDiv.appendChild(button);
+        button.textContent += cooldownMessage; // 쿨타임 메시지가 있다면 버튼 텍스트에 추가
+
+        // disabledByCooldown 플래그 값에 따라 버튼 상태 및 스타일 클래스 적용
+        if (disabledByCooldown) {
+            button.disabled = true; // 버튼 비활성화
+            button.classList.add('on-cooldown'); // 'on-cooldown' CSS 클래스 추가
+        } else {
+            button.disabled = false; // 버튼 활성화 (혹시 이전 상태가 disabled였을 수 있으므로 명시)
+            button.classList.remove('on-cooldown'); // 'on-cooldown' CSS 클래스 제거
         }
-    });
+
+        button.onclick = () => selectSkill(skill.id, actingChar);
+        availableSkillsDiv.appendChild(button);
+    }
+});
 
     movementControlsArea.innerHTML = '<h4>이동 (선택 시 턴 종료)</h4>';
     const directions = [
