@@ -230,49 +230,63 @@ const SKILLS = {
             return true;
         }
     },
-    // [절정]
+     // [절정]
     SKILL_CLIMAX: {
         id: "SKILL_CLIMAX",
         name: "절정",
         type: "단일 공격",
-        description: "공격력 270% 물리/마법 공격력 310% 마법 피해 (3타). 이후 상대에게 새겨진 [흠집] 수에 따라 각각 공격력 25%/35%/45% 물리 / 마법 공격력 30%/40%/50% 마법 추가 공격 2회 시행. 쇠약 상태 부여.",
+        description: "시전자의 타입에 따라 공격력 또는 마법 공격력의 270% 피해. 이후 상대에게 새겨진 [흠집] 수에 따라 각각 공격력/마법 공격력의 25%(1개)/35%(2개)/45%(3개) 추가 공격 2회. [흠집]은 추가 공격 후 소멸.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
             if (!target) { battleLog(`✦정보✦ ${caster.name} [절정]: 스킬 대상을 찾을 수 없습니다.`); return false; }
-            const damageType = caster.atk >= caster.matk ? 'physical' : 'magical';
-            const skillPower = damageType === 'physical' ? 2.7 : 3.1;
-            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [절정] 3연타 공격!`);
-            for (let i = 0; i < 3; i++) {
-                const damage = calculateDamage(caster, target, skillPower / 3, damageType);
-                target.takeDamage(damage, battleLog, caster);
-                battleLog(`  ✦피해✦ [절정] ${i + 1}타: ${target.name}에게 ${damage.toFixed(0)} ${damageType === 'physical' ? '물리' : '마법'} 피해.`);
-                if (!target.isAlive) break;
+            if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [절정]: 대상 ${target.name}은(는) 이미 쓰러져 있습니다.`); return false; }
+
+            let statTypeToUse;
+            let damageType;
+
+            if (caster.type === "암석" || caster.type === "야수") {
+                statTypeToUse = 'atk';
+                damageType = 'physical';
+            } else if (caster.type === "천체" || caster.type === "나무") {
+                statTypeToUse = 'matk';
+                damageType = 'magical';
+            } else { // 혹시 모를 예외 처리
+                statTypeToUse = caster.atk >= caster.matk ? 'atk' : 'matk';
+                damageType = statTypeToUse === 'atk' ? 'physical' : 'magical';
             }
+            const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
+
+            // 주 공격
+            const mainSkillPower = 2.7; // 270%
+            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [절정] 공격!`);
+            const mainDamage = calculateDamage(caster, target, mainSkillPower, damageType, statTypeToUse); // statTypeToUse 전달
+            target.takeDamage(mainDamage, battleLog, caster);
+            battleLog(`  ✦피해✦ [절정]: ${target.name}에게 ${mainDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+
             if (!target.isAlive) return true;
 
+            // 흠집 스택 기반 추가 공격
             const scratchStacks = target.getDebuffStacks('scratch');
             if (scratchStacks > 0) {
                 battleLog(`✦효과✦ ${target.name} [흠집 ${scratchStacks}스택]: 추가타 발생!`);
                 let bonusSkillPowerPercent = 0;
-                if (damageType === 'physical') {
-                    if (scratchStacks === 1) bonusSkillPowerPercent = 0.25; else if (scratchStacks === 2) bonusSkillPowerPercent = 0.35; else if (scratchStacks >= 3) bonusSkillPowerPercent = 0.45;
-                } else {
-                    if (scratchStacks === 1) bonusSkillPowerPercent = 0.30; else if (scratchStacks === 2) bonusSkillPowerPercent = 0.40; else if (scratchStacks >= 3) bonusSkillPowerPercent = 0.50;
-                }
-                for (let i = 0; i < 2; i++) {
-                    const bonusDamage = calculateDamage(caster, target, bonusSkillPowerPercent, damageType);
+                if (scratchStacks === 1) bonusSkillPowerPercent = 0.25; // 25%
+                else if (scratchStacks === 2) bonusSkillPowerPercent = 0.35; // 35%
+                else if (scratchStacks >= 3) bonusSkillPowerPercent = 0.45; // 45%
+
+                for (let i = 0; i < 2; i++) { // 2회 추가 공격
+                    // calculateDamage 함수에 statTypeToUse를 명시적으로 전달하여 해당 스탯 기반으로 계산
+                    const bonusDamage = calculateDamage(caster, target, bonusSkillPowerPercent, damageType, statTypeToUse);
                     target.takeDamage(bonusDamage, battleLog, caster);
-                    battleLog(`  ✦추가 피해✦ [흠집 효과] ${i + 1}회: ${target.name}에게 ${bonusDamage.toFixed(0)} 추가 ${damageType === 'physical' ? '물리' : '마법'} 피해.`);
+                    battleLog(`  ✦추가 피해✦ [흠집 효과] ${i + 1}회: ${target.name}에게 ${bonusDamage.toFixed(0)} 추가 ${damageTypeKorean} 피해.`);
                     if (!target.isAlive) break;
                 }
-                if (target.isAlive) target.removeDebuffById('scratch');
+
+                if (target.isAlive) target.removeDebuffById('scratch'); // 흠집 제거는 모든 추가 공격 후
                 battleLog(`✦정보✦ ${target.name}: [흠집] 효과 소멸.`);
             }
-            if (!target.isAlive) return true;
-
-            target.addDebuff('weakness', '쇠약', 2, { damageMultiplierReduction: 0.2 });
-            battleLog(`✦상태 이상✦ ${target.name}, [쇠약] 효과 적용 (2턴).`);
+            // [쇠약] 부여 로직 제거
             return true;
         }
     },
@@ -307,45 +321,83 @@ const SKILLS = {
             return true;
         }
     },
-    // [파열]
+        // [파열]
     SKILL_RUPTURE: {
         id: "SKILL_RUPTURE",
         name: "파열",
         type: "광역 공격",
-        description: "주 목표에게 공격력 210% 물리/마법 공격력 260% 마법 피해. 부 목표에게 공격력 130% 물리/마법 공격력 180% 마법 피해. [쇠약] 상태 적에게 적중 시 추가 고정 피해 30%.",
-        targetType: "multi_enemy",
-        targetSelection: "two_enemies",
-        execute: (caster, mainTarget, subTarget, allies, enemies, battleLog) => {
+        description: "사용 쿨타임: 2턴. 시전자 타입 기반 주 목표에게 공/마공 210% 피해, 주 목표 제외 모든 적에게 공/마공 140% 피해. [쇠약] 상태 적에게 적중 시 추가로 공/마공 30% 고정 피해.",
+        targetType: "single_enemy", // 주 목표를 선택하고, 나머지는 자동으로 부 목표가 됨
+        targetSelection: "enemy",
+        execute: (caster, mainTarget, allies, enemies, battleLog) => { // subTarget은 내부에서 결정
             if (!mainTarget) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상을 찾을 수 없습니다.`); return false; }
-            const damageType = caster.atk >= caster.matk ? 'physical' : 'magical';
-            battleLog(`✦스킬✦ ${caster.name}, [파열] 사용! 주 대상: ${mainTarget.name}${subTarget && subTarget.isAlive ? ', 부 대상: ' + subTarget.name : ''}.`);
-            
-            const mainSkillPower = damageType === 'physical' ? 2.1 : 2.6;
-            const mainDamage = calculateDamage(caster, mainTarget, mainSkillPower, damageType);
-            mainTarget.takeDamage(mainDamage, battleLog, caster);
-            battleLog(`  ✦피해✦ [파열 주 대상] ${mainTarget.name}: ${mainDamage.toFixed(0)} ${damageType === 'physical' ? '물리' : '마법'} 피해.`);
-            if (mainTarget.hasDebuff('weakness')) {
-                const bonusFixedDamage = mainDamage * 0.3;
-                mainTarget.takeDamage(bonusFixedDamage, battleLog, caster); 
-                battleLog(`  ✦추가 피해✦ ${mainTarget.name} [쇠약 대상 효과]: ${bonusFixedDamage.toFixed(0)} 추가 고정 피해.`);
-            }
-            if (!mainTarget.isAlive && (!subTarget || !subTarget.isAlive)) return true;
+            if (!mainTarget.isAlive) { battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상 ${mainTarget.name}은(는) 이미 쓰러져 있습니다.`); return false;}
 
-            if (subTarget && subTarget.isAlive && mainTarget.id !== subTarget.id) {
-                const subSkillPower = damageType === 'physical' ? 1.3 : 1.8;
-                const subDamage = calculateDamage(caster, subTarget, subSkillPower, damageType);
-                subTarget.takeDamage(subDamage, battleLog, caster);
-                battleLog(`  ✦피해✦ [파열 부 대상] ${subTarget.name}: ${subDamage.toFixed(0)} ${damageType === 'physical' ? '물리' : '마법'} 피해.`);
-                if (subTarget.hasDebuff('weakness')) {
-                    const bonusFixedDamageSub = subDamage * 0.3;
-                    subTarget.takeDamage(bonusFixedDamageSub, battleLog, caster);
-                    battleLog(`  ✦추가 피해✦ ${subTarget.name} [쇠약 대상 효과]: ${bonusFixedDamageSub.toFixed(0)} 추가 고정 피해.`);
-                }
+            // 쿨타임 확인 (2턴 쿨타임: 사용 후 2턴 동안 사용 불가 -> T, T+1, T+2 사용불가, T+3부터 사용가능)
+            // 즉, currentTurn - lastUsedTurn < 3 이면 쿨타임 중
+            const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] || 0;
+            if (lastUsed !== 0 && currentTurn - lastUsed < 3) {
+                battleLog(`✦정보✦ ${caster.name}, [파열] 사용 불가: 쿨타임 ${3 - (currentTurn - lastUsed)}턴 남음.`);
+                return false; // 스킬 사용 실패
             }
+
+            let statTypeToUse;
+            let damageType;
+
+            if (caster.type === "암석" || caster.type === "야수") {
+                statTypeToUse = 'atk';
+                damageType = 'physical';
+            } else if (caster.type === "천체" || caster.type === "나무") {
+                statTypeToUse = 'matk';
+                damageType = 'magical';
+            } else {
+                statTypeToUse = caster.atk >= caster.matk ? 'atk' : 'matk';
+                damageType = statTypeToUse === 'atk' ? 'physical' : 'magical';
+            }
+            const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
+
+            battleLog(`✦스킬✦ ${caster.name}, [파열] 사용! 주 대상: ${mainTarget.name}.`);
+
+            // 주 목표 공격
+            const mainSkillPower = 2.1; // 210%
+            const mainDamage = calculateDamage(caster, mainTarget, mainSkillPower, damageType, statTypeToUse);
+            mainTarget.takeDamage(mainDamage, battleLog, caster);
+            battleLog(`  ✦피해✦ [파열 주 대상] ${mainTarget.name}: ${mainDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+
+            // 주 목표 [쇠약] 상태 시 추가 고정 피해
+            if (mainTarget.isAlive && mainTarget.hasDebuff('weakness')) {
+                const bonusFixedDamageValue = caster.getEffectiveStat(statTypeToUse) * 0.3; // 공/마공의 30%
+                // calculateDamage 함수에서 'fixed' 타입은 세 번째 인자를 고정 데미지 값으로 사용
+                const actualBonusFixedDamage = calculateDamage(caster, mainTarget, bonusFixedDamageValue, 'fixed');
+                mainTarget.takeDamage(actualBonusFixedDamage, battleLog, caster);
+                battleLog(`  ✦추가 피해✦ ${mainTarget.name} ([쇠약] 대상): ${actualBonusFixedDamage.toFixed(0)} 추가 고정 피해.`);
+            }
+
+            // 부 목표 공격 (주 목표를 제외한 모든 살아있는 적)
+            const subTargets = enemies.filter(e => e.isAlive && e.id !== mainTarget.id);
+            if (subTargets.length > 0) {
+                battleLog(`  ✦파열 부가 대상 공격 시작 (총 ${subTargets.length}명)`);
+                const subSkillPower = 1.4; // 140%
+                subTargets.forEach(subTarget => {
+                    if (!subTarget.isAlive) return; // 혹시 모를 중복 체크
+
+                    const subDamage = calculateDamage(caster, subTarget, subSkillPower, damageType, statTypeToUse);
+                    subTarget.takeDamage(subDamage, battleLog, caster);
+                    battleLog(`    ✦피해✦ [파열 부 대상] ${subTarget.name}: ${subDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+
+                    // 부 목표 [쇠약] 상태 시 추가 고정 피해
+                    if (subTarget.isAlive && subTarget.hasDebuff('weakness')) {
+                        const bonusFixedDamageValueSub = caster.getEffectiveStat(statTypeToUse) * 0.3; // 공/마공의 30%
+                        const actualBonusFixedDamageSub = calculateDamage(caster, subTarget, bonusFixedDamageValueSub, 'fixed');
+                        subTarget.takeDamage(actualBonusFixedDamageSub, battleLog, caster);
+                        battleLog(`    ✦추가 피해✦ ${subTarget.name} ([쇠약] 대상): ${actualBonusFixedDamageSub.toFixed(0)} 추가 고정 피해.`);
+                    }
+                });
+            }
+            caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] = currentTurn; // 스킬 사용 턴 기록
             return true;
         }
-    }
-};
+    };
 
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
@@ -718,10 +770,10 @@ function displayCharacters() {
 
 
 // --- 4. 핵심 전투 로직 함수 ---
-function calculateDamage(attacker, defender, skillPower, damageType) {
+function calculateDamage(attacker, defender, skillPower, damageType, statTypeToUse = null) {
     let damage = 0;
-    let attackStat = 0;
-    let defenseStat = 0;
+    let attackStatValue = 0; // attackStat -> attackStatValue로 변경 (값 자체를 의미)
+    let defenseStatValue = 0; // defenseStat -> defenseStatValue로 변경
     let actualSkillPower = skillPower;
 
     const attackerWeakness = attacker.debuffs.find(d => d.id === 'weakness' && d.turnsLeft > 0);
@@ -740,7 +792,9 @@ function calculateDamage(attacker, defender, skillPower, damageType) {
     } else if (damageType === 'fixed') {
         damage = actualSkillPower;
     }
-    return Math.max(1, damage);
+
+    // 0 미만이면 0으로 처리
+    return Math.max(0, damage);
 }
 
 function applyTurnStartEffects(character) {
@@ -898,6 +952,8 @@ function showSkillSelectionForNextAlly() {
             const button = document.createElement('button');
             button.textContent = skill.name;
             let cooldownMessage = "";
+
+            //실재 쿨타임
             if (skill.id === SKILLS.SKILL_REALITY.id) {
                 const lastUsed = actingChar.lastSkillTurn[skill.id] || 0;
                 if (lastUsed !== 0 && currentTurn - lastUsed < 3) { // currentTurn은 현재 진행 중인 턴
@@ -905,6 +961,17 @@ function showSkillSelectionForNextAlly() {
                     cooldownMessage = ` (${3-(currentTurn-lastUsed)}턴 남음)`;
                 }
             }
+
+            // 파열 쿨타임
+        if (skill.id === SKILLS.SKILL_RUPTURE.id) {
+            const lastUsed = actingChar.lastSkillTurn[skill.id] || 0;
+            if (lastUsed !== 0 && currentTurn - lastUsed < 3) {
+                disabledByCooldown = true;
+                cooldownMessage = ` (${3 - (currentTurn - lastUsed)}턴 남음)`;
+            }
+        }
+
+            
             button.textContent += cooldownMessage;
             button.onclick = () => selectSkill(skill.id, actingChar);
             availableSkillsDiv.appendChild(button);
