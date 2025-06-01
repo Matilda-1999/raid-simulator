@@ -890,6 +890,15 @@ class Character {
 // --- 3. 유틸리티 및 UI 관리 함수 ---
 function logToBattleLog(message) {
     if (battleLogDiv) {
+        // 메시지 앞뒤 공백 제거 테스트
+        const trimmedMessage = typeof message === 'string' ? message.trim() : message;
+        battleLogDiv.innerHTML += trimmedMessage + '\n';
+        battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
+    } else {
+        console.error("battleLogDiv is not defined.");
+    }
+    
+    if (battleLogDiv) {
         battleLogDiv.innerHTML += message + '\n';
         battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
     } else {
