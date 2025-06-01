@@ -582,7 +582,7 @@ class Character {
         }
 
         this.maxHp = 100;
-        this.currentHp = (currentHpOverride !== null && .isNaN(currentHpOverride) && currentHpOverride > 0)
+        this.currentHp = (currentHpOverride !== null && !isNaN(currentHpOverride) && currentHpOverride > 0)
                        ? Math.min(currentHpOverride, this.maxHp)
                        : this.maxHp;
         if (this.currentHp > this.maxHp) this.currentHp = this.maxHp;
@@ -606,7 +606,7 @@ class Character {
         let existingBuff = this.buffs.find(b => b.id === id);
     
         // 이전 보호막 버프 제거 로직 (중첩 방지 및 정확한 값 관리를 위해)
-        if (existingBuff && existingBuff.effect.shieldAmount && .isStacking) { // 스택형 보호막이 아니라면 기존 보호막 효과 제거
+        if (existingBuff && existingBuff.effect.shieldAmount && !isStacking) { // 스택형 보호막이 아니라면 기존 보호막 효과 제거
             this.shield = Math.max(0, this.shield - existingBuff.effect.shieldAmount);
             // console.log(`[DEBUG AddBuff] ${this.name}: 이전 ${existingBuff.name} 보호막(${existingBuff.effect.shieldAmount}) 제거. 현재 보호막: ${this.shield}`);
         }
