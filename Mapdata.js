@@ -35,7 +35,7 @@ const MONSTER_TEMPLATES = {
 
     // 2. 랜덤 타입을 갖는 몬스터
     "Pierrot": { name: "삐에로", type: ["암석", "나무"] },
-    "Clown": { name: "클라운", type: ["암석", "나무"] } // "Pierrot" -> "Clown" 으로 수정
+    "Clown": { name: "클라운", type: ["암석", "나무"] }
 };
 
 const MAP_CONFIGS = {
