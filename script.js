@@ -1,6 +1,7 @@
 // --- 0. 상수 정의 ---
 const MAP_WIDTH = 5;
 const MAP_HEIGHT = 5;
+let enemyPreviewAction = null; // 몬스터가 예고한 행동 정보 저장
 
 const SKILLS = {
     // [근성]
@@ -1362,17 +1363,18 @@ function loadMap(mapId) {
 function displayCharacters() {
     const allyDisplay = getElement('allyCharacters');
     const enemyDisplay = getElement('enemyCharacters');
-
     allyDisplay.innerHTML = allyCharacters.length === 0 ? '<p>아군 캐릭터가 없습니다.</p>' : '';
     allyCharacters.forEach(char => allyDisplay.appendChild(createCharacterCard(char, 'ally')));
-
     enemyDisplay.innerHTML = enemyCharacters.length === 0 ? '<p>적군 캐릭터가 없습니다.</p>' : '';
     enemyCharacters.forEach(char => enemyDisplay.appendChild(createCharacterCard(char, 'enemy')));
 
     if (typeof renderMapGrid === 'function') {
-        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters);
-    } else if (mapGridContainer) {
-        mapGridContainer.innerHTML = '<p>맵 로딩 실패: renderMapGrid 함수 없음.</p>';
+        const activeAreaEffects = enemyCharacters
+            .filter(e => e.isAlive && e.areaEffect)
+            .map(e => e.areaEffect);
+        
+        const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
+        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, activeAreaEffects, previewedHitArea);
     }
 }
 
@@ -1566,14 +1568,13 @@ function prepareNewTurnCycle() {
         summonMonster("Pierrot");
     }
 
-    // --- 신규 추가: 적 행동 예고 ---
+    // 적 행동 예고
     const firstLivingEnemy = enemyCharacters.find(e => e.isAlive);
     if (firstLivingEnemy) {
         enemyPreviewAction = previewEnemyAction(firstLivingEnemy);
     }
     
     displayCharacters(); // 예고 범위를 포함하여 맵 다시 그리기
-    // --- 여기까지 ---
 
     playerActionsQueue = [];
     actedAlliesThisTurn = [];
@@ -2103,7 +2104,42 @@ function previewEnemyAction(enemyChar) {
     };
 }
 
-// script.js의 performEnemyAction 함수를 아래 코드로 교체하세요.
+function previewEnemyAction(enemyChar) {
+    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
+        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
+        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
+        enemyChar.activeGimmick = newGimmickId;
+        const gimmickData = GIMMICK_DATA[newGimmickId];
+        if (gimmickData) {
+            logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
+        }
+    }
+
+    const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+    const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill);
+    if (usableSkills.length === 0) return null;
+    
+    const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
+
+    let hitArea = [];
+    const skillDefinition = allSkills[skillToUse.id];
+    const executeCode = skillDefinition.execute.toString();
+    const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
+    if (areaMatch && areaMatch[1]) {
+        hitArea = areaMatch[1].split(';').map(s => {
+            const [x, y] = s.split(',').map(Number);
+            return { x, y };
+        });
+    }
+    
+    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다!`);
+
+    return {
+        casterId: enemyChar.id,
+        skillId: skillToUse.id,
+        hitArea: hitArea
+    };
+}
 
 async function performEnemyAction(enemyChar) {
     if (!enemyChar.isAlive) return false;
