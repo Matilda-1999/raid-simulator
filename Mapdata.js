@@ -107,11 +107,13 @@ const SPAWN_POINTS = {
 /**
  * 맵 그리드와 캐릭터 위치를 화면에 그리는 함수입니다.
  */
-function renderMapGrid(mapContainerElement, allyChars, enemyChars, activeAreaEffects = []) {
+function renderMapGrid(mapContainerElement, allyChars, enemyChars, activeAreaEffects = [], previewedHitArea = []) {
     if (!mapContainerElement) return;
     mapContainerElement.innerHTML = '';
 
-    // 스폰 지점 좌표를 Set으로 만들어 빠른 조회
+    // 예고된 스킬 범위를 Set으로 만들어 빠른 조회를 위함
+    const previewCoordSet = new Set(previewedHitArea.map(p => `${p.x},${p.y}`));
+
     const clownSpawns = new Set(SPAWN_POINTS.Clown.map(p => `${p.x},${p.y}`));
     const pierrotSpawns = new Set(SPAWN_POINTS.Pierrot.map(p => `${p.x},${p.y}`));
 
@@ -136,6 +138,11 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, activeAreaEff
             // 스폰 지점에 CSS 클래스 추가
             if (clownSpawns.has(key)) cellDiv.classList.add('clown-spawn');
             if (pierrotSpawns.has(key)) cellDiv.classList.add('pierrot-spawn');
+
+            // 신규 추가: 스킬 예고 범위에 CSS 클래스 추가
+            if (previewCoordSet.has(key)) {
+                cellDiv.classList.add('skill-preview-zone');
+            }
 
             if (gridCharMap[key]) {
                 gridCharMap[key].forEach(c => {
