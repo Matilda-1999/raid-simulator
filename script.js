@@ -670,6 +670,75 @@ const SKILLS = {
             return true;
         }
     }
+
+    //몬스터 스킬 추가
+    // A-1 레이드 스킬 추가
+    SKILL_Seismic_Fissure: {
+        id: "SKILL_Seismic_Fissure",
+        name: "균열의 진동", // ➃
+        execute: (caster, allies, enemies, battleLog) => {
+            battleLog(`\n<pre>마른 땅이 갈라지며 균열이 퍼져나간다.\n이 전장은 오로지 한 생명의 손아귀에 놓여 있다.\n"땅이 갈라지는 소리를 들은 적 있느냐."</pre>\n`);
+            const hitArea = "1,1;2,1;3,1;1,2;3,2;1,3;2,3;3,3".split(';').map(s => {
+                const [x, y] = s.split(',');
+                return { x: parseInt(x), y: parseInt(y) };
+            });
+            const damage = caster.getEffectiveStat('atk');
+            
+            enemies.forEach(target => { // 여기서 enemies는 '아군' 캐릭터 목록입니다.
+                if (hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [균열의 진동]이 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+    SKILL_Echo_of_Silence: {
+        id: "SKILL_Echo_of_Silence",
+        name: "침묵의 메아리", // ➄
+        execute: (caster, allies, enemies, battleLog) => {
+            battleLog(`\n<pre>기묘한 울림이 공간을 가른다.\n거대한 풍광의 압을 앞에 두고, 달리 무엇을 말할 수 있겠는가?\n"자연의 숨결 앞에서는 그 어떤 주문도 무의미하다."</pre>\n`);
+            const hitArea = "0,2;1,1;3,1;2,0;4,2;1,3;3,3".split(';').map(s => { // 중복된 4,2를 제거하고 1개만 사용
+                const [x, y] = s.split(',');
+                return { x: parseInt(x), y: parseInt(y) };
+            });
+            const targets = enemies.filter(target => hitArea.some(pos => pos.x === target.posX && pos.y === target.posY));
+            const silenceDuration = targets.length;
+
+            if (silenceDuration > 0) {
+                targets.forEach(target => {
+                    battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 메아리]가 ${target.name}에게 적중!`);
+                    target.addDebuff('silence', '[침묵]', silenceDuration, {
+                        description: `버프, 디버프, 치료, 카운터 유형 주문 사용 불가 (${silenceDuration}턴)`
+                    });
+                });
+            } else {
+                battleLog(`✦효과 없음✦ [침묵의 메아리]의 영향을 받은 대상이 없습니다.`);
+            }
+            return true;
+        }
+    },
+    SKILL_Crushing_Sky: {
+        id: "SKILL_Crushing_Sky",
+        name: "무너지는 하늘", // ➅
+        execute: (caster, allies, enemies, battleLog) => {
+            battleLog(`\n<pre>거대한 석괴가 하늘에서 떨어지기 시작한다.\n때로 자연이라는 것은, 인간에게 이다지도 무자비하다.\n"대지가 너희에게 분노하리라."</pre>\n`);
+            const hitArea = "2,0;2,1;0,2;1,2;3,2;4,2;2,3;2,4".split(';').map(s => {
+                const [x, y] = s.split(',');
+                return { x: parseInt(x), y: parseInt(y) };
+            });
+            const damage = caster.getEffectiveStat('atk');
+
+            enemies.forEach(target => {
+                if (hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [무너지는 하늘]이 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+
 };
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
@@ -746,6 +815,9 @@ class Character {
         this.lastAttackedBy = null; 
         this.currentTurnDamageTaken = 0; 
         this.totalDamageTakenThisBattle = 0; 
+
+        this.gimmicks = []; // 몬스터가 가진 기믹 목록
+        this.activeGimmick = null; // 현재 활성화된 기믹 ID
 
         this.posX = -1; 
         this.posY = -1; 
@@ -1212,7 +1284,13 @@ function loadMap(mapId) {
         return;
     }
 
-    logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
+    // --- 변경점 1: 맵 등장 대사(Flavor Text) 출력 ---
+    if (mapConfig.flavorText) {
+        // pre 태그를 사용하여 줄바꿈을 그대로 표시합니다.
+        logToBattleLog(`\n<pre>${mapConfig.flavorText}</pre>\n`);
+    } else {
+        logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
+    }
 
     // 기존 적군 정보 초기화
     enemyCharacters = [];
@@ -1225,35 +1303,27 @@ function loadMap(mapId) {
             return; // 다음 몬스터로 넘어감
         }
 
-        // 랜덤 타입 결정 로직
+        // 랜덤 타입 결정 로직 (기존과 동일)
         let monsterType;
         if (Array.isArray(template.type)) {
-            // type이 배열이면, 그 중 하나를 랜덤으로 선택
             monsterType = template.type[Math.floor(Math.random() * template.type.length)];
         } else {
-            // type이 배열이 아니면(기존 방식), 그대로 사용
             monsterType = template.type;
         }
 
         // 템플릿 기반으로 새로운 캐릭터(몬스터) 생성
         const newEnemy = new Character(template.name, monsterType);
-
-        // 중요: (1,1) 기반 좌표를 (0,0) 기반으로 변환
-        const posX = mapEnemy.pos.x - 1;
-        const posY = mapEnemy.pos.y - 1;
-
-        // 좌표 유효성 검사 및 할당
-        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-            newEnemy.posX = posX;
-            newEnemy.posY = posY;
-        } else {
-            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다. 임의의 위치에 배치됩니다.`);
-            const randomCell = getRandomEmptyCell();
-            if (randomCell) {
-                newEnemy.posX = randomCell.x;
-                newEnemy.posY = randomCell.y;
-            }
-        }
+        
+        // --- 변경점 2: 상세 능력치, 스킬, 기믹 정보 적용 ---
+        newEnemy.maxHp = template.maxHp || 100;
+        newEnemy.currentHp = newEnemy.maxHp;
+        newEnemy.atk = template.atk || 15;
+        newEnemy.matk = template.matk || 15;
+        newEnemy.def = template.def || 15;
+        newEnemy.mdef = template.mdef || 15;
+        newEnemy.skills = template.skills ? [...template.skills] : [];
+        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+        
         enemyCharacters.push(newEnemy);
         logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
     });
@@ -1261,7 +1331,7 @@ function loadMap(mapId) {
     // characterPositions 객체 재구성
     characterPositions = {};
     [...allyCharacters, ...enemyCharacters].forEach(char => {
-        if (char.isAlive && char.posX !== -1 && char.posY !==-1) {
+        if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
             characterPositions[`${char.posX},${char.posY}`] = char.id;
         }
     });
@@ -1269,6 +1339,7 @@ function loadMap(mapId) {
     // 화면 업데이트
     displayCharacters();
 }
+
 function displayCharacters() {
     const allyDisplay = getElement('allyCharacters');
     const enemyDisplay = getElement('enemyCharacters');
@@ -1289,15 +1360,44 @@ function displayCharacters() {
 
 // --- 4. 핵심 전투 로직 함수 ---
 function calculateDamage(attacker, defender, skillPower, damageType, statTypeToUse = null) {
+    // --- 2-6: 대지의 수호 기믹 데미지 조절 로직 ---
+    // 방어하는 캐릭터(defender)에게 '대지의 수호' 기믹이 활성화되어 있는지 확인합니다.
+    if (defender.activeGimmick && defender.activeGimmick.startsWith("GIMMICK_Aegis_of_Earth")) {
+        const gimmickData = GIMMICK_DATA[defender.activeGimmick];
+        if (gimmickData) {
+            // 기믹의 좌표 데이터를 가져와서 배열로 만듭니다.
+            const safeZone = gimmickData.coords.split(';').map(s => {
+                const [x, y] = s.split(',').map(Number); // 문자열을 숫자로 변환
+                // 중요: 기믹 데이터 좌표는 1-based, 캐릭터 위치는 0-based 이므로 변환이 필요 없습니다.
+                // 이전 스킬에서는 변환했지만, 여기서는 캐릭터 위치(posX, posY)와 직접 비교하므로
+                // 기믹 데이터의 1-based 좌표를 그대로 사용합니다.
+                return { x: x, y: y };
+            });
+
+            // 공격자(attacker)가 기믹의 영역(safeZone) 안에 있는지 확인합니다.
+            const isAttackerInSafeZone = safeZone.some(pos => pos.x === attacker.posX && pos.y === attacker.posY);
+
+            if (isAttackerInSafeZone) {
+                // 영역 안에서 공격: 피해량 1.5배
+                logToBattleLog(`✦기믹 효과✦ ${attacker.name}이(가) [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다!`);
+                skillPower *= 1.5;
+            } else {
+                // 영역 밖에서 공격: 피해량 0
+                logToBattleLog(`✦기믹 효과✦ ${attacker.name}이(가) [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다!`);
+                return 0; // 데미지 계산을 중단하고 0을 반환
+            }
+        }
+    }
+    // --- 기믹 로직 끝 ---
+
     let baseAttackStat = 0;
     let defenseStat = 0;
     let actualSkillPower = skillPower;
 
-    // 공격자 [쇠약] 디버프 확인
+    // 공격자 [쇠약] 디버프 확인 (기존 로직)
     const attackerWeakness = attacker.debuffs.find(d => d.id === 'weakness' && d.turnsLeft > 0);
     if (attackerWeakness && attackerWeakness.effect.damageMultiplierReduction) {
         actualSkillPower *= (1 - attackerWeakness.effect.damageMultiplierReduction);
-        // logToBattleLog(`✦효과✦ ${attacker.name}[쇠약]: 피해량 ${attackerWeakness.effect.damageMultiplierReduction*100}% 감소 적용.`);
     }
 
     if (damageType === 'physical') {
@@ -1523,6 +1623,15 @@ function showSkillSelectionForCharacter(actingChar) {
                 }
             }
             button.textContent += cooldownMessage;
+
+        // --- 침묵 디버프 체크 로직 추가 ---
+        if (actingChar.hasDebuff('silence')) {
+            const silencedTypes = ["어그로", "카운터", "지정 버프", "광역 버프", "광역 디버프"]; // 침묵에 영향받는 스킬 타입
+            if (silencedTypes.includes(skill.type)) {
+                button.disabled = true;
+                button.textContent += " (침묵)";
+            }
+        }
 
             if (disabledByCooldown) {
                 button.disabled = true; 
@@ -1926,6 +2035,18 @@ async function performEnemyAction(enemyChar) {
     if (!enemyChar.isAlive) return checkBattleEnd(); // 턴 시작 효과로 죽을 수 있음
 
     logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
+
+     // --- 기믹 순환 로직 추가 ---
+    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
+        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
+        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
+        enemyChar.activeGimmick = newGimmickId;
+        const gimmickData = GIMMICK_DATA[newGimmickId];
+        if (gimmickData) {
+            logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
+        }
+    }
+    // --- 기믹 로직 끝 ---
 
     let targetAlly = null; 
     const provokeDebuffOnEnemy = enemyChar.debuffs.find(d => d.id === 'provoked' && d.turnsLeft > 0);
