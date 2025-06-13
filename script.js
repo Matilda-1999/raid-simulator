@@ -1552,20 +1552,37 @@ function startBattle() {
 
 function prepareNewTurnCycle() {
     if (!isBattleStarted) {
-         alert('전투를 시작해 주세요. (prepareNewTurnCycle)');
+         alert('전투를 시작해 주세요.');
          return;
     }
     currentTurn++;
-    logToBattleLog(`\n=== ${currentTurn} 턴 행동 선택 시작 ===`);
-    playerActionsQueue = [];
-    actedAlliesThisTurn = []; 
+    enemyPreviewAction = null; // 이전 턴의 예고 정보 초기화
 
-    if(skillSelectionArea) skillSelectionArea.style.display = 'none'; 
-    if(executeTurnButton) executeTurnButton.style.display = 'none';
-    if(nextTurnButton && nextTurnButton.style.display !== 'none') nextTurnButton.style.display = 'none'; // nextTurnButton은 이제 사용 안 함
-    if(skillDescriptionArea) skillDescriptionArea.innerHTML = ''; 
+    logToBattleLog(`\n=== ${currentTurn} 턴 행동 선택 시작 ===`);
+
+    if (currentTurn > 0 && currentTurn % 4 === 0) {
+        logToBattleLog(`--- 4턴 경과, 추가 몬스터가 소환됩니다. ---`);
+        summonMonster("Clown");
+        summonMonster("Pierrot");
+    }
+
+    // --- 신규 추가: 적 행동 예고 ---
+    const firstLivingEnemy = enemyCharacters.find(e => e.isAlive);
+    if (firstLivingEnemy) {
+        enemyPreviewAction = previewEnemyAction(firstLivingEnemy);
+    }
     
-    promptAllySelection(); // 아군 선택 UI 호출
+    displayCharacters(); // 예고 범위를 포함하여 맵 다시 그리기
+    // --- 여기까지 ---
+
+    playerActionsQueue = [];
+    actedAlliesThisTurn = [];
+    if(skillSelectionArea) skillSelectionArea.style.display = 'none';
+    if(executeTurnButton) executeTurnButton.style.display = 'none';
+    if(nextTurnButton && nextTurnButton.style.display !== 'none') nextTurnButton.style.display = 'none';
+    if(skillDescriptionArea) skillDescriptionArea.innerHTML = '';
+    
+    promptAllySelection();
 }
 
 function promptAllySelection() {
@@ -2044,15 +2061,8 @@ async function executeBattleTurn() {
     }
 }
 
-async function performEnemyAction(enemyChar) {
-    if (!enemyChar.isAlive) return false; // 이미 죽었으면 행동 안함
-
-    applyTurnStartEffects(enemyChar); 
-    if (!enemyChar.isAlive) return checkBattleEnd(); // 턴 시작 효과로 죽을 수 있음
-
-    logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
-
-     // --- 기믹 순환 로직 추가 ---
+function previewEnemyAction(enemyChar) {
+    // 1. 기믹 결정
     if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
         const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
         const newGimmickId = enemyChar.gimmicks[gimmickIndex];
@@ -2062,92 +2072,112 @@ async function performEnemyAction(enemyChar) {
             logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
         }
     }
-    // --- 기믹 로직 끝 ---
 
-    let targetAlly = null; 
-    const provokeDebuffOnEnemy = enemyChar.debuffs.find(d => d.id === 'provoked' && d.turnsLeft > 0);
-    if (provokeDebuffOnEnemy && provokeDebuffOnEnemy.effect.targetId) {
-        targetAlly = findCharacterById(provokeDebuffOnEnemy.effect.targetId);
-        if (!targetAlly || !targetAlly.isAlive) {
-            targetAlly = null; 
-            logToBattleLog(`✦정보✦ ${enemyChar.name}: 도발 대상([${findCharacterById(provokeDebuffOnEnemy.effect.targetId)?.name || '정보없음'}])이 유효하지 않아 새로운 대상을 탐색.`);
-        } else {
-            logToBattleLog(`✦정보✦ ${enemyChar.name}: [도발] 효과로 ${targetAlly.name}을(를) 우선 공격합니다.`);
-        }
+    // 2. 사용할 스킬 결정
+    const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+    const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill); // 쿨타임 등은 실제 사용 시 체크
+    if (usableSkills.length === 0) return null;
+    
+    const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
+
+    // 3. 스킬 범위 계산
+    let hitArea = [];
+    const skillDefinition = allSkills[skillToUse.id];
+    // 스킬 execute 함수는 실제 실행 전이라 호출 불가. 대신, 스킬 데이터에 'area' 속성을 추가하거나 execute 코드에서 파싱해야 함
+    // 여기서는 간단하게 execute 코드에서 좌표 문자열을 파싱하는 예시를 사용
+    const executeCode = skillDefinition.execute.toString();
+    const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
+    if (areaMatch && areaMatch[1]) {
+        hitArea = areaMatch[1].split(';').map(s => {
+            const [x, y] = s.split(',').map(Number);
+            return { x, y };
+        });
+    }
+    
+    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다!`);
+
+    return {
+        casterId: enemyChar.id,
+        skillId: skillToUse.id,
+        hitArea: hitArea
+    };
+}
+
+// script.js의 performEnemyAction 함수를 아래 코드로 교체하세요.
+
+async function performEnemyAction(enemyChar) {
+    if (!enemyChar.isAlive) return false;
+
+    applyTurnStartEffects(enemyChar);
+    if (!enemyChar.isAlive) return checkBattleEnd();
+
+    logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
+
+    // --- 1. 특수 이동 로직 (클라운, 삐에로) ---
+    // 이 부분은 그대로 유지됩니다.
+    let possibleMoves = [];
+    if (enemyChar.name === "클라운") {
+        possibleMoves = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // 상하좌우
+    } else if (enemyChar.name === "삐에로") {
+        possibleMoves = [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // 대각선
     }
 
-    if (!targetAlly) { // 도발 대상이 없거나 유효하지 않으면
+    if (possibleMoves.length > 0) {
+        const validMoves = possibleMoves.map(move => {
+            const newX = enemyChar.posX + move[0];
+            const newY = enemyChar.posY + move[1];
+            if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && !characterPositions[`${newX},${newY}`]) {
+                return { x: newX, y: newY };
+            }
+            return null;
+        }).filter(move => move !== null);
+
+        if (validMoves.length > 0) {
+            const chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+            const oldX = enemyChar.posX;
+            const oldY = enemyChar.posY;
+            delete characterPositions[`${oldX},${oldY}`];
+            enemyChar.posX = chosenMove.x;
+            enemyChar.posY = chosenMove.y;
+            characterPositions[`${enemyChar.posX},${enemyChar.posY}`] = enemyChar.id;
+            logToBattleLog(`✦이동✦ ${enemyChar.name}, (${oldX},${oldY})에서 (${enemyChar.posX},${enemyChar.posY})(으)로 이동.`);
+        }
+    }
+    // --- 이동 로직 끝 ---
+
+
+    // --- 2. 행동 실행 로직 (수정된 부분) ---
+    // 기믹 순환 및 스킬 결정 로직을 삭제하고, 예고된 행동을 실행하는 로직으로 변경합니다.
+    if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
+        // 예고된 행동이 있으면 실행
+        const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+        const skillToExecute = allSkills[enemyPreviewAction.skillId];
+
+        if (skillToExecute) {
+            logToBattleLog(`🔥 ${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전!`);
+            // execute 함수는 caster, allies, enemies, battleLog 순서로 인자를 받습니다.
+            // 몬스터 입장에서 enemies는 플레이어의 아군(allyCharacters)입니다.
+            skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
+        }
+    } else {
+        // 예고된 행동이 없으면 기본 공격 (예: 테르모르가 아닌 다른 몬스터)
         const aliveAllies = allyCharacters.filter(a => a.isAlive);
         if (aliveAllies.length > 0) {
-            // 단순 AI: 현재 체력이 가장 낮은 아군을 공격
-            targetAlly = aliveAllies.reduce((minChar, currentChar) => 
+            // 가장 체력이 낮은 아군을 공격하는 기본 AI
+            const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
                 (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
-        }
-    }
-
-    if (targetAlly) {
-        // 사용 가능한 스킬 중 랜덤 선택 (쿨타임 고려)
-        const usableSkills = enemyChar.skills.map(id => SKILLS[id]).filter(skill => {
-            if (!skill) return false;
-            if (skill.cooldown && skill.cooldown > 0) {
-                const lastUsed = enemyChar.lastSkillTurn[skill.id] || 0;
-                return !(lastUsed !== 0 && currentTurn - lastUsed < skill.cooldown);
-            }
-            return true; // 쿨타임 없는 스킬은 사용 가능
-        });
-        
-        let skillToUse = null;
-        if (usableSkills.length > 0) {
-            skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
-        }
-
-        const aiTargetName = targetAlly.name; 
-
-        if (skillToUse) {
-            logToBattleLog(`🔥 ${enemyChar.name}, [${skillToUse.name}] 시전. (대상: ${skillToUse.targetType.includes("enemy") || skillToUse.targetType.includes("single_") ? aiTargetName : (skillToUse.targetType.includes("ally") ? "아군(적AI팀)" : "자신") })`);
             
-            let alliesForEnemySkill = enemyCharacters.filter(a => a.isAlive); // 적 AI 입장에서의 아군
-            let enemiesForEnemySkill = allyCharacters.filter(a => a.isAlive); // 적 AI 입장에서의 적군 (플레이어 팀)
-            let skillSuccessEnemy = true;
-
-            // 스킬 대상 타입에 따른 실행 (executeSingleAction의 switch문과 유사하게 구성)
-            // 적 AI가 사용하는 스킬의 mainTarget은 대부분 targetAlly가 됨.
-            switch (skillToUse.targetType) {
-                case 'self':
-                case 'all_allies': // 적 AI에게 all_allies는 다른 적들
-                    skillSuccessEnemy = skillToUse.execute(enemyChar, alliesForEnemySkill, enemiesForEnemySkill, logToBattleLog);
-                    break;
-                case 'all_enemies': // 적 AI에게 all_enemies는 플레이어 아군들
-                    skillSuccessEnemy = skillToUse.execute(enemyChar, enemiesForEnemySkill, logToBattleLog);
-                    break;
-                case 'single_enemy': // 적 AI의 단일 적 = 플레이어 아군 중 targetAlly
-                    skillSuccessEnemy = skillToUse.execute(enemyChar, targetAlly, alliesForEnemySkill, enemiesForEnemySkill, logToBattleLog);
-                    break;
-                // 기타 targetType에 대한 처리 추가 가능
-                default: // 기본 공격 또는 특정 대상 지정이 없는 경우 (targetAlly를 대상으로)
-                    logToBattleLog(`✦정보✦ ${enemyChar.name}[${skillToUse.name}]: 대상 타입(${skillToUse.targetType}) AI 실행 미지원. ${aiTargetName}에게 기본 공격 시도.`);
-                    const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical'); // 기본 공격력 100% 물리 피해
-                    targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
-                    break;
-            }
-            if (skillSuccessEnemy !== false && skillToUse.cooldown && skillToUse.cooldown > 0) {
-                 enemyChar.lastSkillTurn[skillToUse.id] = currentTurn; // AI도 스킬 사용 시 쿨타임 기록
-            }
-
-        } else if (targetAlly) { // 사용할 스킬이 없으면 기본 공격
-            logToBattleLog(`✦정보✦ ${enemyChar.name}, ${aiTargetName}에게 기본 공격.`);
-            const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical'); 
+            logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+            const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
             targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
         } else {
             logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
         }
-    } else { 
-        logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 플레이어 아군이 없습니다.`);
     }
 
     processEndOfTurnEffects(enemyChar);
-    displayCharacters(); 
-    return checkBattleEnd(); // 행동 후 전투 종료 여부 반환
+    // displayCharacters(); // executeBattleTurn의 마지막에서 한 번만 호출되도록 여기서 제거
+    return checkBattleEnd();
 }
 
 function checkBattleEnd() {
