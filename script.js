@@ -1008,7 +1008,7 @@ class Character {
             if (this.hasBuff('riposte_stance')) { 
                 let highestHpEnemies = [];
                 let maxHp = -1;
-                enemies.filter(e => e.isAlive).forEach(enemy => { // 여기서 enemies는 항상 모든 적군 리스트
+                enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => { // 여기서 enemies는 항상 모든 적군 리스트
                     if (enemy.currentHp > maxHp) { maxHp = enemy.currentHp; highestHpEnemies = [enemy]; }
                     else if (enemy.currentHp === maxHp) { highestHpEnemies.push(enemy); }
                 });
@@ -1020,8 +1020,8 @@ class Character {
                 }
             } else if (this.hasBuff('fury_stance')) { 
                 const counterDmg = actualHpLoss * 1.5;
-                enemies.filter(e => e.isAlive).forEach(enemy => {
-                    logFn(`✦광역 반격✦ ${this.name} ([격노]), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
+                enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
+                    logFn(`✦반격✦ ${this.name} ([격노]), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
                     enemy.takeDamage(counterDmg, logFn, this);
                 });
             }
@@ -1032,20 +1032,20 @@ class Character {
                     if (allyCaster.hasBuff('riposte_stance')) { 
                         let lowestHpEnemies = [];
                         let minHp = Infinity;
-                        enemies.filter(e => e.isAlive).forEach(enemy => {
+                        enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
                             if (enemy.currentHp < minHp) { minHp = enemy.currentHp; lowestHpEnemies = [enemy];}
                             else if (enemy.currentHp === minHp) { lowestHpEnemies.push(enemy); }
                         });
                         if (lowestHpEnemies.length > 0) {
                             const targetEnemy = lowestHpEnemies.length === 1 ? lowestHpEnemies[0] : lowestHpEnemies[Math.floor(Math.random() * lowestHpEnemies.length)];
                             const counterDmg = actualHpLoss * 0.5; 
-                            logFn(`✦지원 반격✦ ${allyCaster.name} ([응수] 발동, ${this.name} 피격), ${targetEnemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
+                            logFn(`✦반격✦ ${allyCaster.name} ([응수] 발동, ${this.name} 피격), ${targetEnemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
                             targetEnemy.takeDamage(counterDmg, logFn, allyCaster);
                         }
                     } else if (allyCaster.hasBuff('fury_stance')) { 
                         const counterDmg = actualHpLoss * 0.5; 
                         enemies.filter(e => e.isAlive).forEach(enemy => {
-                            logFn(`✦지원 광역 반격✦ ${allyCaster.name} ([격노] 발동, ${this.name} 피격), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
+                            logFn(`✦반격✦ ${allyCaster.name} ([격노] 발동, ${this.name} 피격), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
                             enemy.takeDamage(counterDmg, logFn, allyCaster);
                         });
                     }
