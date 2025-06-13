@@ -612,7 +612,7 @@ const SKILLS = {
             battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost.toFixed(0)}을 소모합니다.`);
             if (caster.currentHp <= 0) {
                 caster.currentHp = 1; // 최소 체력 1로 생존
-                battleLog(`✦효과✦ ${caster.name}이(가) 쓰러지기 직전이지만, 효과는 발동됩니다.`);
+                battleLog(`✦효과✦ ${caster.name}, 쓰러지기 직전이지만 효과는 발동됩니다.`);
             }
 
             // 2 & 3. 시전자 제외 아군 회복 및 면역 부여
@@ -869,7 +869,7 @@ class Character {
             );
 
             if (ironFortressAlly) {
-                logFn(`✦피해 이전✦ ${this.name}이(가) 받을 피해 ${rawDamage.toFixed(0)}가 [철옹성] 효과를 지닌 ${ironFortressAlly.name}에게 이전됩니다.`);
+                logFn(`✦피해 이전✦ ${this.name}의 받을 피해 ${rawDamage.toFixed(0)}가 [철옹성] 효과를 지닌 ${ironFortressAlly.name}에게 이전됩니다.`);
                 ironFortressAlly.takeDamage(rawDamage, logFn, attacker); 
                 return; 
             }
@@ -1003,7 +1003,7 @@ class Character {
         if (transferDebuff && attacker && attacker.isAlive) {
             const healToAttacker = this.getEffectiveStat('atk'); // 대상(피격자) 공격력 100%
             attacker.currentHp = Math.min(attacker.maxHp, attacker.currentHp + healToAttacker);
-            logFn(`✦효과✦ ${this.name}의 [전이] 디버프로 인해, 공격자 ${attacker.name}이(가) 체력을 ${healToAttacker.toFixed(0)} 회복합니다.`);
+            logFn(`✦효과✦ ${this.name}의 [전이] 디버프로 인해, 공격자 ${attacker.name}의 체력이 ${healToAttacker.toFixed(0)} 회복합니다.`);
         }
 
         // [흔적] 효과 (피격자가 버프를 가짐)
@@ -1015,7 +1015,7 @@ class Character {
                 const healForTarget = this.maxHp * 0.25;
 
                 originalCaster.currentHp -= hpCostForCaster;
-                logFn(`✦효과✦ ${this.name}의 [흔적] 버프로 인해, ${originalCaster.name}이(가) 체력 ${hpCostForCaster.toFixed(0)}을 잃습니다.`);
+                logFn(`✦효과✦ ${this.name}의 [흔적] 버프로 인해, ${originalCaster.name}의 체력이 ${hpCostForCaster.toFixed(0)} 감소합니다.`);
                 if (originalCaster.currentHp <= 0) {
                      originalCaster.currentHp = 0;
                      originalCaster.isAlive = false;
@@ -1023,7 +1023,7 @@ class Character {
                 }
 
                 this.currentHp = Math.min(this.maxHp, this.currentHp + healForTarget);
-                logFn(`✦효과✦ 그리고 ${this.name}이(가) 체력을 ${healForTarget.toFixed(0)} 회복합니다.`);
+                logFn(`✦효과✦ 그리고 ${this.name}의 체력을 ${healForTarget.toFixed(0)} 회복합니다.`);
             }
         }
         
@@ -1187,6 +1187,88 @@ function createCharacterCard(character, team) {
     return card;
 }
 
+/**
+ * HTML의 '맵 불러오기' 버튼 클릭 시 호출되는 함수입니다.
+ * 선택된 맵 ID를 loadMap 함수에 전달합니다.
+ */
+function loadSelectedMap() {
+    if (isBattleStarted) {
+        alert("전투 중에는 맵을 변경할 수 없습니다.");
+        return;
+    }
+    const mapSelect = getElement('mapSelect');
+    const selectedMapId = mapSelect.value;
+    loadMap(selectedMapId);
+}
+
+/**
+ * mapId를 받아 mapdata.js의 설정에 따라 맵의 적군을 불러오고 배치합니다.
+ * @param {string} mapId - 불러올 맵의 ID (예: "A-1")
+ */
+function loadMap(mapId) {
+    const mapConfig = MAP_CONFIGS[mapId];
+    if (!mapConfig) {
+        logToBattleLog(`✦경고✦: 맵 [${mapId}]의 설정 정보를 찾을 수 없습니다.`);
+        return;
+    }
+
+    logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
+
+    // 기존 적군 정보 초기화
+    enemyCharacters = [];
+    
+    // 맵 데이터에 따라 새로운 적군 생성
+    mapConfig.enemies.forEach(mapEnemy => {
+        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
+        if (!template) {
+            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+            return; // 다음 몬스터로 넘어감
+        }
+
+        // 랜덤 타입 결정 로직
+        let monsterType;
+        if (Array.isArray(template.type)) {
+            // type이 배열이면, 그 중 하나를 랜덤으로 선택
+            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
+        } else {
+            // type이 배열이 아니면(기존 방식), 그대로 사용
+            monsterType = template.type;
+        }
+
+        // 템플릿 기반으로 새로운 캐릭터(몬스터) 생성
+        const newEnemy = new Character(template.name, monsterType);
+
+        // 중요: (1,1) 기반 좌표를 (0,0) 기반으로 변환
+        const posX = mapEnemy.pos.x - 1;
+        const posY = mapEnemy.pos.y - 1;
+
+        // 좌표 유효성 검사 및 할당
+        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+            newEnemy.posX = posX;
+            newEnemy.posY = posY;
+        } else {
+            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다. 임의의 위치에 배치됩니다.`);
+            const randomCell = getRandomEmptyCell();
+            if (randomCell) {
+                newEnemy.posX = randomCell.x;
+                newEnemy.posY = randomCell.y;
+            }
+        }
+        enemyCharacters.push(newEnemy);
+        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
+    });
+
+    // characterPositions 객체 재구성
+    characterPositions = {};
+    [...allyCharacters, ...enemyCharacters].forEach(char => {
+        if (char.isAlive && char.posX !== -1 && char.posY !==-1) {
+            characterPositions[`${char.posX},${char.posY}`] = char.id;
+        }
+    });
+
+    // 화면 업데이트
+    displayCharacters();
+}
 function displayCharacters() {
     const allyDisplay = getElement('allyCharacters');
     const enemyDisplay = getElement('enemyCharacters');
@@ -1501,7 +1583,7 @@ function selectSkill(skillId, caster) {
     selectedAction.moveDelta = null;
 
     const skill = SKILLS[skillId];
-    logToBattleLog(`${caster.name}이(가) [${skill.name}] 스킬 선택. 대상을 선택해 주세요.`);
+    logToBattleLog(`${caster.name}, [${skill.name}] 스킬 선택. 대상을 선택해 주세요.`);
 
     if (skillDescriptionArea) {
         skillDescriptionArea.innerHTML = `<strong>${skill.name}</strong>: ${skill.description || '설명 없음'}`;
@@ -1538,7 +1620,7 @@ function selectMove(moveDelta, caster) {
     selectedAction.subTargetId = null;
     selectedAction.moveDelta = moveDelta;
 
-    logToBattleLog(`${caster.name}이(가) (${targetX}, ${targetY})로 이동 선택.`);
+    logToBattleLog(`${caster.name}, (${targetX}, ${targetY})로 이동 선택.`);
     selectedTargetName.textContent = `이동 (${targetX},${targetY})`;
     if(confirmActionButton) confirmActionButton.style.display = 'block';
     displayCharacters();
@@ -1711,7 +1793,7 @@ async function executeSingleAction(action) {
                 }
                 const extraHeal = restorationBuff.effect.healPower;
                 lowestHpAlly.currentHp = Math.min(lowestHpAlly.maxHp, lowestHpAlly.currentHp + extraHeal);
-                logToBattleLog(`✦추가 회복✦ ${caster.name}의 [환원] 효과 발동! ${lowestHpAlly.name}이(가) 체력을 ${extraHeal.toFixed(0)} 회복합니다.`);
+                logToBattleLog(`✦추가 회복✦ ${caster.name}의 [환원] 효과 발동. ${lowestHpAlly.name}, 체력을 ${extraHeal.toFixed(0)} 회복합니다.`);
             }
         }
     }
@@ -1970,24 +2052,6 @@ function findCharacterById(id) {
 
 // --- 6. 페이지 로드 시 초기화 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 기본 캐릭터 생성 (테스트용)
-    // const char1 = new Character("파투투", "야수");
-    // const char2 = new Character("튜즈데이", "천체");
-    // const char3 = new Character("이졸데", "나무");
-    // allyCharacters.push(char1, char2, char3);
-
-    // const enemy1 = new Character("우어어", "야수");
-    // const enemy2 = new Character("오아아", "암석");
-    // enemyCharacters.push(enemy1, enemy2);
-
-    // allyCharacters.forEach(char => {
-    //     const cell = getRandomEmptyCell();
-    //     if (cell) { char.posX = cell.x; char.posY = cell.y; characterPositions[`${cell.x},${cell.y}`] = char.id;}
-    // });
-    // enemyCharacters.forEach(char => {
-    //     const cell = getRandomEmptyCell();
-    //     if (cell) { char.posX = cell.x; char.posY = cell.y; characterPositions[`${cell.x},${cell.y}`] = char.id;}
-    // });
 
     displayCharacters(); // 초기 캐릭터 표시
     if (startButton) startButton.style.display = 'block';
