@@ -675,16 +675,17 @@ const SKILLS = {
     // A-1 레이드 스킬 추가
     SKILL_Seismic_Fissure: {
         id: "SKILL_Seismic_Fissure",
-        name: "균열의 진동", // ➃
+        name: "균열의 진동",
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>마른 땅이 갈라지며 균열이 퍼져나간다.\n이 전장은 오로지 한 생명의 손아귀에 놓여 있다.\n"땅이 갈라지는 소리를 들은 적 있느냐."</pre>\n`);
+            // --- 좌표 변환(-1) 로직 제거 ---
             const hitArea = "1,1;2,1;3,1;1,2;3,2;1,3;2,3;3,3".split(';').map(s => {
-                const [x, y] = s.split(',');
-                return { x: parseInt(x), y: parseInt(y) };
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
             });
             const damage = caster.getEffectiveStat('atk');
             
-            enemies.forEach(target => { // 여기서 enemies는 '아군' 캐릭터 목록입니다.
+            enemies.forEach(target => {
                 if (hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
                     battleLog(`✦광역 피해✦ ${caster.name}의 [균열의 진동]이 ${target.name}에게 적중!`);
                     target.takeDamage(damage, battleLog, caster);
@@ -695,12 +696,13 @@ const SKILLS = {
     },
     SKILL_Echo_of_Silence: {
         id: "SKILL_Echo_of_Silence",
-        name: "침묵의 메아리", // ➄
+        name: "침묵의 메아리",
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>기묘한 울림이 공간을 가른다.\n거대한 풍광의 압을 앞에 두고, 달리 무엇을 말할 수 있겠는가?\n"자연의 숨결 앞에서는 그 어떤 주문도 무의미하다."</pre>\n`);
-            const hitArea = "0,2;1,1;3,1;2,0;4,2;1,3;3,3".split(';').map(s => { // 중복된 4,2를 제거하고 1개만 사용
-                const [x, y] = s.split(',');
-                return { x: parseInt(x), y: parseInt(y) };
+            // --- 좌표 변환(-1) 로직 제거 ---
+            const hitArea = "0,2;1,1;3,1;2,0;4,2;1,3;3,3".split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
             });
             const targets = enemies.filter(target => hitArea.some(pos => pos.x === target.posX && pos.y === target.posY));
             const silenceDuration = targets.length;
@@ -720,12 +722,13 @@ const SKILLS = {
     },
     SKILL_Crushing_Sky: {
         id: "SKILL_Crushing_Sky",
-        name: "무너지는 하늘", // ➅
+        name: "무너지는 하늘",
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>거대한 석괴가 하늘에서 떨어지기 시작한다.\n때로 자연이라는 것은, 인간에게 이다지도 무자비하다.\n"대지가 너희에게 분노하리라."</pre>\n`);
+            // --- 좌표 변환(-1) 로직 제거 ---
             const hitArea = "2,0;2,1;0,2;1,2;3,2;4,2;2,3;2,4".split(';').map(s => {
-                const [x, y] = s.split(',');
-                return { x: parseInt(x), y: parseInt(y) };
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
             });
             const damage = caster.getEffectiveStat('atk');
 
@@ -1283,38 +1286,28 @@ function loadMap(mapId) {
         logToBattleLog(`✦경고✦: 맵 [${mapId}]의 설정 정보를 찾을 수 없습니다.`);
         return;
     }
-
-    // --- 변경점 1: 맵 등장 대사(Flavor Text) 출력 ---
     if (mapConfig.flavorText) {
-        // pre 태그를 사용하여 줄바꿈을 그대로 표시합니다.
         logToBattleLog(`\n<pre>${mapConfig.flavorText}</pre>\n`);
     } else {
         logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
     }
 
-    // 기존 적군 정보 초기화
     enemyCharacters = [];
     
-    // 맵 데이터에 따라 새로운 적군 생성
     mapConfig.enemies.forEach(mapEnemy => {
         const template = MONSTER_TEMPLATES[mapEnemy.templateId];
         if (!template) {
             logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-            return; // 다음 몬스터로 넘어감
+            return;
         }
-
-        // 랜덤 타입 결정 로직 (기존과 동일)
         let monsterType;
         if (Array.isArray(template.type)) {
             monsterType = template.type[Math.floor(Math.random() * template.type.length)];
         } else {
             monsterType = template.type;
         }
-
-        // 템플릿 기반으로 새로운 캐릭터(몬스터) 생성
         const newEnemy = new Character(template.name, monsterType);
         
-        // --- 변경점 2: 상세 능력치, 스킬, 기믹 정보 적용 ---
         newEnemy.maxHp = template.maxHp || 100;
         newEnemy.currentHp = newEnemy.maxHp;
         newEnemy.atk = template.atk || 15;
@@ -1323,12 +1316,26 @@ function loadMap(mapId) {
         newEnemy.mdef = template.mdef || 15;
         newEnemy.skills = template.skills ? [...template.skills] : [];
         newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+
+        // --- 좌표 변환(-1) 로직 제거 ---
+        const posX = mapEnemy.pos.x;
+        const posY = mapEnemy.pos.y;
         
+        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+            newEnemy.posX = posX;
+            newEnemy.posY = posY;
+        } else {
+            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
+            const randomCell = getRandomEmptyCell();
+            if (randomCell) {
+                newEnemy.posX = randomCell.x;
+                newEnemy.posY = randomCell.y;
+            }
+        }
         enemyCharacters.push(newEnemy);
         logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
     });
 
-    // characterPositions 객체 재구성
     characterPositions = {};
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
@@ -1336,7 +1343,6 @@ function loadMap(mapId) {
         }
     });
 
-    // 화면 업데이트
     displayCharacters();
 }
 
@@ -1366,12 +1372,9 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
         const gimmickData = GIMMICK_DATA[defender.activeGimmick];
         if (gimmickData) {
             // 기믹의 좌표 데이터를 가져와서 배열로 만듭니다.
-            const safeZone = gimmickData.coords.split(';').map(s => {
-                const [x, y] = s.split(',').map(Number); // 문자열을 숫자로 변환
-                // 중요: 기믹 데이터 좌표는 1-based, 캐릭터 위치는 0-based 이므로 변환이 필요 없습니다.
-                // 이전 스킬에서는 변환했지만, 여기서는 캐릭터 위치(posX, posY)와 직접 비교하므로
-                // 기믹 데이터의 1-based 좌표를 그대로 사용합니다.
-                return { x: x, y: y };
+           const safeZone = gimmickData.coords.split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
             });
 
             // 공격자(attacker)가 기믹의 영역(safeZone) 안에 있는지 확인합니다.
@@ -1379,11 +1382,11 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
 
             if (isAttackerInSafeZone) {
                 // 영역 안에서 공격: 피해량 1.5배
-                logToBattleLog(`✦기믹 효과✦ ${attacker.name}이(가) [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다!`);
+                logToBattleLog(`✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다.`);
                 skillPower *= 1.5;
             } else {
                 // 영역 밖에서 공격: 피해량 0
-                logToBattleLog(`✦기믹 효과✦ ${attacker.name}이(가) [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다!`);
+                logToBattleLog(`✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다.`);
                 return 0; // 데미지 계산을 중단하고 0을 반환
             }
         }
