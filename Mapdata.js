@@ -1,26 +1,71 @@
-// --- 0. 맵 상수 정의 ---
-// const MAP_WIDTH = 5;
-// const MAP_HEIGHT = 5;
+// Mapdata.js
 
-// --- 1. 맵 및 적 데이터 (추후 CSV 파일 내용을 바탕으로 채워질 예정) ---
-const ENEMY_TEMPLATES = {
-    // 예시: "goblin_scout": { name: "고블린 정찰병", type: "야수", maxHp: 30, ... skills: [SKILLS.SKILL_OVERTURE.id] },
+/**
+ * 몬스터의 기본 정보 템플릿입니다.
+ * 'map/monster data - 몬스터 데이터.csv' 파일의 내용을 기반으로 합니다.
+ * 지금은 렌더링에 필요한 이름과 타입 정보만 사용합니다.
+ */
+
+const MONSTER_TEMPLATES = {
+    // 1. 고정 타입을 갖는 몬스터
+    "Terrmor_1": { name: "테르모르", type: "암석" },
+    "Terrmor_2": { name: "테르모르", type: "나무" },
+    "Carnabloom_1": { name: "카르나블룸", type: "야수" },
+    "Carnabloom_2": { name: "카르나블룸", type: "천체" },
+
+    // 2. 랜덤 타입을 갖는 몬스터
+    "Pierrot": { name: "삐에로", type: ["암석", "나무"] },
+    "Clown": { name: "클라운", type: ["암석", "나무"] } // "Pierrot" -> "Clown" 으로 수정
 };
 
-const MAP_LOCATIONS = {
-    // 예시: "forest_entrance": { name: "숲 입구", description: "...", enemies: ["goblin_scout"], connections: {"북쪽": "deep_forest"} },
+const MAP_CONFIGS = {
+    "A-1": {
+        name: "A-1: 황폐한 대지",
+        enemies: [ { templateId: "Terrmor_1", pos: { x: 2, y: 2 } } ]
+    },
+    "A-2": {
+        name: "A-2: 생명의 터전",
+        enemies: [ { templateId: "Terrmor_2", pos: { x: 2, y: 2 } } ]
+    },
+    "B-1": {
+        name: "B-1: 인형극장",
+        enemies: [
+            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } },
+            { templateId: "Pierrot", pos: { x: 3, y: 4 } }
+        ]
+    }, // <-- 쉼표 추가
+    "B-2": {
+        name: "B-2: 달의 그네",
+        enemies: [
+            { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } },
+            { templateId: "Clown", pos: { x: 3, y: 4 } }
+        ]
+    }
 };
 
-// 현재는 5x5 그리드 맵을 사용하므로, 위 MAP_LOCATIONS는 추후 CSV 데이터 기반 맵 시스템으로 확장 시 사용됩니다.
-// 지금은 캐릭터의 posX, posY를 직접 사용합니다.
+// --- 추가: 클라운과 삐에로의 시작 지점(소환 지점) 정의 ---
+// 좌표는 (0,0)을 기준으로 합니다.
+const SPAWN_POINTS = {
+    "Clown": [ // 빨간색 시작 지점
+        { x: 0, y: 0 }, { x: 4, y: 0 }, { x: 0, y: 2 }, { x: 4, y: 2 }
+    ],
+    "Pierrot": [ // 파란색 시작 지점
+        { x: 2, y: 0 }, { x: 0, y: 4 }, { x: 2, y: 4 }, { x: 4, y: 4 }
+    ]
+};
 
-// --- 2. 맵 렌더링 함수 ---
-function renderMapGrid(mapContainerElement, allyChars, enemyChars) {
+/**
+ * 맵 그리드와 캐릭터 위치를 화면에 그리는 함수입니다.
+ */
+function renderMapGrid(mapContainerElement, allyChars, enemyChars, activeAreaEffects = []) {
     if (!mapContainerElement) return;
-    mapContainerElement.innerHTML = ''; // 기존 맵 초기화
+    mapContainerElement.innerHTML = '';
 
-    // 캐릭터 위치를 빠르게 찾기 위한 맵
-    const gridCharMap = {}; // { "x,y": [{charNameInitial, team}, ...], ... }
+    // 스폰 지점 좌표를 Set으로 만들어 빠른 조회
+    const clownSpawns = new Set(SPAWN_POINTS.Clown.map(p => `${p.x},${p.y}`));
+    const pierrotSpawns = new Set(SPAWN_POINTS.Pierrot.map(p => `${p.x},${p.y}`));
+
+    const gridCharMap = {};
     [...allyChars, ...enemyChars].forEach(char => {
         if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
             const key = `${char.posX},${char.posY}`;
@@ -32,28 +77,26 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars) {
 
     for (let y = 0; y < MAP_HEIGHT; y++) {
         const rowDiv = document.createElement('div');
-        rowDiv.className = 'map-row'; // 이 클래스는 index.html의 CSS에 정의되어 있어야 함
+        rowDiv.className = 'map-row';
         for (let x = 0; x < MAP_WIDTH; x++) {
             const cellDiv = document.createElement('div');
-            cellDiv.className = 'map-cell'; // 이 클래스는 index.html의 CSS에 정의되어 있어야 함
-            cellDiv.dataset.x = x;
-            cellDiv.dataset.y = y;
-
+            cellDiv.className = 'map-cell';
             const key = `${x},${y}`;
+
+            // 스폰 지점에 CSS 클래스 추가
+            if (clownSpawns.has(key)) cellDiv.classList.add('clown-spawn');
+            if (pierrotSpawns.has(key)) cellDiv.classList.add('pierrot-spawn');
+
             if (gridCharMap[key]) {
                 gridCharMap[key].forEach(c => {
                     const charMarker = document.createElement('span');
-                    // charMarker 클래스는 index.html의 CSS에 정의 필요 (.char-marker, .ally, .enemy)
                     charMarker.className = `char-marker ${c.team}`;
                     charMarker.textContent = c.initial;
                     cellDiv.appendChild(charMarker);
                 });
             }
-            // 맵 셀 클릭 이벤트 핸들러는 script.js에서 관리하거나, 여기서 콜백 형태로 전달받을 수 있습니다.
-            // 예: cellDiv.onclick = () => handleMapCellClickCallback(x, y);
             rowDiv.appendChild(cellDiv);
         }
-        // ***** CORRECTION HERE *****
-        mapContainerElement.appendChild(rowDiv); // Was: mapContainer.appendChild(rowDiv);
+        mapContainerElement.appendChild(rowDiv);
     }
 }
