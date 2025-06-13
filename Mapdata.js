@@ -8,7 +8,27 @@
 
 const MONSTER_TEMPLATES = {
     // 1. 고정 타입을 갖는 몬스터
-    "Terrmor_1": { name: "테르모르", type: "암석" },
+    "Terrmor_1": {
+        name: "테르모르",
+        type: "암석",
+        maxHp: 500,
+        atk: 35,
+        matk: 20,
+        def: 35,
+        mdef: 20,
+        skills: [
+            "SKILL_Seismic_Fissure",
+            "SKILL_Echo_of_Silence",
+            "SKILL_Crushing_Sky"
+        ],
+        gimmicks: [
+            "GIMMICK_Aegis_of_Earth1",
+            "GIMMICK_Aegis_of_Earth2",
+            "GIMMICK_Aegis_of_Earth3",
+            "GIMMICK_Aegis_of_Earth4"
+        ]
+    },
+
     "Terrmor_2": { name: "테르모르", type: "나무" },
     "Carnabloom_1": { name: "카르나블룸", type: "야수" },
     "Carnabloom_2": { name: "카르나블룸", type: "천체" },
@@ -21,8 +41,15 @@ const MONSTER_TEMPLATES = {
 const MAP_CONFIGS = {
     "A-1": {
         name: "A-1: 황폐한 대지",
-        enemies: [ { templateId: "Terrmor_1", pos: { x: 2, y: 2 } } ]
+        enemies: [
+            { templateId: "Terrmor_1", pos: { x: 2, y: 2 } }
+        ],
+        flavorText: // ➁
+            "거대한 바위가 자연의 중심처럼 눌러앉아 있다. 그것은 그저 풍경처럼 존재하나,\n" +
+            "땅이 울리고, 균열이 일어나면, 바위의 틈 사이로 희미한 숨결이 들려온다. 대지는 이미 깨어나고 있다.\n" +
+            "\"그 누가 잠든 대지를 일깨우느냐.\""
     },
+
     "A-2": {
         name: "A-2: 생명의 터전",
         enemies: [ { templateId: "Terrmor_2", pos: { x: 2, y: 2 } } ]
@@ -40,6 +67,29 @@ const MAP_CONFIGS = {
             { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } },
             { templateId: "Clown", pos: { x: 3, y: 4 } }
         ]
+    }
+};
+
+const GIMMICK_DATA = {
+    "GIMMICK_Aegis_of_Earth1": { // ➆
+        name: "대지의 수호(동)",
+        coords: "3,1;3,2;3,3;4,0;4,1;4,2;4,3;4,4",
+        flavorText: "우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\""
+    },
+    "GIMMICK_Aegis_of_Earth2": { // ➇
+        name: "대지의 수호(서)",
+        coords: "0,0;0,1;0,2;0,3;0,4;1,1;1,2;1,3",
+        flavorText: "우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\""
+    },
+    "GIMMICK_Aegis_of_Earth3": { // ➈
+        name: "대지의 수호(남)",
+        coords: "1,3;2,3;3,3;0,4;1,4;2,4;3,4;4,4",
+        flavorText: "우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\""
+    },
+    "GIMMICK_Aegis_of_Earth4": { // ➉
+        name: "대지의 수호(북)",
+        coords: "0,0;1,0;2,0;3,0;4,0;1,1;2,1;3,1",
+        flavorText: "우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\""
     }
 };
 
