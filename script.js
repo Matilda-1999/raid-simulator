@@ -520,6 +520,155 @@ const SKILLS = {
             caster.lastSkillTurn[SKILLS.SKILL_RUPTURE.id] = currentTurn;
             return true;
         }
+    },
+
+        // [공명]
+    SKILL_RESONANCE: {
+        id: "SKILL_RESONANCE",
+        name: "공명",
+        type: "지정 버프",
+        description: "두 사람의 완벽한 조화는 곧 전체의 완성이다.<br><br>1) 지정 대상이 (잃은 체력x50%) 회복<br>2) 모든 상태 이상 정화<br>3) 시전자 [환원] 상태 진입. <br> [환원] 상태 시,스킬 시전할 때 가장 낮은 체력 아군 (시전자 방어력x60%) 추가 회복 3턴 지속, 연달아 사용하더라도 최대 3턴",
+        targetType: "single_ally",
+        targetSelection: "ally",
+        execute: (caster, target, allies, enemies, battleLog) => {
+            if (!target || !target.isAlive) {
+                battleLog(`✦정보✦ ${caster.name} [공명]: 대상을 찾을 수 없거나 대상이 쓰러져 있습니다.`);
+                return false;
+            }
+            
+            // 1. 잃은 체력 비례 회복
+            const lostHp = target.maxHp - target.currentHp;
+            const healAmount = lostHp * 0.5;
+            target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
+            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용!`);
+            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount.toFixed(0)} 회복. (HP: ${target.currentHp.toFixed(0)})`);
+
+            // 2. 모든 상태 이상 정화
+            if (target.debuffs.length > 0) {
+                const cleansedDebuffs = target.debuffs.map(d => d.name).join(', ');
+                target.debuffs = [];
+                battleLog(`✦정화✦ ${target.name}: 모든 디버프(${cleansedDebuffs})가 정화되었습니다.`);
+            }
+
+            // 3. 시전자 [환원] 상태 진입
+            caster.addBuff('restoration', '[환원]', 3, {
+                description: "스킬 시전 시 체력이 가장 낮은 아군 추가 회복 (3턴).",
+                healPower: caster.getEffectiveStat('def') * 0.6
+            });
+            battleLog(`✦버프✦ ${caster.name}: [환원] 상태가 되어, 3턴간 스킬 사용 시 아군을 추가 회복합니다.`);
+            
+            return true;
+        }
+    },
+    
+    // [보상]
+    SKILL_COMPENSATION: {
+        id: "SKILL_COMPENSATION",
+        name: "보상",
+        type: "지정 디버프",
+        description: "대가는 본래 나만을 위함을 의미하는 것이 아니다.<br><br>1) 시전자 (전체 체력x15%) 타격(고정 피해)<br>2) 해당 대상에게 [전이] 부여. <br>[전이] 상태 시, 피격당하면 타격한 플레이어가 (대상 공격력x100%) 회복.",
+        targetType: "single_enemy",
+        targetSelection: "enemy",
+        execute: (caster, target, allies, enemies, battleLog) => {
+            if (!target || !target.isAlive) {
+                battleLog(`✦정보✦ ${caster.name} [보상]: 대상을 찾을 수 없거나 대상이 쓰러져 있습니다.`);
+                return false;
+            }
+            
+            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [보상] 사용!`);
+            
+            // 1. 시전자 고정 피해
+            const selfDamage = caster.maxHp * 0.15;
+            caster.takeDamage(selfDamage, battleLog, null); // 자신에게 고정 피해, 공격자 없음
+            battleLog(`✦소모✦ ${caster.name}: 스킬 대가로 ${selfDamage.toFixed(0)}의 피해를 입습니다.`);
+            
+            if (!caster.isAlive) return true; // 대가로 쓰러지면 스킬 종료
+
+            // 2. 대상에게 [전이] 부여
+            target.addDebuff('transfer', '[전이]', 2, {
+                description: "피격 시 공격자를 (자신의 공격력x100%)만큼 회복시킴.",
+                casterId: caster.id // 혹시 몰라 시전자 정보 저장
+            });
+            battleLog(`✦디버프✦ ${target.name}: [전이] 상태가 되었습니다 (2턴).`);
+
+            return true;
+        }
+    },
+
+    // [침전]
+    SKILL_SEDIMENTATION: {
+        id: "SKILL_SEDIMENTATION",
+        name: "침전",
+        type: "광역 버프",
+        description: "희생은 언제나 숭고하다. 그러나 희생자는 누가 구할 것인가.<br><br>1) 시전자 (전체 체력x20%) 차감<br>2) 시전자 제외 전원 (잃은 체력x70%) 회복<br>3) [면역] 1회 부여. <br>[면역] 상태 시, 이후 상태 이상 1회 무조건 적용되지 않음.",
+        targetType: "all_allies",
+        targetSelection: "all_allies", // UI는 전체선택, 로직은 자신 제외
+        execute: (caster, allies, enemies, battleLog) => {
+            battleLog(`✦스킬✦ ${caster.name}, [침전] 사용!`);
+
+            // 1. 시전자 체력 차감
+            const hpCost = caster.maxHp * 0.2;
+            caster.currentHp -= hpCost;
+            battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost.toFixed(0)}을 소모합니다.`);
+            if (caster.currentHp <= 0) {
+                caster.currentHp = 1; // 최소 체력 1로 생존
+                battleLog(`✦효과✦ ${caster.name}이(가) 쓰러지기 직전이지만, 효과는 발동됩니다.`);
+            }
+
+            // 2 & 3. 시전자 제외 아군 회복 및 면역 부여
+            allies.filter(a => a.isAlive && a.id !== caster.id).forEach(ally => {
+                const lostHp = ally.maxHp - ally.currentHp;
+                if (lostHp > 0) {
+                    const healAmount = lostHp * 0.7;
+                    ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
+                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount.toFixed(0)} 회복. (HP: ${ally.currentHp.toFixed(0)})`);
+                }
+                ally.addBuff('immunity', '[면역]', 2, { // 2턴 지속. 사용 즉시 사라짐.
+                    description: "다음 상태 이상 공격을 1회 무효화합니다.",
+                    singleUse: true
+                });
+                battleLog(`✦버프✦ ${ally.name}: [면역] 효과를 얻었습니다 (1회).`);
+            });
+
+            return true;
+        }
+    },
+
+    // [차연]
+    SKILL_DIFFERANCE: {
+        id: "SKILL_DIFFERANCE",
+        name: "차연",
+        type: "광역 버프",
+        description: "자기희생의 완결은 영원히 지연된다. 우리의 마음에 남아.<br><br>1) 시전자 (전체 체력x15%) 타격(고정 피해)<br>2) 시전자 (전체 체력x30%) 회복<br>3) 전원 [흔적] 상태 진입. <br>[흔적] 상태 시, 피격당한 아군의 현재 체력이 50% 이하라면 시전자가 (전체 체력x5%)를 잃고 아군 (전체 체력x25%) 회복 3턴 지속, 연달아 사용하더라도 최대 3턴",
+        targetType: "all_allies", // 실제 효과는 '전원'에게 적용
+        targetSelection: "all_allies",
+        execute: (caster, allies, enemies, battleLog) => {
+            battleLog(`✦스킬✦ ${caster.name}, [차연] 사용!`);
+            
+            // 1. 시전자 고정 피해
+            const selfDamage = caster.maxHp * 0.15;
+            caster.takeDamage(selfDamage, battleLog, null);
+            battleLog(`✦소모✦ ${caster.name}: 스킬 사용을 위해 ${selfDamage.toFixed(0)}의 피해를 입습니다.`);
+            
+            if (!caster.isAlive) return true;
+
+            // 2. 시전자 체력 회복
+            const selfHeal = caster.maxHp * 0.3;
+            caster.currentHp = Math.min(caster.maxHp, caster.currentHp + selfHeal);
+            battleLog(`✦회복✦ ${caster.name}: 체력 ${selfHeal.toFixed(0)} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
+
+            // 3. 전원에게 [흔적] 부여 (아군, 적군 포함)
+            const allCharacters = [...allies, ...enemies];
+            allCharacters.filter(c => c.isAlive).forEach(character => {
+                character.addBuff('trace', '[흔적]', 3, {
+                    description: "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
+                    originalCasterId: caster.id
+                });
+                battleLog(`✦버프✦ ${character.name}: [흔적] 상태가 되었습니다 (3턴).`);
+            });
+
+            return true;
+        }
     }
 };
 
@@ -642,9 +791,17 @@ class Character {
     }
 
     addDebuff(id, name, turns, effect) {
+        // [면역] 효과 체크
+        const immunityBuff = this.buffs.find(b => b.id === 'immunity' && b.effect.singleUse);
+        if (immunityBuff) {
+            logToBattleLog(`✦효과✦ ${this.name}: [면역] 효과로 [${name}] 디버프를 무효화합니다.`);
+            this.removeBuffById('immunity'); // 1회용이므로 사용 후 제거
+            return; // 디버프를 추가하지 않고 함수 종료
+        }
+
         let existingDebuff = this.debuffs.find(d => d.id === id);
         if (existingDebuff) {
-            if (effect.overrideDuration) { // 흠집처럼 중첩 시 지속시간 갱신
+            if (effect.overrideDuration) { // 흠집처럼 중첩 시 지속 시간 갱신
                 existingDebuff.turnsLeft = turns;
             } else {
                 existingDebuff.turnsLeft = Math.max(existingDebuff.turnsLeft, turns);
@@ -840,7 +997,36 @@ class Character {
                 attacker.takeDamage(reflectedDamage, logFn, this);
             }
         }
-    
+
+                // [전이] 효과 (피격자가 디버프를 가짐)
+        const transferDebuff = this.debuffs.find(d => d.id === 'transfer' && d.turnsLeft > 0);
+        if (transferDebuff && attacker && attacker.isAlive) {
+            const healToAttacker = this.getEffectiveStat('atk'); // 대상(피격자) 공격력 100%
+            attacker.currentHp = Math.min(attacker.maxHp, attacker.currentHp + healToAttacker);
+            logFn(`✦효과✦ ${this.name}의 [전이] 디버프로 인해, 공격자 ${attacker.name}이(가) 체력을 ${healToAttacker.toFixed(0)} 회복합니다.`);
+        }
+
+        // [흔적] 효과 (피격자가 버프를 가짐)
+        const traceBuff = this.buffs.find(b => b.id === 'trace' && b.turnsLeft > 0);
+        if (traceBuff && this.isAlive && this.currentHp <= this.maxHp * 0.5) {
+            const originalCaster = findCharacterById(traceBuff.effect.originalCasterId);
+            if (originalCaster && originalCaster.isAlive) {
+                const hpCostForCaster = originalCaster.maxHp * 0.05;
+                const healForTarget = this.maxHp * 0.25;
+
+                originalCaster.currentHp -= hpCostForCaster;
+                logFn(`✦효과✦ ${this.name}의 [흔적] 버프로 인해, ${originalCaster.name}이(가) 체력 ${hpCostForCaster.toFixed(0)}을 잃습니다.`);
+                if (originalCaster.currentHp <= 0) {
+                     originalCaster.currentHp = 0;
+                     originalCaster.isAlive = false;
+                     logFn(`✦전투 불능✦ ${originalCaster.name}, [흔적]의 대가로 쓰러집니다.`);
+                }
+
+                this.currentHp = Math.min(this.maxHp, this.currentHp + healForTarget);
+                logFn(`✦효과✦ 그리고 ${this.name}이(가) 체력을 ${healForTarget.toFixed(0)} 회복합니다.`);
+            }
+        }
+        
         if (this.currentHp <= 0) {
             this.currentHp = 0;
             if (prevIsAlive) {
@@ -1511,6 +1697,25 @@ async function executeSingleAction(action) {
         return false; 
     }
 
+    // [환원] 효과 처리: 스킬 사용 시 발동
+    if (action.type === 'skill' && caster.hasBuff('restoration')) {
+        const restorationBuff = caster.buffs.find(b => b.id === 'restoration');
+        if (restorationBuff) {
+            const aliveAllies = allyCharacters.filter(a => a.isAlive);
+            if (aliveAllies.length > 0) {
+                let lowestHpAlly = aliveAllies[0];
+                for (let i = 1; i < aliveAllies.length; i++) {
+                    if (aliveAllies[i].currentHp < lowestHpAlly.currentHp) {
+                        lowestHpAlly = aliveAllies[i];
+                    }
+                }
+                const extraHeal = restorationBuff.effect.healPower;
+                lowestHpAlly.currentHp = Math.min(lowestHpAlly.maxHp, lowestHpAlly.currentHp + extraHeal);
+                logToBattleLog(`✦추가 회복✦ ${caster.name}의 [환원] 효과 발동! ${lowestHpAlly.name}이(가) 체력을 ${extraHeal.toFixed(0)} 회복합니다.`);
+            }
+        }
+    }
+    
     applyTurnStartEffects(caster); // 턴 시작 효과 (버프/디버프 턴 감소, 도트 데미지/힐 등)
 
     logToBattleLog(`\n--- ${caster.name}, 행동 시작 (${currentTurn}턴) ---`);
