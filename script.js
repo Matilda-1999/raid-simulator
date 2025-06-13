@@ -676,6 +676,10 @@ const SKILLS = {
     SKILL_Seismic_Fissure: {
         id: "SKILL_Seismic_Fissure",
         name: "균열의 진동",
+        type: "광역 공격", // 속성 추가
+        description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.", // 속성 추가
+        targetType: "all_enemies", // 오류 해결을 위한 핵심 속성 추가
+        targetSelection: "all_enemies", // 속성 추가
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>마른 땅이 갈라지며 균열이 퍼져나간다.\n이 전장은 오로지 한 생명의 손아귀에 놓여 있다.\n"땅이 갈라지는 소리를 들은 적 있느냐."</pre>\n`);
             const hitArea = "1,1;2,1;3,1;1,2;3,2;1,3;2,3;3,3".split(';').map(s => {
@@ -697,6 +701,10 @@ const SKILLS = {
     SKILL_Echo_of_Silence: {
         id: "SKILL_Echo_of_Silence",
         name: "침묵의 메아리",
+        type: "광역 디버프", // 속성 추가
+        description: "피격 범위 내 모든 적에게 [침묵]을 부여합니다.", // 속성 추가
+        targetType: "all_enemies", // 오류 해결을 위한 핵심 속성 추가
+        targetSelection: "all_enemies", // 속성 추가
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>기묘한 울림이 공간을 가른다.\n거대한 풍광의 압을 앞에 두고, 달리 무엇을 말할 수 있겠는가?\n"자연의 숨결 앞에서는 그 어떤 주문도 무의미하다."</pre>\n`);
             const hitArea = "0,2;1,1;3,1;2,0;4,2;1,3;3,3".split(';').map(s => {
@@ -723,6 +731,10 @@ const SKILLS = {
     SKILL_Crushing_Sky: {
         id: "SKILL_Crushing_Sky",
         name: "무너지는 하늘",
+        type: "광역 공격", // 속성 추가
+        description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.", // 속성 추가
+        targetType: "all_enemies", // 오류 해결을 위한 핵심 속성 추가
+        targetSelection: "all_enemies", // 속성 추가
         execute: (caster, allies, enemies, battleLog) => {
             battleLog(`\n<pre>거대한 석괴가 하늘에서 떨어지기 시작한다.\n때로 자연이라는 것은, 인간에게 이다지도 무자비하다.\n"대지가 너희에게 분노하리라."</pre>\n`);
             const hitArea = "2,0;2,1;0,2;1,2;3,2;4,2;2,3;2,4".split(';').map(s => {
@@ -739,7 +751,7 @@ const SKILLS = {
             });
             return true;
         }
-    },
+    }
 
 };
 
