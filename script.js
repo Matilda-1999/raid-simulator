@@ -2190,7 +2190,7 @@ async function performEnemyAction(enemyChar) {
         const skillToExecute = allSkills[enemyPreviewAction.skillId];
 
         if (skillToExecute) {
-            logToBattleLog(`🔥 ${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전!`);
+            logToBattleLog(`${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전.`);
             // execute 함수는 caster, allies, enemies, battleLog 순서로 인자를 받습니다.
             // 몬스터 입장에서 enemies는 플레이어의 아군(allyCharacters)입니다.
             skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
