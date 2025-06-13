@@ -53,12 +53,11 @@
             border: 1px solid var(--color-primary-gold-darker);
         }
         
-        /* 기본 아이콘 스타일 (폰트 패밀리 지정이 핵심) */
-        .material-icons-outlined { /* 주로 Outlined 스타일 사용을 가정 */
-            font-family: 'Material Icons Outlined' !important; /* !important 로 우선순위 테스트 */
+        .material-icons-outlined, .material-icons {
+            font-family: 'Material Icons Outlined';
             font-weight: normal;
             font-style: normal;
-            font-size: 1.1em; /* 기본 크기, 각 요소에서 필요시 재정의 */
+            font-size: 1.1em;
             line-height: 1;
             letter-spacing: normal;
             text-transform: none;
@@ -74,27 +73,6 @@
             margin-right: 6px;      
             user-select: none; 
         }
-        .material-icons { /* Filled 스타일 아이콘을 사용할 경우 */
-            font-family: 'Material Icons' !important; /* !important 로 우선순위 테스트 */
-            font-weight: normal;
-            font-style: normal;
-            font-size: 1.1em; /* 기본 크기 */
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-smoothing: antialiased;
-            text-rendering: optimizeLegibility;
-            -moz-osx-font-smoothing: grayscale;
-            font-feature-settings: 'liga';
-            vertical-align: middle; 
-            margin-right: 6px;      
-            user-select: none; 
-        }
-
 
         h1, h2, h3, h4 {
             font-family: var(--font-title);
@@ -112,9 +90,9 @@
             border-bottom: 2px solid var(--color-primary-gold-darker);
             padding-bottom: 15px;
         }
-        h1 .material-icons, h1 .material-icons-outlined { /* 제목 내 아이콘 크기 조정 */
-            font-size: 1em; /* 제목 폰트 크기에 맞게 */
-            margin-right: 12px; /* 여백 조정 */
+        h1 .material-icons, h1 .material-icons-outlined {
+            font-size: 1em;
+            margin-right: 12px;
         }
         h2 {
             margin-top: 30px;
@@ -166,12 +144,6 @@
             font-size: 1.5em; 
         }
         
-        .character-input, .character-display { 
-            background-color: transparent; 
-            border: none; 
-            padding: 0; 
-            margin-bottom: 0; 
-        }
         .character-input { 
             background-color: var(--color-surface-alt);
             border: 1px solid var(--color-border-accent);
@@ -179,13 +151,12 @@
             margin-bottom: 25px;
             border-radius: 8px;
         }
-        .character-input .char-add-buttons-wrapper { /* 버튼 정렬을 위한 래퍼 */
+        .character-input .char-add-buttons-wrapper {
             display: flex;            
             justify-content: flex-end; 
             gap: 10px; 
             margin-top: 15px;    
         }
-
         .character-input label {
             display: block;
             margin-bottom: 10px;
@@ -193,7 +164,6 @@
             color: var(--color-text-secondary);
             font-weight: bold;
         }
-        
         .character-input select,
         .character-input input[type="text"],
         .character-input input[type="number"] {
@@ -233,7 +203,7 @@
             align-items: center;
             justify-content: center;
         }
-        .button .material-icons, .button .material-icons-outlined { /* 버튼 내 아이콘 크기/마진 재정의 */
+        .button .material-icons, .button .material-icons-outlined {
             font-size: 1.25em; 
             margin-right: 8px;
         }
@@ -250,9 +220,8 @@
             transform: none !important;
             box-shadow: none !important;
         }
-
         .character-input button.button {
-            margin-top: 0; /* char-add-buttons-wrapper에서 margin-top 관리 */
+            margin-top: 0;
         }
 
         .character-stats {
@@ -270,15 +239,8 @@
             border: 2px solid var(--color-primary-gold);
             background-color: #332e25;
         }
-        .character-stats p {
-            margin: 7px 0;
-            font-size: 0.95em;
-            line-height: 1.5;
-        }
-        .character-stats strong {
-            color: var(--color-primary-gold-lighter);
-            font-weight: 700;
-        }
+        .character-stats p { margin: 7px 0; font-size: 0.95em; line-height: 1.5; }
+        .character-stats strong { color: var(--color-primary-gold-lighter); font-weight: 700; }
         .delete-char-button {
             position: absolute;
             top: 10px;
@@ -304,7 +266,7 @@
 
         .map-display-area {
             width: 100%;
-            margin-top: 25px; /* 캐릭터 카드 아래로 옮겼으므로, character-cards-wrapper와 간격 */
+            margin-top: 25px;
             margin-bottom: 25px;
             text-align: center;
         }
@@ -316,9 +278,7 @@
             border-radius: 6px;
             display: inline-block;
         }
-        .map-row {
-            display: flex;
-        }
+        .map-row { display: flex; }
         .map-cell {
             width: 65px;
             height: 65px;
@@ -331,9 +291,7 @@
             background-color: #252525;
             transition: background-color 0.2s;
         }
-        .map-cell:hover {
-            background-color: #333;
-        }
+        .map-cell:hover { background-color: #333; }
         .map-cell .char-marker {
             font-size: 0.85em;
             font-weight: bold;
@@ -349,6 +307,17 @@
         .map-cell .char-marker.ally { background-color: var(--color-accent-blue); color: white; }
         .map-cell .char-marker.enemy { background-color: var(--color-accent-red); color: white; }
 
+        /* /// 신규 추가: 시작 지점(스폰 존) 시각화를 위한 CSS /// */
+        .map-cell.clown-spawn {
+            background-color: rgba(255, 0, 0, 0.2);
+            border: 1px dashed #FF6347;
+        }
+        .map-cell.pierrot-spawn {
+            background-color: rgba(0, 0, 255, 0.2);
+            border: 1px dashed #4169E1;
+        }
+        /* /// 여기까지 추가 /// */
+
         .battle-area {
             background-color: var(--color-surface);
             padding: 25px;
@@ -358,18 +327,9 @@
         }
         .battle-log-container { margin-top: 30px; }
         .battle-log { background-color: #171717; color: var(--color-text-secondary); padding: 20px; height: 300px; overflow-y: auto; border-radius: 8px; margin-top: 20px; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; border: 1px solid var(--color-border); line-height: 1.6; font-size: 0.9em; }
-        
-        .battle-controls button { /* .button 클래스 적용 */
-            margin: 8px 5px; 
-        }
-        
+        .battle-controls button { margin: 8px 5px; }
         .skill-selection { margin-top: 25px; border: 1px solid var(--color-border-accent); padding: 20px; border-radius: 8px; background-color: var(--color-surface-alt); }
-        
-        .skill-buttons {
-            text-align: center; 
-            margin-bottom: 10px; 
-        }
-        
+        .skill-buttons { text-align: center; margin-bottom: 10px; }
         .skill-buttons button { 
             font-family: var(--font-body);
             background-color: var(--color-primary-gold-darker);
@@ -384,13 +344,10 @@
             display: inline-block; 
             min-width: 90px;       
         }
-        
         .skill-buttons button:hover { background-color: var(--color-primary-gold); transform: scale(1.03); }
         .skill-buttons button:disabled { background: #454545 !important; color: #777 !important; cursor: not-allowed !important; transform: none !important; box-shadow: none !important;}
-        
         .skill-description-display { margin-top: 20px; margin-bottom: 20px; padding: 15px; background-color: #222526; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.95em; min-height: 50px; color: var(--color-text-secondary); line-height: 1.5; }
         .skill-description-display strong { color: var(--color-primary-gold-lighter); }
-
         .movement-controls {
             margin-top: 20px; 
             padding: 15px; 
@@ -448,9 +405,7 @@
             font-size: 1.25em; 
             margin-right: 8px; 
         }
-        
         #confirmActionButton:hover { background: linear-gradient(145deg, #218838, #1c6c2e); transform: translateY(-2px); }
-        
         #confirmActionButton:disabled { 
             background: #454545 !important;
             color: #777 !important;
@@ -460,9 +415,9 @@
         }
 
         .skill-buttons button:disabled {
-            background: #454545 !important; /* 회색 계열 배경 */
-            color: #777 !important;         /* 회색 계열 글자색 */
-            cursor: not-allowed !important; /* 클릭 불가 커서 */
+            background: #454545 !important;
+            color: #777 !important;
+            cursor: not-allowed !important;
             transform: none !important;
             box-shadow: none !important;
         }
@@ -499,21 +454,6 @@
                 min-width: 35px;
                 padding: 3px;
             }
-            .material-icons, .material-icons-outlined {
-                margin-right: 4px;
-                font-size: 1em; 
-            }
-            h1 .material-icons, h1 .material-icons-outlined,
-            h2 .material-icons, h2 .material-icons-outlined,
-            h3 .material-icons, h3 .material-icons-outlined,
-            h4 .material-icons, h4 .material-icons-outlined {
-                font-size: 1em; 
-                margin-right: 6px; 
-            }
-            .button .material-icons, .button .material-icons-outlined {
-                font-size: 1.1em;
-                margin-right: 6px;
-            }
         }
 
         ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -525,6 +465,19 @@
 <body>
     <div class="container"> <h1>✦ 마스레이드 전투 시뮬레이션</h1>
 
+        <div class="character-input">
+            <h2><span class="material-icons-outlined">explore</span>맵 선택</h2>
+            <label for="mapSelect">불러올 맵:</label>
+            <select id="mapSelect">
+                <option value="A-1">A-1: 황폐한 대지</option>
+                <option value="A-2">A-2: 생명의 터전</option>
+                <option value="B-1">B-1: 인형극장</option>
+                <option value="B-2">B-2: 달의 그네</option>
+            </select>
+            <div class="char-add-buttons-wrapper">
+                <button onclick="loadSelectedMap()" class="button"><span class="material-icons-outlined">download</span>맵 불러오기</button>
+            </div>
+        </div>
         <div class="character-input">
             <h2><span class="material-icons-outlined">person_add</span>캐릭터 추가</h2>
             <label for="charName">이름:</label>
@@ -564,10 +517,8 @@
         
         <div class="map-display-area">
             <h2><span class="material-icons-outlined">map</span>맵 상황</h2>
-            <div id="mapGridContainer" class="map-grid-container">
-                </div>
-             <div id="mapInfo">
-                </div>
+            <div id="mapGridContainer" class="map-grid-container"></div>
+             <div id="mapInfo"></div>
         </div>
 
     </div> <div class="container battle-area"> <h2><span class="material-icons-outlined">castle</span>전투 진행 및 스킬 선택</h2> 
@@ -578,16 +529,13 @@
         <div id="allySelectionButtons" style="margin-top: 15px;"></div>
         <div id="skillSelectionArea" class="skill-selection" style="display: none;">
             <h3><span class="material-icons-outlined">psychology</span>스킬/이동 선택: <span id="currentActingCharName"></span></h3>
-            <div id="availableSkills" class="skill-buttons">
-                </div>
-            <div id="skillDescriptionArea" class="skill-description-display"> 
-                </div>
+            <div id="availableSkills" class="skill-buttons"></div>
+            <div id="skillDescriptionArea" class="skill-description-display"></div>
             <div class="movement-controls" id="movementControlsArea">
                 <h4><span class="material-icons-outlined">open_with</span>이동 (선택 시 턴 종료)</h4>
-                </div>
+            </div>
             <p>대상 선택: <span id="selectedTargetName">없음</span></p>
-            <button onclick="confirmAction()" id="confirmActionButton" style="display: none;" class="button"> <span class="material-icons">check_circle_outline</span>행동 확정
-            </button>
+            <button onclick="confirmAction()" id="confirmActionButton" style="display: none;" class="button"> <span class="material-icons">check_circle_outline</span>행동 확정</button>
         </div>
     </div>
 
