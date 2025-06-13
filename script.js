@@ -1077,7 +1077,7 @@ class Character {
 function logToBattleLog(message) {
     if (battleLogDiv) {
         // 메시지 앞뒤 공백 제거 테스트
-        const trimmedMessage = typeof message === 'string' ? message.trim() : message;
+        const trimmedmessage = typeof message === 'string' ? message.trim() : message;
         battleLogDiv.innerHTML += trimmedmessage + '<br>'; //띄쓰
         battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
     } else {
