@@ -733,7 +733,7 @@ let allyCharacters = [];
 let enemyCharacters = [];
 let currentTurn = 0;
 let isBattleStarted = false;
-// let currentActingCharacterIndex = 0; // 행동 순서 직접 지정으로 변경되어 사용 방식 변경
+let currentMapId = null;
 let playerActionsQueue = [];
 let characterPositions = {}; 
 let actedAlliesThisTurn = []; // 이번 턴에 행동을 마친 아군 ID 목록 (행동 순서 직접 지정용)
@@ -1269,9 +1269,10 @@ function loadSelectedMap() {
 
 /**
  * mapId를 받아 mapdata.js의 설정에 따라 맵의 적군을 불러오고 배치합니다.
- * @param {string} mapId - 불러올 맵의 ID (예: "A-1")
+ * @param {string} mapId - 불러올 맵의 ID
  */
 function loadMap(mapId) {
+    currentMapId = mapId;
     const mapConfig = MAP_CONFIGS[mapId];
     if (!mapConfig) {
         logToBattleLog(`✦경고✦: 맵 [${mapId}]의 설정 정보를 찾을 수 없습니다.`);
@@ -1335,6 +1336,68 @@ function loadMap(mapId) {
     });
 
     displayCharacters();
+}
+
+/**
+ * 지정된 템플릿 ID와 스폰 위치를 기반으로 몬스터를 소환하는 함수입니다.
+ * Mapdata.js에 정의된 SPAWN_POINTS 목록을 순서대로 확인하여
+ * 비어있는 첫 번째 위치에 몬스터를 소환합니다.
+ * @param {string} monsterTemplateId - 소환할 몬스터의 템플릿 ID (예: "Clown", "Pierrot")
+ */
+function summonMonster(monsterTemplateId) {
+    const template = MONSTER_TEMPLATES[monsterTemplateId];
+    if (!template) {
+        logToBattleLog(`✦경고✦: 소환할 몬스터 템플릿 [${monsterTemplateId}]를 찾을 수 없습니다.`);
+        return;
+    }
+
+    const spawnPoints = SPAWN_POINTS[monsterTemplateId]; //
+    if (!spawnPoints || spawnPoints.length === 0) {
+        logToBattleLog(`✦경고✦: [${monsterTemplateId}]의 스폰 지점 정보가 없습니다.`);
+        return;
+    }
+
+    // 지정된 스폰 지점 목록에서 순서대로 비어있는 위치를 찾습니다.
+    let spawnPos = null;
+    for (const pos of spawnPoints) {
+        if (!characterPositions[`${pos.x},${pos.y}`]) {
+            spawnPos = pos;
+            break; // 첫 번째 빈 자리를 찾으면 반복을 중단합니다.
+        }
+    }
+    
+    if (spawnPos === null) {
+        logToBattleLog(`✦정보✦: [${template.name}]을(를) 소환할 비어있는 스폰 지점이 없습니다.`);
+        return;
+    }
+
+    let monsterType;
+    if (Array.isArray(template.type)) { //
+        monsterType = template.type[Math.floor(Math.random() * template.type.length)]; //
+    } else {
+        monsterType = template.type; //
+    }
+
+    const newEnemy = new Character(template.name, monsterType);
+    
+    // 템플릿의 스탯을 적용합니다.
+    newEnemy.maxHp = template.maxHp || 100; //
+    newEnemy.currentHp = newEnemy.maxHp;
+    newEnemy.atk = template.atk || 15; //
+    newEnemy.matk = template.matk || 15; //
+    newEnemy.def = template.def || 15; //
+    newEnemy.mdef = template.mdef || 15; //
+    newEnemy.skills = template.skills ? [...template.skills] : []; //
+    newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : []; //
+    
+    newEnemy.posX = spawnPos.x;
+    newEnemy.posY = spawnPos.y;
+    
+    enemyCharacters.push(newEnemy);
+    characterPositions[`${spawnPos.x},${spawnPos.y}`] = newEnemy.id;
+
+    logToBattleLog(`✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${spawnPos.x},${spawnPos.y}]에 나타났습니다!`);
+    displayCharacters(); // 맵과 캐릭터 카드 UI 갱신
 }
 
 function displayCharacters() {
@@ -1508,7 +1571,7 @@ function startBattle() {
     currentTurn = 0; 
     playerActionsQueue = [];
     actedAlliesThisTurn = [];
-    logToBattleLog('--- 전투 시작 ---');
+    logToBattleLog('     【전투 시작】     \n');
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         char.currentHp = char.maxHp; // 체력 완전 회복
         char.isAlive = true;
@@ -1537,9 +1600,10 @@ function prepareNewTurnCycle() {
     currentTurn++;
     enemyPreviewAction = null; // 이전 턴의 예고 정보 초기화
 
-    logToBattleLog(`\n=== ${currentTurn} 턴 행동 선택 시작 ===`);
+    logToBattleLog(`\n--- ${currentTurn} 턴 행동 선택 시작 ---`);
 
-    if (currentTurn > 0 && currentTurn % 4 === 0) {
+    // 맵 ID가 'B-1'일 경우에만 4턴마다 추가 몬스터를 소환합니다.
+    if (currentMapId === 'B-1' && currentTurn > 0 && currentTurn % 4 === 0) {
         logToBattleLog(`--- 4턴 경과, 추가 몬스터가 소환됩니다. ---`);
         summonMonster("Clown");
         summonMonster("Pierrot");
