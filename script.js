@@ -324,18 +324,35 @@ const SKILLS = {
             const damage = calculateDamage(caster, target, skillPower, damageType);
             target.takeDamage(damage, battleLog, caster);
             battleLog(`✦피해✦ ${caster.name}, [서막]: ${target.name}에게 ${damage} ${damageType === 'physical' ? '물리' : '마법'} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
-            
+
+            // 시전자의 '영감(타입)'에 따라 감소시킬 방어력 종류를 결정
+            let defenseToReduce;
+            if (caster.type === "암석" || caster.type === "야수") {
+                defenseToReduce = 'def'; // 물리 방어력
+            } else if (caster.type === "천체" || caster.type === "나무") {
+                defenseToReduce = 'mdef'; // 마법 방어력
+            } else {
+                // '영감'이 지정되지 않은 경우, 더 높은 공격력 스탯을 기준으로 결정
+                defenseToReduce = damageType === 'physical' ? 'def' : 'mdef';
+            }
+
+            // 디버프에 어떤 방어력을 감소시킬지('reductionType'), 감소율은 얼마인지('reductionPerStack') 정보를 추가합니다.
             target.addDebuff('scratch', '[흠집]', 2, { 
                 maxStacks: 3, 
                 overrideDuration: true,
                 removerSkillId: SKILLS.SKILL_CLIMAX.id,
-                category: '표식'
+                category: '표식',
+                reductionType: defenseToReduce,       // 'def' 또는 'mdef' 저장
+                reductionValue: 0.10               // 스택당 10% 감소
             });
             const scratchStacks = target.getDebuffStacks('scratch');
-            battleLog(`✦디버프✦ ${target.name}, [흠집] 효과 적용 (현재 ${scratchStacks}스택).`);
+            const defenseTypeKorean = defenseToReduce === 'def' ? '방어력' : '마법 방어력';
+            battleLog(`✦디버프✦ ${target.name}, [흠집] 효과 적용 (${defenseTypeKorean} 감소). (현재 ${scratchStacks}스택).`);
+            
             return true;
         }
     },
+    
      // [절정]
     SKILL_CLIMAX: {
         id: "SKILL_CLIMAX",
@@ -1119,7 +1136,7 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
                         value += (this.atk * buff.effect.atkBoostPerStack * buff.effect.stacks); // 기본 공격력 비례
                     }
                     if (statName === 'matk' && buff.effect.matkBoostPerStack) {
-                        value += (this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks); // 기본 마법공격력 비례
+                        value += (this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks); // 기본 마법 공격력 비례
                     }
                 }
                 // [허상] 공격력 증가 효과
@@ -1129,10 +1146,16 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
                 }
             }
         });
+        
         this.debuffs.forEach(debuff => {
             if (debuff.turnsLeft > 0 && debuff.effect) {
-                // 디버프로 인한 스탯 감소 로직 (필요시 추가)
-                // 예: if (debuff.effect.type === `${statName}_reduction_multiplier`) value *= (1 - debuff.effect.value);
+                // [흠집] 관련 로직 추가
+                // 'scratch' 디버프이고, 스택이 1 이상 존재하며, 디버프에 저장된 감소 타입이 현재 계산 중인 스탯과 일치할 때
+                if (debuff.id === 'scratch' && debuff.effect.reductionType === statName && debuff.stacks > 0) {
+                    // 스택 수와 무관하게 고정된 값(10%)으로 방어력 감소
+                    const reductionValue = debuff.effect.reductionValue || 0.10; // 기본값 10%
+                    value *= (1 - reductionValue); 
+                }
             }
         });
         return Math.max(0, value); // 스탯은 0 이상
