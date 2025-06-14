@@ -2164,8 +2164,6 @@ function previewEnemyAction(enemyChar) {
             return { x, y };
         });
     }
-    
-    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다.`);
 
     return {
         casterId: enemyChar.id,
@@ -2201,8 +2199,6 @@ function previewEnemyAction(enemyChar) {
             return { x, y };
         });
     }
-    
-    logToBattleLog(`✦예고✦ ${enemyChar.name}, [${skillToUse.name}]을(를) 시전하려 합니다.`);
 
     return {
         casterId: enemyChar.id,
