@@ -3,6 +3,15 @@ const MAP_WIDTH = 5;
 const MAP_HEIGHT = 5;
 let enemyPreviewAction = null; // 몬스터가 예고한 행동 정보 저장
 
+const TYPE_ADVANTAGE_MODIFIER = 1.3; // 상성일 때 피해량 30% 증가
+const TYPE_DISADVANTAGE_MODIFIER = 0.7; // 역상성일 때 피해량 30% 감소
+const TYPE_RELATIONSHIPS = {
+    '야수': '나무',
+    '나무': '천체',
+    '천체': '암석',
+    '암석': '야수'
+};
+
 const SKILLS = {
     // [근성]
     SKILL_RESILIENCE: {
@@ -942,6 +951,18 @@ class Character {
     takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
         if (!this.isAlive) return;
 
+        // 상성 관련
+        if (attacker && attacker.isAlive) {
+            // 상성 우위 체크
+            if (TYPE_RELATIONSHIPS[attacker.type] === this.type) {
+                logFn(`✦상성 우위✦ ${attacker.name}의 공격(${attacker.type})이 ${this.name}(${this.type})에 적중합니다.`);
+            } 
+            // 상성 열세 체크
+            else if (TYPE_RELATIONSHIPS[this.type] === attacker.type) {
+                logFn(`✦상성 열세✦ ${this.name}(${this.type}), ${attacker.name}의 공격(${attacker.type})에 저항합니다.`);
+            }
+        }
+        
         // [철옹성] 피해 이전 로직
         if (this.isAlive && attacker && allyCharacters.includes(this)) { // 자신이 아군일 때만 다른 아군에게 이전 시도
             const ironFortressAlly = allyCharacters.find(ally =>
@@ -1445,6 +1466,17 @@ function displayCharacters() {
 
 // --- 4. 핵심 전투 로직 함수 ---
 function calculateDamage(attacker, defender, skillPower, damageType, statTypeToUse = null) {
+    
+    let typeModifier = 1.0; // 기본 피해 배율
+    // 상성 우위 체크: 공격자의 타입이 방어자의 타입을 이기는가?
+    if (TYPE_RELATIONSHIPS[attacker.type] === defender.type) {
+        typeModifier = TYPE_ADVANTAGE_MODIFIER;
+    } 
+    // 상성 열세 체크: 방어자의 타입이 공격자의 타입을 이기는가?
+    else if (TYPE_RELATIONSHIPS[defender.type] === attacker.type) {
+        typeModifier = TYPE_DISADVANTAGE_MODIFIER;
+    }
+    
     // --- 2-6: 대지의 수호 기믹 데미지 조절 로직 ---
     // 방어하는 캐릭터(defender)에게 '대지의 수호' 기믹이 활성화되어 있는지 확인합니다.
     if (defender.activeGimmick && defender.activeGimmick.startsWith("GIMMICK_Aegis_of_Earth")) {
@@ -1494,7 +1526,8 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
         return 0;
     }
 
-    let damage = (baseAttackStat * actualSkillPower) - defenseStat;
+    let damage = (baseAttackStat * actualSkillPower * typeModifier) - defenseStat;
+    
     return Math.round(Math.max(0, damage)); // 최종 피해량을 반올림
 }
 
