@@ -14,27 +14,25 @@ const SKILLS = {
         targetSelection: "self",
         execute: (caster, allies, enemies, battleLog) => {
             if (currentTurn % 2 === 1) { // 홀수 턴: 철옹성
-                const shieldAmount = caster.currentHp * 2.0 + caster.def * 2.0;
-                // caster.shield += shieldAmount; // 보호막은 addBuff를 통해 관리
+                const shieldAmount = Math.round(caster.currentHp * 2.0 + caster.def * 2.0); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
                 caster.removeBuffById('iron_fortress'); 
                 caster.addBuff('iron_fortress', '[철옹성]', 3, {
                     description: "자신에게 보호막 부여. 3턴간 아군 피해 대신 받음.",
-                    shieldAmount: shieldAmount, // 이 버프가 제공하는 보호막 양
+                    shieldAmount: shieldAmount,
                     redirectAllyDamage: true 
                 });
-                battleLog(`✦스킬✦ ${caster.name}, [근성](홀수) 사용: [철옹성] 효과 발동. 보호막 +${shieldAmount.toFixed(0)} (3턴). (현재 총 보호막: ${caster.shield.toFixed(0)})`);
+                battleLog(`✦스킬✦ ${caster.name}, [근성](홀수) 사용: [철옹성] 효과 발동. 보호막 +${shieldAmount} (3턴). (현재 총 보호막: ${caster.shield.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             } else { // 짝수 턴: 의지
                 const damageTaken = caster.totalDamageTakenThisBattle;
-                const shieldAmount = damageTaken * 2.5;
-                // caster.shield += shieldAmount; // 보호막은 addBuff를 통해 관리
+                const shieldAmount = Math.round(damageTaken * 2.5); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
                 caster.removeBuffById('will_buff');
                 caster.addBuff('will_buff', '[의지]', 3, {
                     description: "받은 총 피해 비례 보호막. 해제 시 남은 보호막만큼 체력 흡수 및 받은 피해 총합 초기화.",
-                    shieldAmount: shieldAmount, // 이 버프가 제공하는 보호막 양
+                    shieldAmount: shieldAmount,
                     healOnRemove: true, 
                     resetsTotalDamageTaken: true 
                 });
-                battleLog(`✦스킬✦ ${caster.name}, [근성](짝수) 사용: [의지] 효과 발동. (받은 피해: ${damageTaken.toFixed(0)}) 보호막 +${shieldAmount.toFixed(0)} (3턴). (현재 총 보호막: ${caster.shield.toFixed(0)})`);
+                battleLog(`✦스킬✦ ${caster.name}, [근성](짝수) 사용: [의지] 효과 발동. (받은 피해: ${damageTaken}) 보호막 +${shieldAmount} (3턴). (현재 총 보호막: ${caster.shield.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             }
             return true;
         }
@@ -51,7 +49,6 @@ const SKILLS = {
         execute: (caster, allies, enemies, battleLog) => {
             const skillName = SKILLS.SKILL_COUNTER.name;
 
-            // 쿨타임 확인
             const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_COUNTER.id] || 0;
             if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_COUNTER.cooldown) {
                 battleLog(`✦정보✦ ${caster.name}, [${skillName}] 사용 불가: 쿨타임 ${SKILLS.SKILL_COUNTER.cooldown - (currentTurn - lastUsed)}턴 남음.`);
@@ -63,18 +60,16 @@ const SKILLS = {
             if (baseShieldAmountFromCaster > 0) {
                 const allLivingAlliesIncludingCaster = allies.filter(a => a.isAlive);
                 if (allLivingAlliesIncludingCaster.length > 0) {
-                    const shieldPerAlly = baseShieldAmountFromCaster / allLivingAlliesIncludingCaster.length;
-                    battleLog(`✦효과✦ ${caster.name}, [${skillName}]의 보호막 분배: 자신의 보호막(${baseShieldAmountFromCaster.toFixed(0)}) 기반으로 아군 ${allLivingAlliesIncludingCaster.length}명에게 2턴 보호막 버프 부여.`);
+                    const shieldPerAlly = Math.round(baseShieldAmountFromCaster / allLivingAlliesIncludingCaster.length); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
+                    battleLog(`✦효과✦ ${caster.name}, [${skillName}]의 보호막 분배: 자신의 보호막(${baseShieldAmountFromCaster}) 기반으로 아군 ${allLivingAlliesIncludingCaster.length}명에게 2턴 보호막 버프 부여.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
                     allLivingAlliesIncludingCaster.forEach(ally => {
-                        const buffId = `counter_shield_${caster.id}_to_${ally.id}_${currentTurn}`; // 턴정보 추가로 ID 유니크성 강화
+                        const buffId = `counter_shield_${caster.id}_to_${ally.id}_${currentTurn}`;
                         ally.addBuff(
                             buffId,
                             '[반격 보호막]',
                             2,
                             { shieldAmount: shieldPerAlly }
                         );
-                        // addBuff에서 로그를 찍으므로 여기서는 생략하거나 요약 로그만 남김
-                        // battleLog(`  ✦보호막 버프✦ ${ally.name}: [반격 보호막] +${shieldPerAlly.toFixed(0)} (2턴). (현재 총 보호막: ${ally.shield.toFixed(0)})`);
                     });
                     caster.shield = 0; 
                 } else {
@@ -99,7 +94,7 @@ const SKILLS = {
                 });
                 battleLog(`✦스킬✦ ${caster.name}, [반격](짝수) 사용: [격노] 태세 돌입. (2턴)`);
             }
-            caster.lastSkillTurn[SKILLS.SKILL_COUNTER.id] = currentTurn; // 성공 시 쿨타임 기록
+            caster.lastSkillTurn[SKILLS.SKILL_COUNTER.id] = currentTurn;
             return true;
         }
     },
@@ -114,10 +109,10 @@ const SKILLS = {
         execute: (caster, allies, enemies, battleLog) => {
             caster.addBuff('provoke_damage_reduction', '피해 감소 (도발)', 1, { damageReduction: 0.7 });
             enemies.filter(e => e.isAlive).forEach(enemy => {
-                enemy.addDebuff('provoked', '도발 (타겟 고정)', 2, { targetId: caster.id }); // 도발은 적에게 거는 디버프
+                enemy.addDebuff('provoked', '도발 (타겟 고정)', 2, { targetId: caster.id });
             });
-            caster.aggroDamageStored = 0; // 이 스킬 사용 시 저장된 피해량은 초기화 (새로 저장 시작)
-            battleLog(`✦효과✦ ${caster.name}, [도발] 사용: 모든 적을 도발하며, 자신은 받는 피해가 감소합니다.`);
+            caster.aggroDamageStored = 0;
+            battleLog(`✦효과✦ ${caster.name}, [도발] 사용: 모든 적을 도발합니다. 자신은 받는 피해가 감소합니다.`);
             return true;
         }
     },
@@ -131,21 +126,18 @@ const SKILLS = {
         targetSelection: "self",
         cooldown: 2, // 사용 후 1턴간 사용 불가
         execute: (caster, allies, enemies, battleLog) => {
-            // 쿨타임 확인
             const lastUsed = caster.lastSkillTurn[SKILLS.SKILL_REVERSAL.id] || 0;
             if (lastUsed !== 0 && currentTurn - lastUsed < SKILLS.SKILL_REVERSAL.cooldown) {
                 battleLog(`✦정보✦ ${caster.name}, [역습] 사용 불가: 쿨타임 ${SKILLS.SKILL_REVERSAL.cooldown - (currentTurn - lastUsed)}턴 남음.`);
                 return false;
             }
 
-            const hpLoss = caster.currentHp * 0.5;
+            const hpLoss = Math.round(caster.currentHp * 0.5);
             caster.currentHp -= hpLoss;
-            if (caster.currentHp < 1) caster.currentHp = 1; // 최소 체력 1
-            battleLog(`✦소모✦ ${caster.name}, [역습] 사용 준비: 체력 ${hpLoss.toFixed(0)} 소모. (현재 HP: ${caster.currentHp.toFixed(0)})`);
-            caster.addBuff('reversal_active', '역습 대기', 1, {
-                 // 도발 저장 피해는 reversal_active 버프 효과보다는, 피격 시점에 caster.aggroDamageStored를 직접 참조
-            });
-            caster.lastSkillTurn[SKILLS.SKILL_REVERSAL.id] = currentTurn; // 성공 시 쿨타임 기록
+            if (caster.currentHp < 1) caster.currentHp = 1;
+            battleLog(`✦소모✦ ${caster.name}, [역습] 사용 준비: 체력 ${hpLoss} 소모. (현재 HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+            caster.addBuff('reversal_active', '역습 대기', 1, {});
+            caster.lastSkillTurn[SKILLS.SKILL_REVERSAL.id] = currentTurn;
             return true;
         }
     },
@@ -163,30 +155,29 @@ const SKILLS = {
                 return false;
             }
             if (caster.id === target.id) { // 자신에게 사용
-                const healAmount = caster.getEffectiveStat('atk') * 0.5; // getEffectiveStat 사용
+                const healAmount = Math.round(caster.getEffectiveStat('atk') * 0.5); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
                 caster.currentHp = Math.min(caster.maxHp, caster.currentHp + healAmount);
-                battleLog(`✦회복✦ ${caster.name}, [허상] 사용 (자신): 체력 ${healAmount.toFixed(0)} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
+                battleLog(`✦회복✦ ${caster.name}, [허상] 사용 (자신): 체력 ${healAmount} 회복. (HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             } else { // 다른 아군에게 사용
-                const hpLoss = caster.getEffectiveStat('atk') * 0.2;
+                const hpLoss = Math.round(caster.getEffectiveStat('atk') * 0.2); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
                 caster.currentHp -= hpLoss;
                 if (caster.currentHp < 1) caster.currentHp = 1;
-                battleLog(`✦소모✦ ${caster.name}, [허상] 사용 (${target.name} 대상): 체력 ${hpLoss.toFixed(0)} 소모. (HP: ${caster.currentHp.toFixed(0)})`);
+                battleLog(`✦소모✦ ${caster.name}, [허상] 사용 (${target.name} 대상): 체력 ${hpLoss} 소모. (HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
                 
                 target.addBuff('illusion_atk_boost', '공격력 증가 (허상)', 2, { 
-                    type: 'atk_boost_multiplier', // Character.getEffectiveStat 에서 참조할 타입
-                    value: 2.0 // 공격력 2배
+                    type: 'atk_boost_multiplier',
+                    value: 2.0
                  });
                 battleLog(`✦버프✦ ${target.name}: [허상 효과] 공격력 2배 증가 (2턴).`);
             }
-            // 턴 종료 시 추가 공격 로직 (가장 처음 살아 있는 적 대상)
             const firstAliveEnemy = enemies.find(e => e.isAlive);
             if (firstAliveEnemy) {
                  caster.addBuff('illusion_end_turn_attack', '턴 종료 추가 공격 (허상)', 1, { 
                      attackerId: caster.id, 
-                     originalTargetId: target.id, // 허상 스킬의 원래 대상 (자신 또는 아군)
+                     originalTargetId: target.id,
                      enemyTargetId: firstAliveEnemy.id,
-                     power: 0.5, // 공격력의 0.5배
-                     damageType: 'physical' // 예시: 물리 피해
+                     power: 0.5,
+                     damageType: 'physical'
                  });
             } else {
                 battleLog(`✦정보✦ ${caster.name} [허상]: 턴 종료 추가 공격 대상을 찾을 수 없습니다.`);
@@ -209,33 +200,29 @@ const SKILLS = {
             }
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [허무] 사용: 디버프 정화 및 랜덤 버프 부여.`);
             
-            // 디버프 정화 로직 (기존 유지)
             const removableDebuffs = target.debuffs.filter(d => ['상태 이상', '제어', '속성 감소'].includes(d.effect.category || '기타'));
             let removedCount = 0;
-            // Fisher-Yates shuffle 로 랜덤 선택
             for (let i = removableDebuffs.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [removableDebuffs[i], removableDebuffs[j]] = [removableDebuffs[j], removableDebuffs[i]];
             }
             for (let i = 0; i < Math.min(2, removableDebuffs.length); i++) {
                 const debuffToRemove = removableDebuffs[i];
-                target.removeDebuffById(debuffToRemove.id); // removeDebuffById는 Character 클래스에 정의 필요
+                target.removeDebuffById(debuffToRemove.id);
                 battleLog(`✦정화✦ ${target.name}: [${debuffToRemove.name}] 디버프 정화됨.`);
                 removedCount++;
             }
-            if (removedCount === 0 && removableDebuffs.length > 0) { // 정화할 디버프는 있었으나 0개 정화된 경우(로직오류 가능성) - 실제로는 min(2, length)로 인해 거의 발생 안함
+            if (removedCount === 0 && removableDebuffs.length > 0) {
                  battleLog(`✦정보✦ ${target.name}: 정화할 수 있는 디버프가 없습니다(선택실패).`);
             } else if (removableDebuffs.length === 0) {
                  battleLog(`✦정보✦ ${target.name}: 정화할 수 있는 디버프가 없습니다.`);
             }
 
-
-            // 랜덤 버프 부여 로직 (기존 유지)
             const buffChoices = [
-                { id: 'nihility_heal_hot', name: '턴 시작 시 HP 회복 (허무)', turns: 2, effect: { type: 'turn_start_heal', value: caster.getEffectiveStat('atk') * 0.5 } },
-                { id: 'nihility_reflect_dmg', name: '피해 반사 (허무)', turns: 2, effect: { type: 'damage_reflect', value: 0.3 } }, // 30% 반사
-                { id: 'nihility_def_boost', name: '방어력 증가 (허무)', turns: 2, effect: { type: 'def_boost_multiplier', value: 1.3 } }, // 30% 증가 -> 1.3배
-                { id: 'nihility_atk_boost', name: '공격력 증가 (허무)', turns: 2, effect: { type: 'atk_boost_multiplier', value: 1.5 } }  // 50% 증가 -> 1.5배
+                { id: 'nihility_heal_hot', name: '턴 시작 시 HP 회복 (허무)', turns: 2, effect: { type: 'turn_start_heal', value: Math.round(caster.getEffectiveStat('atk') * 0.5) } }, // ▼▼▼ 수정: 반올림 적용 ▼▼▼
+                { id: 'nihility_reflect_dmg', name: '피해 반사 (허무)', turns: 2, effect: { type: 'damage_reflect', value: 0.3 } },
+                { id: 'nihility_def_boost', name: '방어력 증가 (허무)', turns: 2, effect: { type: 'def_boost_multiplier', value: 1.3 } },
+                { id: 'nihility_atk_boost', name: '공격력 증가 (허무)', turns: 2, effect: { type: 'atk_boost_multiplier', value: 1.5 } }
             ];
             const chosenBuffData = buffChoices[Math.floor(Math.random() * buffChoices.length)];
             target.addBuff(chosenBuffData.id, chosenBuffData.name, chosenBuffData.turns, chosenBuffData.effect);
@@ -249,8 +236,8 @@ const SKILLS = {
         name: "실존",
         type: "광역 버프",
         description: "보아라, 눈앞에 놓여진 것을. 그리고 말하라, 당신이 깨달은 것을.<br><br>모든 아군 방어력 x0.3 증가 (2턴). <br>자신은 [실재] 4스택 추가 획득 (2턴, 해제 불가). <br>연속 사용 시 추가 2스택 획득. (쿨타임 2턴)",
-        targetType: "all_allies", // 자신 포함 모든 아군
-        targetSelection: "all_allies", // UI에서 전체 선택으로 처리
+        targetType: "all_allies",
+        targetSelection: "all_allies",
         cooldown: 3, 
         execute: (caster, allies, enemies, battleLog) => {
             const currentTurnNum = currentTurn;
@@ -264,29 +251,26 @@ const SKILLS = {
             
             allies.filter(a => a.isAlive).forEach(ally => {
                 ally.addBuff('reality_def_boost', '방어력 증가 (실존)', 2, { 
-                    type: 'def_boost_multiplier', // Character.getEffectiveStat 에서 참조
-                    value: 1.3 // 30% 증가
+                    type: 'def_boost_multiplier',
+                    value: 1.3
                 });
             });
             battleLog(`✦버프✦ 모든 아군: 방어력 30% 증가 (2턴).`);
 
-            // [실재] 스택 로직 (연속 사용 시 추가 스택은 lastSkillTurn을 좀 더 활용해야 함)
             let realityStacksToAdd = 4;
             const realityBuff = caster.buffs.find(b => b.id === 'reality_stacks');
-            if (realityBuff && realityBuff.lastAppliedTurn === currentTurnNum -1) { // 직전 턴에 실재 버프가 적용되었다면 (연속사용 간주)
+            if (realityBuff && realityBuff.lastAppliedTurn === currentTurnNum -1) {
                  realityStacksToAdd +=2;
                  battleLog(`✦효과✦ ${caster.name} [실존] 연속 사용: [실재] 추가 2스택.`);
             }
 
-            // addBuff 스택 로직이 기존 스택에 더하는 형태여야 함
-            caster.addBuff('reality_stacks', '[실재]', 2, { // 2턴 지속, 해제 불가
-                atkBoostPerStack: 0.4, // 스택당 공격력/마법공격력 40% 증가 (기본 스탯 비례)
-                matkBoostPerStack: 0.4, // 마법 공격력도 동일하게
+            caster.addBuff('reality_stacks', '[실재]', 2, {
+                atkBoostPerStack: 0.4,
+                matkBoostPerStack: 0.4,
                 stacks: realityStacksToAdd, 
                 unremovable: true,
-                lastAppliedTurn: currentTurnNum // 연속 사용 체크를 위해 마지막 적용 턴 기록
-            }, true); // true는 스택을 누적하라는 의미 (addBuff 수정 필요)
-
+                lastAppliedTurn: currentTurnNum
+            }, true);
 
             const currentRealityStacks = caster.buffs.find(b => b.id === 'reality_stacks')?.stacks || 0;
             battleLog(`✦버프✦ ${caster.name}: [실재] ${realityStacksToAdd}스택 추가 획득 (현재 ${currentRealityStacks}스택, 2턴, 해제 불가).`);
@@ -303,23 +287,22 @@ const SKILLS = {
         description: "아래는 진창이었음을. 드디어 깨달은 당신에게 선사하는 아름다운 정론이다.<br><br>모든 적군에게 2턴 동안 [중독] 상태 부여 (턴 종료 시 사용자의 (공격력+마법공격력)/2 x0.5 고정 피해). <br>중독 결산 후 랜덤 적군에게 사용자의 (공격력+마법공격력)/2 x0.3 추가 공격 부여.",
         targetType: "all_enemies",
         targetSelection: "all_enemies",
-        execute: (caster, enemies, battleLog) => { // allies 파라미터는 없어도 됨
+        execute: (caster, enemies, battleLog) => {
             battleLog(`✦스킬✦ ${caster.name}, [진리] 사용: 모든 적에게 [중독]을 부여합니다.`);
             const averageAttack = (caster.getEffectiveStat('atk') + caster.getEffectiveStat('matk')) / 2;
             enemies.filter(e => e.isAlive).forEach(enemy => {
                 enemy.addDebuff('poison_truth', '[중독](진리)', 2, { 
                     damagePerTurn: averageAttack * 0.5, 
-                    type: 'fixed', // 고정 피해
-                    casterId: caster.id, // 피해 출처 명시
-                    category: '상태 이상' // 허무 스킬 정화 대상 여부 판단용
+                    type: 'fixed',
+                    casterId: caster.id,
+                    category: '상태 이상'
                 });
                 battleLog(`✦상태 이상✦ ${enemy.name}, [중독](진리) 효과 적용 (2턴).`);
             });
-            // 턴 종료 추가 공격을 위한 마커 버프
             caster.addBuff('truth_end_turn_attack_marker', '진리 추가 공격 대기', 1, { 
                 originalCasterId: caster.id,
-                power: 0.3, // (공격력+마법공격력)/2 의 0.3배
-                damageBaseStatAverage: true // 표식
+                power: 0.3,
+                damageBaseStatAverage: true
             });
             return true;
         }
@@ -340,14 +323,13 @@ const SKILLS = {
             const skillPower = damageType === 'physical' ? 2.0 : 2.5;
             const damage = calculateDamage(caster, target, skillPower, damageType);
             target.takeDamage(damage, battleLog, caster);
-            battleLog(`✦피해✦ ${caster.name}, [서막]: ${target.name}에게 ${damage.toFixed(0)} ${damageType === 'physical' ? '물리' : '마법'} 피해.`);
+            battleLog(`✦피해✦ ${caster.name}, [서막]: ${target.name}에게 ${damage} ${damageType === 'physical' ? '물리' : '마법'} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             
-            // [흠집] 디버프 적용
             target.addDebuff('scratch', '[흠집]', 2, { 
                 maxStacks: 3, 
-                overrideDuration: true, // 중첩 시 마지막 흠집 유지 시간에 따름 (addDebuff에서 처리)
-                removerSkillId: SKILLS.SKILL_CLIMAX.id, // 이 스킬로 제거됨을 명시 (선택적)
-                category: '표식' // 예시 카테고리
+                overrideDuration: true,
+                removerSkillId: SKILLS.SKILL_CLIMAX.id,
+                category: '표식'
             });
             const scratchStacks = target.getDebuffStacks('scratch');
             battleLog(`✦디버프✦ ${target.name}, [흠집] 효과 적용 (현재 ${scratchStacks}스택).`);
@@ -366,32 +348,29 @@ const SKILLS = {
             if (!target) { battleLog(`✦정보✦ ${caster.name} [절정]: 스킬 대상을 찾을 수 없습니다.`); return false; }
             if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [절정]: 대상 ${target.name}은(는) 이미 쓰러져 있습니다.`); return false; }
 
-            let statTypeToUse; // 'atk' 또는 'matk'
-            let damageType; // 'physical' 또는 'magical'
+            let statTypeToUse;
+            let damageType;
 
-            // 시전자 타입에 따른 주 스탯 및 데미지 타입 결정
             if (caster.type === "암석" || caster.type === "야수") {
                 statTypeToUse = 'atk';
                 damageType = 'physical';
             } else if (caster.type === "천체" || caster.type === "나무") {
                 statTypeToUse = 'matk';
                 damageType = 'magical';
-            } else { // 예외 처리 (기본 스탯 높은 쪽으로)
+            } else {
                 statTypeToUse = caster.getEffectiveStat('atk') >= caster.getEffectiveStat('matk') ? 'atk' : 'matk';
                 damageType = statTypeToUse === 'atk' ? 'physical' : 'magical';
             }
             const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
 
-            // 주 공격
-            const mainSkillPower = 2.7; // 270%
+            const mainSkillPower = 2.7;
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [절정] 공격.`);
             const mainDamage = calculateDamage(caster, target, mainSkillPower, damageType, statTypeToUse);
             target.takeDamage(mainDamage, battleLog, caster);
-            battleLog(`  ✦피해✦ [절정]: ${target.name}에게 ${mainDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+            battleLog(`  ✦피해✦ [절정]: ${target.name}에게 ${mainDamage} ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
 
-            if (!target.isAlive) return true; // 주 공격으로 대상 사망 시 종료
+            if (!target.isAlive) return true;
 
-            // [흠집] 스택 기반 추가 공격
             const scratchStacks = target.getDebuffStacks('scratch');
             if (scratchStacks > 0) {
                 battleLog(`✦효과✦ ${target.name} [흠집 ${scratchStacks}스택]: 추가타 발생.`);
@@ -400,14 +379,13 @@ const SKILLS = {
                 else if (scratchStacks === 2) bonusSkillPowerPercent = 0.35;
                 else if (scratchStacks >= 3) bonusSkillPowerPercent = 0.45;
 
-                for (let i = 0; i < 2; i++) { // 2회 추가 공격
+                for (let i = 0; i < 2; i++) {
                     const bonusDamage = calculateDamage(caster, target, bonusSkillPowerPercent, damageType, statTypeToUse);
                     target.takeDamage(bonusDamage, battleLog, caster);
-                    battleLog(`  ✦추가 피해✦ [흠집 효과] ${i + 1}회: ${target.name}에게 ${bonusDamage.toFixed(0)} 추가 ${damageTypeKorean} 피해.`);
-                    if (!target.isAlive) break; // 추가 공격 중 대상 사망 시 중단
+                    battleLog(`  ✦추가 피해✦ [흠집 효과] ${i + 1}회: ${target.name}에게 ${bonusDamage} 추가 ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+                    if (!target.isAlive) break;
                 }
 
-                // 모든 추가 공격 후 [흠집] 제거
                 if (target.isAlive) target.removeDebuffById('scratch');
                 battleLog(`✦정보✦ ${target.name}: [흠집] 효과 소멸.`);
             }
@@ -428,25 +406,24 @@ const SKILLS = {
 
             const damageType = caster.getEffectiveStat('atk') >= caster.getEffectiveStat('matk') ? 'physical' : 'magical';
             const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
-            const skillPower1 = damageType === 'physical' ? 1.9 : 2.4; // 2타 총합 계수
+            const skillPower1 = damageType === 'physical' ? 1.9 : 2.4;
 
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [간파] 2연타 공격.`);
             for (let i=0; i<2; i++) {
-                const damage1 = calculateDamage(caster, target, skillPower1 / 2, damageType); // 1타당 절반 계수
+                const damage1 = calculateDamage(caster, target, skillPower1 / 2, damageType);
                 target.takeDamage(damage1, battleLog, caster);
-                battleLog(`  ✦피해✦ [간파] ${i+1}타: ${target.name}에게 ${damage1.toFixed(0)} ${damageTypeKorean} 피해.`);
+                battleLog(`  ✦피해✦ [간파] ${i+1}타: ${target.name}에게 ${damage1} ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
                 if (!target.isAlive) return true;
             }
 
-            // 추가타 및 [쇠약] 부여
             const skillPower2 = damageType === 'physical' ? 0.5 : 0.7;
             const damage2 = calculateDamage(caster, target, skillPower2, damageType);
             target.takeDamage(damage2, battleLog, caster);
-            battleLog(`✦추가 피해✦ ${caster.name} [간파 효과]: ${target.name}에게 ${damage2.toFixed(0)} 추가 ${damageTypeKorean} 피해.`);
+            battleLog(`✦추가 피해✦ ${caster.name} [간파 효과]: ${target.name}에게 ${damage2} 추가 ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             if (!target.isAlive) return true;
             
             target.addDebuff('weakness', '[쇠약]', 2, { 
-                damageMultiplierReduction: 0.2, // 공격 시 피해량 20% 감소 (calculateDamage에서 이 디버프 확인 필요)
+                damageMultiplierReduction: 0.2,
                 category: '상태 이상'
             });
             battleLog(`✦상태 이상✦ ${target.name}, [쇠약] 효과 적용 (2턴).`);
@@ -459,7 +436,7 @@ const SKILLS = {
         name: "파열",
         type: "광역 공격",
         description: "균열은 가장 고요한 순간에 일어난다.<br><br> 시전자 타입 기반 주 목표에게 공/마공 210% 피해, 주 목표 제외 모든 적에게 공/마공 140% 피해. [쇠약] 상태 적에게 적중 시 추가로 공/마공 30% 고정 피해. (쿨타임 2턴)",
-        targetType: "single_enemy", // 주 목표 선택, 나머지는 자동 부 목표
+        targetType: "single_enemy",
         targetSelection: "enemy",
         cooldown: 3, 
         execute: (caster, mainTarget, allies, enemies, battleLog) => { 
@@ -486,20 +463,18 @@ const SKILLS = {
 
             battleLog(`✦스킬✦ ${caster.name}, [파열] 사용. 주 대상: ${mainTarget.name}.`);
 
-            // 주 목표 공격
             const mainSkillPower = 2.1;
             const mainDamage = calculateDamage(caster, mainTarget, mainSkillPower, damageType, statTypeToUse);
             mainTarget.takeDamage(mainDamage, battleLog, caster);
-            battleLog(`  ✦피해✦ [파열 주 대상] ${mainTarget.name}: ${mainDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+            battleLog(`  ✦피해✦ [파열 주 대상] ${mainTarget.name}: ${mainDamage} ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
 
             if (mainTarget.isAlive && mainTarget.hasDebuff('weakness')) {
                 const bonusFixedDamageValue = caster.getEffectiveStat(statTypeToUse) * 0.3;
-                const actualBonusFixedDamage = calculateDamage(caster, mainTarget, bonusFixedDamageValue, 'fixed'); // 고정 피해
+                const actualBonusFixedDamage = calculateDamage(caster, mainTarget, bonusFixedDamageValue, 'fixed');
                 mainTarget.takeDamage(actualBonusFixedDamage, battleLog, caster);
-                battleLog(`  ✦추가 피해✦ ${mainTarget.name} ([쇠약] 대상): ${actualBonusFixedDamage.toFixed(0)} 추가 고정 피해.`);
+                battleLog(`  ✦추가 피해✦ ${mainTarget.name} ([쇠약] 대상): ${actualBonusFixedDamage} 추가 고정 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             }
 
-            // 부 목표 공격
             const subTargets = enemies.filter(e => e.isAlive && e.id !== mainTarget.id);
             if (subTargets.length > 0) {
                 battleLog(`  ✦파열 부가 대상 공격 시작 (총 ${subTargets.length}명)`);
@@ -508,13 +483,13 @@ const SKILLS = {
                     if (!subTarget.isAlive) return;
                     const subDamage = calculateDamage(caster, subTarget, subSkillPower, damageType, statTypeToUse);
                     subTarget.takeDamage(subDamage, battleLog, caster);
-                    battleLog(`    ✦피해✦ [파열 부 대상] ${subTarget.name}: ${subDamage.toFixed(0)} ${damageTypeKorean} 피해.`);
+                    battleLog(`    ✦피해✦ [파열 부 대상] ${subTarget.name}: ${subDamage} ${damageTypeKorean} 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
 
                     if (subTarget.isAlive && subTarget.hasDebuff('weakness')) {
                         const bonusFixedDamageValueSub = caster.getEffectiveStat(statTypeToUse) * 0.3;
                         const actualBonusFixedDamageSub = calculateDamage(caster, subTarget, bonusFixedDamageValueSub, 'fixed');
                         subTarget.takeDamage(actualBonusFixedDamageSub, battleLog, caster);
-                        battleLog(`    ✦추가 피해✦ ${subTarget.name} ([쇠약] 대상): ${actualBonusFixedDamageSub.toFixed(0)} 추가 고정 피해.`);
+                        battleLog(`    ✦추가 피해✦ ${subTarget.name} ([쇠약] 대상): ${actualBonusFixedDamageSub} 추가 고정 피해.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
                     }
                 });
             }
@@ -537,26 +512,23 @@ const SKILLS = {
                 return false;
             }
             
-            // 1. 잃은 체력 비례 회복
             const lostHp = target.maxHp - target.currentHp;
-            const healAmount = lostHp * 0.5;
+            const healAmount = Math.round(lostHp * 0.5);
             target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
-            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용!`);
-            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount.toFixed(0)} 회복. (HP: ${target.currentHp.toFixed(0)})`);
+            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용.`);
+            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount} 회복. (HP: ${target.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
 
-            // 2. 모든 상태 이상 정화
             if (target.debuffs.length > 0) {
                 const cleansedDebuffs = target.debuffs.map(d => d.name).join(', ');
                 target.debuffs = [];
                 battleLog(`✦정화✦ ${target.name}: 모든 디버프(${cleansedDebuffs})가 정화되었습니다.`);
             }
 
-            // 3. 시전자 [환원] 상태 진입
             caster.addBuff('restoration', '[환원]', 3, {
                 description: "스킬 시전 시 체력이 가장 낮은 아군 추가 회복 (3턴).",
-                healPower: caster.getEffectiveStat('def') * 0.6
+                healPower: Math.round(caster.getEffectiveStat('def') * 0.6)
             });
-            battleLog(`✦버프✦ ${caster.name}: [환원] 상태가 되어, 3턴간 스킬 사용 시 아군을 추가 회복합니다.`);
+            battleLog(`✦버프✦ ${caster.name}: [환원] 상태가 되어 3턴간 스킬 사용 시 아군을 추가 회복합니다.`);
             
             return true;
         }
@@ -576,19 +548,17 @@ const SKILLS = {
                 return false;
             }
             
-            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [보상] 사용!`);
+            battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [보상] 사용.`);
             
-            // 1. 시전자 고정 피해
-            const selfDamage = caster.maxHp * 0.15;
-            caster.takeDamage(selfDamage, battleLog, null); // 자신에게 고정 피해, 공격자 없음
-            battleLog(`✦소모✦ ${caster.name}: 스킬 대가로 ${selfDamage.toFixed(0)}의 피해를 입습니다.`);
+            const selfDamage = Math.round(caster.maxHp * 0.15);
+            caster.takeDamage(selfDamage, battleLog, null);
+            battleLog(`✦소모✦ ${caster.name}: 스킬 대가로 ${selfDamage}의 피해를 입습니다.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             
-            if (!caster.isAlive) return true; // 대가로 쓰러지면 스킬 종료
+            if (!caster.isAlive) return true;
 
-            // 2. 대상에게 [전이] 부여
             target.addDebuff('transfer', '[전이]', 2, {
                 description: "피격 시 공격자를 (자신의 공격력x100%)만큼 회복시킴.",
-                casterId: caster.id // 혹시 몰라 시전자 정보 저장
+                casterId: caster.id
             });
             battleLog(`✦디버프✦ ${target.name}: [전이] 상태가 되었습니다 (2턴).`);
 
@@ -603,32 +573,30 @@ const SKILLS = {
         type: "광역 버프",
         description: "희생은 언제나 숭고하다. 그러나 희생자는 누가 구할 것인가.<br><br>1) 시전자 (전체 체력x20%) 차감<br>2) 시전자 제외 전원 (잃은 체력x70%) 회복<br>3) [면역] 1회 부여. <br>[면역] 상태 시, 이후 상태 이상 1회 무조건 적용되지 않음.",
         targetType: "all_allies",
-        targetSelection: "all_allies", // UI는 전체선택, 로직은 자신 제외
+        targetSelection: "all_allies",
         execute: (caster, allies, enemies, battleLog) => {
-            battleLog(`✦스킬✦ ${caster.name}, [침전] 사용!`);
+            battleLog(`✦스킬✦ ${caster.name}, [침전] 사용.`);
 
-            // 1. 시전자 체력 차감
-            const hpCost = caster.maxHp * 0.2;
+            const hpCost = Math.round(caster.maxHp * 0.2); 
             caster.currentHp -= hpCost;
-            battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost.toFixed(0)}을 소모합니다.`);
+            battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost}을 소모합니다.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             if (caster.currentHp <= 0) {
-                caster.currentHp = 1; // 최소 체력 1로 생존
+                caster.currentHp = 1;
                 battleLog(`✦효과✦ ${caster.name}, 쓰러지기 직전이지만 효과는 발동됩니다.`);
             }
 
-            // 2 & 3. 시전자 제외 아군 회복 및 면역 부여
             allies.filter(a => a.isAlive && a.id !== caster.id).forEach(ally => {
                 const lostHp = ally.maxHp - ally.currentHp;
                 if (lostHp > 0) {
-                    const healAmount = lostHp * 0.7;
+                    const healAmount = Math.round(lostHp * 0.7); 
                     ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
-                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount.toFixed(0)} 회복. (HP: ${ally.currentHp.toFixed(0)})`);
+                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount} 회복. (HP: ${ally.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
                 }
-                ally.addBuff('immunity', '[면역]', 2, { // 2턴 지속. 사용 즉시 사라짐.
+                ally.addBuff('immunity', '[면역]', 2, {
                     description: "다음 상태 이상 공격을 1회 무효화합니다.",
                     singleUse: true
                 });
-                battleLog(`✦버프✦ ${ally.name}: [면역] 효과를 얻었습니다 (1회).`);
+                battleLog(`✦버프✦ ${ally.name}: [면역] 효과를 얻었습니다. (1회)`);
             });
 
             return true;
@@ -641,31 +609,28 @@ const SKILLS = {
         name: "차연",
         type: "광역 버프",
         description: "자기희생의 완결은 영원히 지연된다. 우리의 마음에 남아.<br><br>1) 시전자 (전체 체력x15%) 타격(고정 피해)<br>2) 시전자 (전체 체력x30%) 회복<br>3) 전원 [흔적] 상태 진입. <br>[흔적] 상태 시, 피격당한 아군의 현재 체력이 50% 이하라면 시전자가 (전체 체력x5%)를 잃고 아군 (전체 체력x25%) 회복 3턴 지속, 연달아 사용하더라도 최대 3턴",
-        targetType: "all_allies", // 실제 효과는 '전원'에게 적용
+        targetType: "all_allies",
         targetSelection: "all_allies",
         execute: (caster, allies, enemies, battleLog) => {
-            battleLog(`✦스킬✦ ${caster.name}, [차연] 사용!`);
+            battleLog(`✦스킬✦ ${caster.name}, [차연] 발동.`);
             
-            // 1. 시전자 고정 피해
-            const selfDamage = caster.maxHp * 0.15;
+            const selfDamage = Math.round(caster.maxHp * 0.15); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
             caster.takeDamage(selfDamage, battleLog, null);
-            battleLog(`✦소모✦ ${caster.name}: 스킬 사용을 위해 ${selfDamage.toFixed(0)}의 피해를 입습니다.`);
+            battleLog(`✦소모✦ ${caster.name}: 스킬 사용을 위해 ${selfDamage}의 피해를 입습니다.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
             
             if (!caster.isAlive) return true;
 
-            // 2. 시전자 체력 회복
-            const selfHeal = caster.maxHp * 0.3;
+            const selfHeal = Math.round(caster.maxHp * 0.3); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
             caster.currentHp = Math.min(caster.maxHp, caster.currentHp + selfHeal);
-            battleLog(`✦회복✦ ${caster.name}: 체력 ${selfHeal.toFixed(0)} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
+            battleLog(`✦회복✦ ${caster.name}: 체력 ${selfHeal} 회복. (HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
 
-            // 3. 전원에게 [흔적] 부여 (아군, 적군 포함)
             const allCharacters = [...allies, ...enemies];
             allCharacters.filter(c => c.isAlive).forEach(character => {
                 character.addBuff('trace', '[흔적]', 3, {
                     description: "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
                     originalCasterId: caster.id
                 });
-                battleLog(`✦버프✦ ${character.name}: [흔적] 상태가 되었습니다 (3턴).`);
+                battleLog(`✦버프✦ ${character.name}: [흔적] 상태가 되었습니다. (3턴)`);
             });
 
             return true;
@@ -999,83 +964,85 @@ class Character {
         this.lastAttackedBy = attacker ? attacker.id : null;
     
         // 반격 로직 ([응수], [격노], [역습])
-        if (attacker && attacker.isAlive && actualHpLoss > 0) {
-            const alliesOfAttacked = allyCharacters.includes(this) ? allyCharacters : enemyCharacters;
-            const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters; // 공격자의 적 = 피격자 편
+if (attacker && attacker.isAlive && actualHpLoss > 0) {
+    const alliesOfAttacked = allyCharacters.includes(this) ? allyCharacters : enemyCharacters;
+    const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters; // 공격자의 적 = 피격자 편
 
-            // 1. 피격자 본인 또는 아군이 [응수]/[격노] 버프를 가졌을 때
-            // 피격자 본인
-            if (this.hasBuff('riposte_stance')) { 
-                let highestHpEnemies = [];
-                let maxHp = -1;
-                enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => { // 여기서 enemies는 항상 모든 적군 리스트
-                    if (enemy.currentHp > maxHp) { maxHp = enemy.currentHp; highestHpEnemies = [enemy]; }
-                    else if (enemy.currentHp === maxHp) { highestHpEnemies.push(enemy); }
-                });
-                if (highestHpEnemies.length > 0) {
-                    const targetEnemy = highestHpEnemies.length === 1 ? highestHpEnemies[0] : highestHpEnemies[Math.floor(Math.random() * highestHpEnemies.length)];
-                    const counterDmg = actualHpLoss * 1.5;
-                    logFn(`✦반격✦ ${this.name} ([응수]), ${targetEnemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
-                    targetEnemy.takeDamage(counterDmg, logFn, this);
-                }
-            } else if (this.hasBuff('fury_stance')) { 
-                const counterDmg = actualHpLoss * 1.5;
+    // 1. 피격자 본인 또는 아군이 [응수]/[격노] 버프를 가졌을 때
+    // 피격자 본인
+    if (this.hasBuff('riposte_stance')) { 
+        let highestHpEnemies = [];
+        let maxHp = -1;
+        enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
+            if (enemy.currentHp > maxHp) { maxHp = enemy.currentHp; highestHpEnemies = [enemy]; }
+            else if (enemy.currentHp === maxHp) { highestHpEnemies.push(enemy); }
+        });
+        if (highestHpEnemies.length > 0) {
+            const targetEnemy = highestHpEnemies.length === 1 ? highestHpEnemies[0] : highestHpEnemies[Math.floor(Math.random() * highestHpEnemies.length)];
+            const counterDmg = Math.round(actualHpLoss * 1.5); 
+            logFn(`✦반격✦ ${this.name} ([응수]), ${targetEnemy.name}에게 ${counterDmg} 피해.`);
+            targetEnemy.takeDamage(counterDmg, logFn, this);
+        }
+    } else if (this.hasBuff('fury_stance')) { 
+        const counterDmg = Math.round(actualHpLoss * 1.5); 
+        enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
+            logFn(`✦반격✦ ${this.name} ([격노]), ${enemy.name}에게 ${counterDmg} 피해.`);
+            enemy.takeDamage(counterDmg, logFn, this);
+        });
+    }
+
+    // 피격자의 아군 (피격자 자신 제외)
+    alliesOfAttacked.forEach(allyCaster => {
+        if (allyCaster.isAlive && allyCaster.id !== this.id) {
+            if (allyCaster.hasBuff('riposte_stance')) { 
+                let lowestHpEnemies = [];
+                let minHp = Infinity;
                 enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
-                    logFn(`✦반격✦ ${this.name} ([격노]), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
-                    enemy.takeDamage(counterDmg, logFn, this);
+                    if (enemy.currentHp < minHp) { minHp = enemy.currentHp; lowestHpEnemies = [enemy];}
+                    else if (enemy.currentHp === minHp) { lowestHpEnemies.push(enemy); }
                 });
-            }
-
-            // 피격자의 아군 (피격자 자신 제외)
-            alliesOfAttacked.forEach(allyCaster => {
-                if (allyCaster.isAlive && allyCaster.id !== this.id) {
-                    if (allyCaster.hasBuff('riposte_stance')) { 
-                        let lowestHpEnemies = [];
-                        let minHp = Infinity;
-                        enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => {
-                            if (enemy.currentHp < minHp) { minHp = enemy.currentHp; lowestHpEnemies = [enemy];}
-                            else if (enemy.currentHp === minHp) { lowestHpEnemies.push(enemy); }
-                        });
-                        if (lowestHpEnemies.length > 0) {
-                            const targetEnemy = lowestHpEnemies.length === 1 ? lowestHpEnemies[0] : lowestHpEnemies[Math.floor(Math.random() * lowestHpEnemies.length)];
-                            const counterDmg = actualHpLoss * 0.5; 
-                            logFn(`✦반격✦ ${allyCaster.name} ([응수] 발동, ${this.name} 피격), ${targetEnemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
-                            targetEnemy.takeDamage(counterDmg, logFn, allyCaster);
-                        }
-                    } else if (allyCaster.hasBuff('fury_stance')) { 
-                        const counterDmg = actualHpLoss * 0.5; 
-                        enemies.filter(e => e.isAlive).forEach(enemy => {
-                            logFn(`✦반격✦ ${allyCaster.name} ([격노] 발동, ${this.name} 피격), ${enemy.name}에게 ${counterDmg.toFixed(0)} 피해.`);
-                            enemy.takeDamage(counterDmg, logFn, allyCaster);
-                        });
-                    }
+                if (lowestHpEnemies.length > 0) {
+                    const targetEnemy = lowestHpEnemies.length === 1 ? lowestHpEnemies[0] : lowestHpEnemies[Math.floor(Math.random() * lowestHpEnemies.length)];
+                    const counterDmg = Math.round(actualHpLoss * 0.5);
+                    logFn(`✦반격✦ ${allyCaster.name} ([응수] 발동, ${this.name} 피격), ${targetEnemy.name}에게 ${counterDmg} 피해.`);
+                    targetEnemy.takeDamage(counterDmg, logFn, allyCaster);
                 }
-            });
-
-            // [역습] 로직 (피격자 본인만 해당)
-            if (this.hasBuff('reversal_active')) {
-                const storedDamage = this.aggroDamageStored || 0; // 도발로 저장된 피해
-                let reversalDamage = 0;
-                let reversalDamageType = '';
-                let reversalDamageTypeKr = '';
-
-                if (currentTurn % 2 !== 0) { // 홀수 턴
-                    reversalDamage = (this.getEffectiveStat('atk') + storedDamage) * 1.5;
-                    reversalDamageType = 'physical';
-                    reversalDamageTypeKr = '물리';
-                } else { // 짝수 턴
-                    reversalDamage = (this.getEffectiveStat('matk') + storedDamage) * 1.5;
-                    reversalDamageType = 'magical';
-                    reversalDamageTypeKr = '마법';
-                }
-                if (reversalDamage > 0) {
-                    logFn(`✦역습✦ ${this.name} ([역습] 발동, [도발] 저장 피해: ${storedDamage.toFixed(0)}): ${attacker.name}에게 ${reversalDamage.toFixed(0)} ${reversalDamageTypeKr} 피해.`);
-                    attacker.takeDamage(reversalDamage, logFn, this); // 공격한 적에게 피해
-                }
-                this.aggroDamageStored = 0; // 역습 후 도발 저장량 초기화
-                this.removeBuffById('reversal_active'); // 역습 버프 제거
+            } else if (allyCaster.hasBuff('fury_stance')) { 
+                const counterDmg = Math.round(actualHpLoss * 0.5); 
+                enemiesOfAttacked.filter(e => e.isAlive).forEach(enemy => { 
+                    logFn(`✦반격✦ ${allyCaster.name} ([격노] 발동, ${this.name} 피격), ${enemy.name}에게 ${counterDmg} 피해.`);
+                    enemy.takeDamage(counterDmg, logFn, allyCaster);
+                });
             }
         }
+    });
+
+    // [역습] 로직 (피격자 본인만 해당)
+    if (this.hasBuff('reversal_active')) {
+        const storedDamage = this.aggroDamageStored || 0; 
+        let reversalDamage = 0;
+        let reversalDamageType = '';
+        let reversalDamageTypeKr = '';
+
+        if (currentTurn % 2 !== 0) { // 홀수 턴
+            reversalDamage = (this.getEffectiveStat('atk') + storedDamage) * 1.5;
+            reversalDamageType = 'physical';
+            reversalDamageTypeKr = '물리';
+        } else { // 짝수 턴
+            reversalDamage = (this.getEffectiveStat('matk') + storedDamage) * 1.5;
+            reversalDamageType = 'magical';
+            reversalDamageTypeKr = '마법';
+        }
+
+        reversalDamage = Math.round(reversalDamage);
+        if (reversalDamage > 0) {
+            logFn(`✦스킬✦ ${this.name} ([역습] 발동, [도발] 저장 피해: ${storedDamage.toFixed(0)}): ${attacker.name}에게 ${reversalDamage} ${reversalDamageTypeKr} 피해.`);
+            attacker.takeDamage(reversalDamage, logFn, this); // 공격한 적에게 피해
+        }
+        this.aggroDamageStored = 0;
+        this.removeBuffById('reversal_active'); 
+    }
+}
     
         // 피해 반사 (일반적인 반사 버프)
         const reflectBuff = this.buffs.find(b => b.effect.type === 'damage_reflect' && b.turnsLeft > 0);
@@ -1425,13 +1392,13 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
         baseAttackStat = attacker.getEffectiveStat(statTypeToUse || 'matk');
         defenseStat = defender.getEffectiveStat('mdef');
     } else if (damageType === 'fixed') {
-        return Math.max(0, actualSkillPower); // 고정 피해는 방어력 무시
+        return Math.round(Math.max(0, skillPower)); // 고정 피해도 반올림
     } else { // 알 수 없는 타입
         return 0;
     }
 
     let damage = (baseAttackStat * actualSkillPower) - defenseStat;
-    return Math.max(0, damage); // 최소 피해량은 0
+    return Math.round(Math.max(0, damage)); // 최종 피해량을 반올림
 }
 
 function applyTurnStartEffects(character) {
@@ -1478,7 +1445,7 @@ function applyTurnStartEffects(character) {
 
     character.debuffs = character.debuffs.filter(debuff => {
         if (debuff.id === 'poison_truth' && debuff.turnsLeft > 0 && debuff.effect.type === 'fixed') { // 진리 중독
-            const poisonDamage = debuff.effect.damagePerTurn;
+            const roundedDamage = Math.round(debuff.effect.damagePerTurn);
             logToBattleLog(`✦상태 피해✦ ${character.name}, [${debuff.name} 효과]: ${poisonDamage.toFixed(0)} 고정 피해.`);
             character.takeDamage(poisonDamage, logToBattleLog, findCharacterById(debuff.effect.casterId) || null); 
         }
