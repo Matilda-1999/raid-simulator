@@ -346,7 +346,7 @@ const SKILLS = {
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
             if (!target) { battleLog(`✦정보✦ ${caster.name} [절정]: 스킬 대상을 찾을 수 없습니다.`); return false; }
-            if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [절정]: 대상 ${target.name}은(는) 이미 쓰러져 있습니다.`); return false; }
+            if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [절정]: 대상(${target.name})이 이미 쓰러져 있습니다.`); return false; }
 
             let statTypeToUse;
             let damageType;
@@ -402,7 +402,7 @@ const SKILLS = {
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
             if (!target) { battleLog(`✦정보✦ ${caster.name} [간파]: 스킬 대상을 찾을 수 없습니다.`); return false; }
-            if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [간파]: 대상 ${target.name}은(는) 이미 쓰러져 있습니다.`); return false;}
+            if (!target.isAlive) { battleLog(`✦정보✦ ${caster.name} [간파]: 대상(${target.name})이 이미 쓰러져 있습니다.`); return false;}
 
             const damageType = caster.getEffectiveStat('atk') >= caster.getEffectiveStat('matk') ? 'physical' : 'magical';
             const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
@@ -800,6 +800,7 @@ class Character {
 
         this.gimmicks = []; // 몬스터가 가진 기믹 목록
         this.activeGimmick = null; // 현재 활성화된 기믹 ID
+        this.isEnraged = false;
 
         this.posX = -1; 
         this.posY = -1; 
@@ -1600,6 +1601,11 @@ function prepareNewTurnCycle() {
     currentTurn++;
     enemyPreviewAction = null; // 이전 턴의 예고 정보 초기화
 
+    // 모든 적 캐릭터에 대해 광폭화 조건을 확인합니다.
+    enemyCharacters.forEach(enemy => {
+        checkAndApplyEnrage(enemy, logToBattleLog);
+    });
+    
     logToBattleLog(`\n--- ${currentTurn} 턴 행동 선택 시작 ---`);
 
     // 맵 ID가 'B-1'일 경우에만 4턴마다 추가 몬스터를 소환합니다.
@@ -2136,7 +2142,7 @@ function previewEnemyAction(enemyChar) {
         });
     }
     
-    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다!`);
+    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다.`);
 
     return {
         casterId: enemyChar.id,
@@ -2173,13 +2179,60 @@ function previewEnemyAction(enemyChar) {
         });
     }
     
-    logToBattleLog(`✦예고✦ ${enemyChar.name}이(가) [${skillToUse.name}]을(를) 시전하려 합니다!`);
+    logToBattleLog(`✦예고✦ ${enemyChar.name}, [${skillToUse.name}]을(를) 시전하려 합니다.`);
 
     return {
         casterId: enemyChar.id,
         skillId: skillToUse.id,
         hitArea: hitArea
     };
+}
+
+const ENRAGE_TURN_THRESHOLD = 20; // 광폭화 페이즈 돌입 턴
+const ENRAGE_HP_THRESHOLD = 0.20; // 광폭화 페이즈 돌입 체력 비율 (20%)
+
+/**
+ * 대상 캐릭터의 광폭화 조건을 확인하고, 만족 시 광폭화 효과를 적용하는 함수
+ * @param {Character} character - 확인할 캐릭터 (적)
+ * @param {function} battleLog - 전투 로그를 기록할 함수
+ */
+function checkAndApplyEnrage(character, battleLog) {
+    // 이미 광폭화 상태이거나, 쓰러진 캐릭터는 확인하지 않습니다.
+    if (!character.isAlive || character.isEnraged) {
+        return;
+    }
+
+    const hpPercentage = character.currentHp / character.maxHp;
+    let enrageTriggered = false;
+    let triggerReason = "";
+
+    // 조건 1: 특정 턴 수 초과
+    if (currentTurn > ENRAGE_TURN_THRESHOLD) {
+        triggerReason = `${ENRAGE_TURN_THRESHOLD}턴 경과`;
+        enrageTriggered = true;
+    } 
+    // 조건 2: 체력이 20% 이하
+    else if (hpPercentage <= ENRAGE_HP_THRESHOLD) {
+        triggerReason = `체력 ${Math.round(ENRAGE_HP_THRESHOLD * 100)}% 이하`;
+        enrageTriggered = true;
+    }
+
+    // 조건 만족 시 광폭화 효과 적용
+    if (enrageTriggered) {
+        character.isEnraged = true; // 광폭화 상태로 변경 (중복 적용 방지)
+        battleLog(`✦광폭화✦ ${triggerReason} ${character.name}, 분노에 휩싸입니다.`);
+
+        // 모든 스탯 1.5배 증가
+        character.atk = Math.round(character.atk * 1.5);
+        character.matk = Math.round(character.matk * 1.5);
+        character.def = Math.round(character.def * 1.5);
+        character.mdef = Math.round(character.mdef * 1.5);
+        
+        battleLog(`  ✦효과✦ ${character.name}의 모든 능력치가 1.5배 증가합니다.`);
+        
+        // 변경된 스탯을 UI에 즉시 반영
+        displayCharacters(); 
+    }
 }
 
 async function performEnemyAction(enemyChar) {
@@ -2262,11 +2315,11 @@ function checkBattleEnd() {
     const allAlliesDead = allyCharacters.every(char => !char.isAlive);
 
     if (enemyCharacters.length > 0 && allEnemiesDead) { 
-        logToBattleLog('--- 모든 적을 물리쳤습니다. 전투 승리. 🎉 ---');
+        logToBattleLog('--- 모든 적을 물리쳤습니다. 전투 승리.  ---');
         endBattle();
         return true;
     } else if (allyCharacters.length > 0 && allAlliesDead) { 
-        logToBattleLog('--- 모든 아군이 쓰러졌습니다. 전투 패배. 😭 ---');
+        logToBattleLog('--- 모든 아군이 쓰러졌습니다. 전투 패배.  ---');
         endBattle();
         return true;
     }
@@ -2275,7 +2328,7 @@ function checkBattleEnd() {
 
 function endBattle() {
     isBattleStarted = false;
-    logToBattleLog("--- 전투 종료 ---");
+    logToBattleLog("=== 전투 종료 ===");
 
     if (startButton) startButton.style.display = 'block';
     if (nextTurnButton && nextTurnButton.style.display !== 'none') nextTurnButton.style.display = 'none';
@@ -2286,7 +2339,7 @@ function endBattle() {
     currentTurn = 0; 
     playerActionsQueue = [];
     actedAlliesThisTurn = [];
-    // 캐릭터 위치 등은 유지하거나, 초기화면으로 돌아가는 로직 추가 가능
+    // 캐릭터 위치 등은 유지하거나, 초기 화면으로 돌아가는 로직 추가 가능
 }
 
 function findCharacterById(id) {
