@@ -11,8 +11,8 @@ const MONSTER_TEMPLATES = {
     "Terrmor_1": {
         name: "테르모르",
         type: "암석",
-        maxHp: 500,
-        atk: 35,
+        maxHp: 3000,
+        atk: 45,
         matk: 20,
         def: 35,
         mdef: 20,
