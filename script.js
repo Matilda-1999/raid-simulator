@@ -885,6 +885,16 @@ class Character {
         return this.debuffs.some(d => d.id === id && d.turnsLeft > 0);
     }
 
+    removeDebuffById(id) {
+        const debuffIndex = this.debuffs.findIndex(d => d.id === id);
+        if (debuffIndex > -1) {
+            const removedDebuff = this.debuffs[debuffIndex];
+            // 디버프 제거 시 특별한 효과가 있다면 여기에 추가 (예: 보호막 감소 등)
+            // 현재는 특별한 효과가 없으므로 배열에서 제거만 합니다.
+            this.debuffs.splice(debuffIndex, 1);
+        }
+    }
+    
     removeBuffById(id) {
         const buffIndex = this.buffs.findIndex(b => b.id === id && !b.unremovable);
         if (buffIndex > -1) {
