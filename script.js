@@ -1444,7 +1444,7 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
         
         this.debuffs.forEach(debuff => {
             if (debuff.turnsLeft > 0 && debuff.effect) {
-                // [흠집
+                // [흠집]
                 if (debuff.id === 'scratch' && debuff.effect.reductionType === statName && debuff.stacks > 0) {
                     const reductionValue = debuff.effect.reductionValue || 0.10; // 기본값 10%
                     value *= (1 - reductionValue); 
@@ -1664,6 +1664,7 @@ characterPositions = {};
 
 // 변경된 캐릭터 목록과 맵을 화면에 다시 그립니다.
 displayCharacters();
+}
 
 /**
  * 지정된 템플릿 ID와 스폰 위치를 기반으로 몬스터를 소환
