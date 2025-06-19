@@ -697,7 +697,7 @@ const SKILLS = {
     }
 };
 
-    // --- 신규 추가: 몬스터 전용 스킬 객체 ---
+    // --- 몬스터 전용 스킬 객체 ---
     const MONSTER_SKILLS = {
         SKILL_Seismic_Fissure: {
             id: "SKILL_Seismic_Fissure",
@@ -716,7 +716,7 @@ const SKILLS = {
             
             enemies.forEach(target => {
                 if (hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                    battleLog(`✦광역 피해✦ ${caster.name}의 [균열의 진동]이 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [균열의 진동]이 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -743,7 +743,7 @@ const SKILLS = {
 
             if (silenceDuration > 0) {
                 targets.forEach(target => {
-                    battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 메아리]가 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 메아리]가 ${target.name}에게 적중.`);
                     target.addDebuff('silence', '[침묵]', silenceDuration, {
                         description: `버프, 디버프, 치료, 카운터 유형 주문 사용 불가 (${silenceDuration}턴)`
                     });
@@ -1421,11 +1421,11 @@ function loadMap(mapId) {
 }
 
 /**
- * 지정된 템플릿 ID와 스폰 위치를 기반으로 몬스터를 소환하는 함수입니다.
- * Mapdata.js에 정의된 SPAWN_POINTS 목록을 순서대로 확인하여
- * 비어있는 첫 번째 위치에 몬스터를 소환합니다.
+ * 지정된 템플릿 ID와 스폰 위치를 기반으로 몬스터를 소환
+ * Mapdata.js에 정의된 SPAWN_POINTS 목록을 순서대로 확인하여 비어 있는 첫 번째 위치에 몬스터를 소환합니다.
  * @param {string} monsterTemplateId - 소환할 몬스터의 템플릿 ID (예: "Clown", "Pierrot")
  */
+    
 function summonMonster(monsterTemplateId) {
     const template = MONSTER_TEMPLATES[monsterTemplateId];
     if (!template) {
@@ -1439,7 +1439,7 @@ function summonMonster(monsterTemplateId) {
         return;
     }
 
-    // 지정된 스폰 지점 목록에서 순서대로 비어있는 위치를 찾습니다.
+    // 지정된 스폰 지점 목록에서 순서대로 비어 있는 위치를 찾습니다.
     let spawnPos = null;
     for (const pos of spawnPoints) {
         if (!characterPositions[`${pos.x},${pos.y}`]) {
