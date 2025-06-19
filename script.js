@@ -2378,6 +2378,9 @@ async function executeSingleAction(action) {
                 case 'single_ally_or_self': // execute(caster, target, allies, enemies, battleLog)
                     skillSuccess = skill.execute(caster, mainTarget, actualAllies, actualEnemies, logToBattleLog);
                     break;
+                case 'single_ally_or_gimmick': 
+                    skillSuccess = skill.execute(caster, mainTarget, actualAllies, actualEnemies, logToBattleLog);
+                    break;
                 case 'multi_enemy': // 예: 파열 execute(caster, mainTarget, subTarget(내부결정), allies, enemies, battleLog)
                                     // 파열의 경우 subTarget을 파라미터로 받지 않고 내부에서 enemies와 mainTarget을 이용해 결정
                     skillSuccess = skill.execute(caster, mainTarget, actualAllies, actualEnemies, logToBattleLog); // subTarget은 execute 내부에서 처리
