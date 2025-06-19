@@ -1,10 +1,3 @@
-// Mapdata.js
-
-/**
- * 몬스터의 기본 정보 템플릿입니다.
- * 'map/monster data - 몬스터 데이터.csv' 파일의 내용을 기반으로 합니다.
- * 지금은 렌더링에 필요한 이름과 타입 정보만 사용합니다.
- */
 
 const MONSTER_TEMPLATES = {
     // 1. 고정 타입을 갖는 몬스터
@@ -152,51 +145,68 @@ const SPAWN_POINTS = {
 };
 
 /**
- * 맵 그리드와 캐릭터 위치를 화면에 그리는 함수입니다.
+ * 맵 그리드와 캐릭터 위치를 화면에 그리는 함수
  */
-function renderMapGrid(mapContainerElement, allyChars, enemyChars, activeAreaEffects = [], previewedHitArea = []) {
+function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [], activeAreaEffects = [], previewedHitArea = []) { // mapObjs 파라미터 추가
     if (!mapContainerElement) return;
     mapContainerElement.innerHTML = '';
 
-    // 예고된 스킬 범위를 Set으로 만들어 빠른 조회를 위함
     const previewCoordSet = new Set(previewedHitArea.map(p => `${p.x},${p.y}`));
-
     const clownSpawns = new Set(SPAWN_POINTS.Clown.map(p => `${p.x},${p.y}`));
     const pierrotSpawns = new Set(SPAWN_POINTS.Pierrot.map(p => `${p.x},${p.y}`));
 
-    const gridCharMap = {};
+    const gridContentMap = {}; // 캐릭터와 오브젝트를 함께 관리
     [...allyChars, ...enemyChars].forEach(char => {
         if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
             const key = `${char.posX},${char.posY}`;
-            if (!gridCharMap[key]) gridCharMap[key] = [];
-            const nameInitial = char.name.length > 1 ? char.name.substring(0,2) : char.name.substring(0,1);
-            gridCharMap[key].push({ initial: nameInitial, team: (allyChars.includes(char) ? 'ally' : 'enemy') });
+            if (!gridContentMap[key]) gridContentMap[key] = [];
+            const nameInitial = char.name.length > 1 ? char.name.substring(0, 2) : char.name.substring(0, 1);
+            gridContentMap[key].push({
+                type: 'character',
+                initial: nameInitial,
+                team: (allyChars.includes(char) ? 'ally' : 'enemy')
+            });
         }
     });
 
-    for (let y = 0; y < MAP_HEIGHT; y++) {
+    // 맵 오브젝트 렌더링 로직 추가
+    mapObjs.forEach(obj => {
+        const key = `${obj.posX},${obj.posY}`;
+        if (!gridContentMap[key]) gridContentMap[key] = [];
+        gridContentMap[key].push({
+            type: 'gimmick',
+            gimmickType: obj.type, // 'fruit', 'fissure', 'spring'
+            obj: obj
+        });
+    });
+
+    for (let y = 0; y < 5; y++) { // MAP_HEIGHT 대신 5 사용
         const rowDiv = document.createElement('div');
         rowDiv.className = 'map-row';
-        for (let x = 0; x < MAP_WIDTH; x++) {
+        for (let x = 0; x < 5; x++) { // MAP_WIDTH 대신 5 사용
             const cellDiv = document.createElement('div');
             cellDiv.className = 'map-cell';
             const key = `${x},${y}`;
 
-            // 스폰 지점에 CSS 클래스 추가
             if (clownSpawns.has(key)) cellDiv.classList.add('clown-spawn');
             if (pierrotSpawns.has(key)) cellDiv.classList.add('pierrot-spawn');
+            if (previewCoordSet.has(key)) cellDiv.classList.add('skill-preview-zone');
 
-            // 신규 추가: 스킬 예고 범위에 CSS 클래스 추가
-            if (previewCoordSet.has(key)) {
-                cellDiv.classList.add('skill-preview-zone');
-            }
-
-            if (gridCharMap[key]) {
-                gridCharMap[key].forEach(c => {
-                    const charMarker = document.createElement('span');
-                    charMarker.className = `char-marker ${c.team}`;
-                    charMarker.textContent = c.initial;
-                    cellDiv.appendChild(charMarker);
+            if (gridContentMap[key]) {
+                gridContentMap[key].forEach(c => {
+                    const marker = document.createElement('div');
+                    if (c.type === 'character') {
+                        marker.className = `char-marker ${c.team}`;
+                        marker.textContent = c.initial;
+                    } else if (c.type === 'gimmick') {
+                        marker.className = `gimmick-object gimmick-${c.gimmickType}`;
+                        if (c.gimmickType === 'fruit') marker.textContent = '🌱';
+                        if (c.gimmickType === 'fissure') marker.textContent = '💥';
+                        if (c.gimmickType === 'spring') {
+                             marker.textContent = `${c.obj.healingReceived}/${c.obj.healingGoal}`;
+                        }
+                    }
+                    cellDiv.appendChild(marker);
                 });
             }
             rowDiv.appendChild(cellDiv);
