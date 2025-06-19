@@ -1614,116 +1614,56 @@ function loadMap(mapId) {
     enemyCharacters = []; // 적군 목록 초기화
     
     mapConfig.enemies.forEach(mapEnemy => {
-        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
-        if (!template) {
-            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-            return;
-        }
-        let monsterType;
-        if (Array.isArray(template.type)) {
-            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
-        } else {
-            monsterType = template.type;
-        }
-        const newEnemy = new Character(template.name, monsterType);
-        
-        newEnemy.maxHp = template.maxHp || 100;
-        newEnemy.currentHp = newEnemy.maxHp;
-        newEnemy.atk = template.atk || 15;
-        newEnemy.matk = template.matk || 15;
-        newEnemy.def = template.def || 15;
-        newEnemy.mdef = template.mdef || 15;
-        newEnemy.skills = template.skills ? [...template.skills] : [];
-        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
-
-        const posX = mapEnemy.pos.x;
-        const posY = mapEnemy.pos.y;
-        
-        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-            newEnemy.posX = posX;
-            newEnemy.posY = posY;
-        } else {
-            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
-            const randomCell = getRandomEmptyCell();
-            if (randomCell) {
-                newEnemy.posX = randomCell.x;
-                newEnemy.posY = randomCell.y;
-            }
-        }
-        enemyCharacters.push(newEnemy);
-        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
-    });
-
-    // --- 아군 위치 보존 로직 ---
-    const newCharacterPositions = {};
-    // 1. 기존 아군 위치 먼저 등록
-    allyCharacters.forEach(char => {
-        if (char.posX !== -1 && char.posY !== -1) {
-            newCharacterPositions[`${char.posX},${char.posY}`] = char.id;
-        }
-    });
-    // 2. 새로 불러온 적군 위치 등록(겹치면 덮어쓰기)
-    enemyCharacters.forEach(char => {
-        if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
-            newCharacterPositions[`${char.posX},${char.posY}`] = char.id;
-        }
-    });
+    const template = MONSTER_TEMPLATES[mapEnemy.templateId];
+    if (!template) {
+        logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+        return;
+    }
+    let monsterType;
+    if (Array.isArray(template.type)) {
+        monsterType = template.type[Math.floor(Math.random() * template.type.length)];
+    } else {
+        monsterType = template.type;
+    }
+    const newEnemy = new Character(template.name, monsterType);
     
-    characterPositions = newCharacterPositions;
+    newEnemy.maxHp = template.maxHp || 100;
+    newEnemy.currentHp = newEnemy.maxHp;
+    newEnemy.atk = template.atk || 15;
+    newEnemy.matk = template.matk || 15;
+    newEnemy.def = template.def || 15;
+    newEnemy.mdef = template.mdef || 15;
+    newEnemy.skills = template.skills ? [...template.skills] : [];
+    newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
 
-    enemyCharacters = [];
+    const posX = mapEnemy.pos.x;
+    const posY = mapEnemy.pos.y;
     
-    mapConfig.enemies.forEach(mapEnemy => {
-        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
-        if (!template) {
-            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-            return;
+    if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+        newEnemy.posX = posX;
+        newEnemy.posY = posY;
+    } else {
+        logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
+        const randomCell = getRandomEmptyCell();
+        if (randomCell) {
+            newEnemy.posX = randomCell.x;
+            newEnemy.posY = randomCell.y;
         }
-        let monsterType;
-        if (Array.isArray(template.type)) {
-            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
-        } else {
-            monsterType = template.type;
-        }
-        const newEnemy = new Character(template.name, monsterType);
-        
-        newEnemy.maxHp = template.maxHp || 100;
-        newEnemy.currentHp = newEnemy.maxHp;
-        newEnemy.atk = template.atk || 15;
-        newEnemy.matk = template.matk || 15;
-        newEnemy.def = template.def || 15;
-        newEnemy.mdef = template.mdef || 15;
-        newEnemy.skills = template.skills ? [...template.skills] : [];
-        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+    }
+    enemyCharacters.push(newEnemy);
+    logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
+});
 
-        // --- 좌표 변환(-1) 로직 제거 ---
-        const posX = mapEnemy.pos.x;
-        const posY = mapEnemy.pos.y;
-        
-        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-            newEnemy.posX = posX;
-            newEnemy.posY = posY;
-        } else {
-            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
-            const randomCell = getRandomEmptyCell();
-            if (randomCell) {
-                newEnemy.posX = randomCell.x;
-                newEnemy.posY = randomCell.y;
-            }
-        }
-        enemyCharacters.push(newEnemy);
-        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
-    });
+// 아군과 새로 불러온 적군의 위치 정보를 모두 포함하여 전체 위치 맵을 다시 생성
+characterPositions = {};
+[...allyCharacters, ...enemyCharacters].forEach(char => {
+    if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
+        characterPositions[`${char.posX},${char.posY}`] = char.id;
+    }
+});
 
-    characterPositions = {};
-    [...allyCharacters, ...enemyCharacters].forEach(char => {
-        if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
-            characterPositions[`${char.posX},${char.posY}`] = char.id;
-        }
-    });
-
-    displayCharacters();
-}
+// 변경된 캐릭터 목록과 맵을 화면에 다시 그립니다.
+displayCharacters();
 
 /**
  * 지정된 템플릿 ID와 스폰 위치를 기반으로 몬스터를 소환
