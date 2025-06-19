@@ -120,6 +120,7 @@ const GIMMICK_DATA = {
     
     "GIMMICK_Seed_of_Devour": {
         name: "흡수의 술식",
+        coords: "1,1;1,2;1,3;2,1;2,3;3,1;3,2;3,3",
         description: "세 가지 형태의 기믹 중 하나가 무작위로 발동합니다.",
         subGimmick1: {
             name: "열매 파괴",
