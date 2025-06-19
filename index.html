@@ -325,6 +325,41 @@
             box-shadow: inset 0 0 12px #FFD700;
         }
 
+        .map-cell .gimmick-object {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: white;
+            text-shadow: 1px 1px 3px black;
+            box-shadow: 0 0 10px 2px rgba(0,0,0,0.5);
+        }
+        .gimmick-fruit {
+            background-color: #8B0000; /* 어두운 빨강 */
+            border: 2px solid #FF4500;
+        }
+        .gimmick-fissure {
+            background: radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(0,0,0,0) 70%);
+            border: none;
+            box-shadow: none;
+            animation: pulse 1.5s infinite;
+        }
+        .gimmick-spring {
+            background-color: #00BFFF; /* 딥 스카이 블루 */
+            border: 2px solid #FFFFFF;
+            font-size: 1em; /* 글씨 크기 조절 */
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.9); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(0.9); }
+        }
+
+        .battle-area {
+
         .battle-area {
             background-color: var(--color-surface);
             padding: 25px;
