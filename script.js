@@ -725,15 +725,15 @@ const SKILLS = {
 
     // --- 몬스터 전용 스킬 객체 ---
     const MONSTER_SKILLS = {
-        SKILL_Seismic_Fissure: {
-            id: "SKILL_Seismic_Fissure",
-            name: "균열의 진동",
-            type: "광역 공격",
-            description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.",
-            targetType: "all_enemies",
-            targetSelection: "all_enemies",
-            execute: (caster, allies, enemies, battleLog) => {
-            battleLog(`\n<pre>마른 땅이 갈라지며 균열이 퍼져나간다.\n이 전장은 오로지 한 생명의 손아귀에 놓여 있다.\n"땅이 갈라지는 소리를 들은 적 있느냐."</pre>\n`);
+    SKILL_Seismic_Fissure: {
+        id: "SKILL_Seismic_Fissure",
+        name: "균열의 진동",
+        type: "광역 공격",
+        script: `\n<pre>마른 땅이 갈라지며 균열이 퍼져나간다.\n이 전장은 오로지 한 생명의 손아귀에 놓여 있다.\n"땅이 갈라지는 소리를 들은 적 있느냐."</pre>\n`,
+        description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.",
+        targetType: "all_enemies",
+        targetSelection: "all_enemies",
+        execute: (caster, allies, enemies, battleLog) => {
             const hitArea = "1,1;2,1;3,1;1,2;3,2;1,3;2,3;3,3".split(';').map(s => {
                 const [x, y] = s.split(',').map(Number);
                 return { x, y };
@@ -748,18 +748,18 @@ const SKILLS = {
             });
                 
             return true;
-            }
-        },
-        
-        SKILL_Echo_of_Silence: {
-            id: "SKILL_Echo_of_Silence",
-            name: "침묵의 메아리",
-            type: "광역 디버프",
-            description: "피격 범위 내 모든 적에게 [침묵]을 부여합니다.",
-            targetType: "all_enemies",
-            targetSelection: "all_enemies",
-            execute: (caster, allies, enemies, battleLog) => {
-            battleLog(`\n<pre>기묘한 울림이 공간을 가른다.\n거대한 풍광의 압을 앞에 두고, 달리 무엇을 말할 수 있겠는가?\n"자연의 숨결 앞에서는 그 어떤 주문도 무의미하다."</pre>\n`);
+        }
+    },
+    
+    SKILL_Echo_of_Silence: {
+        id: "SKILL_Echo_of_Silence",
+        name: "침묵의 메아리",
+        type: "광역 디버프",
+        script: `\n<pre>기묘한 울림이 공간을 가른다.\n거대한 풍광의 압을 앞에 두고, 달리 무엇을 말할 수 있겠는가?\n"자연의 숨결 앞에서는 그 어떤 주문도 무의미하다."</pre>\n`,
+        description: "피격 범위 내 모든 적에게 [침묵]을 부여합니다.",
+        targetType: "all_enemies",
+        targetSelection: "all_enemies",
+        execute: (caster, allies, enemies, battleLog) => {
             const hitArea = "0,2;1,1;3,1;2,0;4,2;1,3;3,3".split(';').map(s => {
                 const [x, y] = s.split(',').map(Number);
                 return { x, y };
@@ -778,19 +778,18 @@ const SKILLS = {
                 battleLog(`✦효과 없음✦ [침묵의 메아리]의 영향을 받은 대상이 없습니다.`);
             }
             return true;
-                
-            }
-        },
+        }
+    },
         
         SKILL_Crushing_Sky: {
-            id: "SKILL_Crushing_Sky",
-            name: "무너지는 하늘",
-            type: "광역 공격",
-            description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.",
-            targetType: "all_enemies",
-            targetSelection: "all_enemies",
-             execute: (caster, allies, enemies, battleLog) => {
-            battleLog(`\n<pre>거대한 석괴가 하늘에서 떨어지기 시작한다.\n때로 자연이라는 것은, 인간에게 이다지도 무자비하다.\n"대지가 너희에게 분노하리라."</pre>\n`);
+        id: "SKILL_Crushing_Sky",
+        name: "무너지는 하늘",
+        type: "광역 공격",
+        script: `\n<pre>거대한 석괴가 하늘에서 떨어지기 시작한다.\n때로 자연이라는 것은, 인간에게 이다지도 무자비하다.\n"대지가 너희에게 분노하리라."</pre>\n`,
+        description: "피격 범위 내 모든 적에게 공격력만큼 피해를 줍니다.",
+        targetType: "all_enemies",
+        targetSelection: "all_enemies",
+         execute: (caster, allies, enemies, battleLog) => {
             const hitArea = "2,0;2,1;0,2;1,2;3,2;4,2;2,3;2,4".split(';').map(s => {
                 const [x, y] = s.split(',').map(Number);
                 return { x, y };
@@ -805,88 +804,92 @@ const SKILLS = {
             });
             return true;
         }
-        },
+    },
 
         SKILL_Birth_of_Vines: {
-            id: "SKILL_Birth_of_Vines",
-            name: "덩굴 탄생",
-            type: "광역 공격",
-            description: "지정된 범위에 마법 공격력만큼 피해를 줍니다.",
-            targetType: "all_enemies", // 몬스터 입장에서 플레이어는 enemy
-            execute: (caster, allies, enemies, battleLog) => {
-                battleLog(`\n<pre>바닥으로부터 수많은 덩굴이 솟구친다.\n벗어날 수 없는 공포가 당신의 발목을 옥죄어 온다.\n"이 땅에 모습을 드러낸 이들을, 잊지 않겠다."</pre>\n`);
-                const hitArea = "0,0;0,2;0,4;1,1;1,3;2,0;2,2;2,4;3,1;3,3;4,0;4,2;4,4".split(';').map(s => {
-                    const [x, y] = s.split(',').map(Number);
-                    return { x, y };
-                });
-                const damage = caster.getEffectiveStat('matk');
-                
-                enemies.forEach(target => {
-                    if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                        battleLog(`✦광역 피해✦ ${caster.name}의 [덩굴 탄생]이 ${target.name}에게 적중!`);
-                        target.takeDamage(damage, battleLog, caster);
-                    }
-                });
-                return true;
-            }
-        },
-        SKILL_Spores_of_Silence: {
-            id: "SKILL_Spores_of_Silence",
-            name: "침묵의 포자",
-            type: "광역 디버프",
-            description: "지정된 범위의 대상에게 [무장 해제] 디버프를 부여합니다. 지속 턴은 피격된 인원 수와 같습니다.",
-            targetType: "all_enemies",
-            execute: (caster, allies, enemies, battleLog) => {
-                battleLog(`\n<pre>고운 꽃가루가 하늘을 뒤덮는다.\n생경한 아름다움은 고요한 찬사만을 강요한다.\n"많은 말은 필요하지 않은 법."</pre>\n`);
-                const hitArea = "0,0;1,0;2,0;3,0;4,0;0,2;1,2;3,2;4,2;0,4;1,4;2,4;3,4;4,4".split(';').map(s => {
-                    const [x, y] = s.split(',').map(Number);
-                    return { x, y };
-                });
-                
-                const targets = enemies.filter(target => target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY));
-                const debuffDuration = targets.length;
-
-                if (debuffDuration > 0) {
-                     battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 포자]가 ${targets.map(t=>t.name).join(', ')}에게 적중!`);
-                    targets.forEach(target => {
-                        target.addDebuff('disarm', '[무장 해제]', debuffDuration, {
-                            description: `공격 유형 스킬 사용 불가 (${debuffDuration}턴)`
-                        });
-                    });
-                } else {
-                    battleLog(`✦효과 없음✦ [침묵의 포자]의 영향을 받은 대상이 없습니다.`);
+        id: "SKILL_Birth_of_Vines",
+        name: "덩굴 탄생",
+        type: "광역 공격",
+        // ▼▼▼ battleLog 대신 script 속성으로 분리 ▼▼▼
+        script: `\n<pre>바닥으로부터 수많은 덩굴이 솟구친다.\n벗어날 수 없는 공포가 당신의 발목을 옥죄어 온다.\n"이 땅에 모습을 드러낸 이들을, 잊지 않겠다."</pre>\n`,
+        description: "지정된 범위에 마법 공격력만큼 피해를 줍니다.",
+        targetType: "all_enemies",
+        execute: (caster, allies, enemies, battleLog) => {
+            // ▼▼▼ execute 함수 내의 script 출력 로직 제거 ▼▼▼
+            const hitArea = "0,0;0,2;0,4;1,1;1,3;2,0;2,2;2,4;3,1;3,3;4,0;4,2;4,4".split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+            const damage = caster.getEffectiveStat('matk');
+            
+            enemies.forEach(target => {
+                if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [덩굴 탄생]이 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
                 }
-                return true;
-            }
-        },
-        SKILL_Seeds_Wrath: {
-            id: "SKILL_Seeds_Wrath",
-            name: "씨앗의 분노",
-            type: "광역 복합",
-            description: "두 종류의 범위에 각각 다른 효과를 부여합니다.",
-            targetType: "all_enemies",
-            execute: (caster, allies, enemies, battleLog) => {
-                battleLog(`\n<pre>땅속 깊은 곳에서 들려오는 불길한 진동.\n잠들어 있던 씨앗이 한순간 깨어난다.\n"분노하라. 그리하여 너희를 삼킬 것이다."</pre>\n`);
-                const greenHitArea = "1,1;1,2;1,3;2,1;2,3;3,1;3,2;3,3".split(';').map(s => s.split(',').map(Number));
-                const blueHitArea = "0,0;0,4;4,0;4,4".split(';').map(s => s.split(',').map(Number));
-                const damage = caster.getEffectiveStat('matk');
+            });
+            return true;
+        }
+    },
+        
+        SKILL_Spores_of_Silence: {
+        id: "SKILL_Spores_of_Silence",
+        name: "침묵의 포자",
+        type: "광역 디버프",
+        script: `\n<pre>고운 꽃가루가 하늘을 뒤덮는다.\n생경한 아름다움은 고요한 찬사만을 강요한다.\n"많은 말은 필요하지 않은 법."</pre>\n`,
+        description: "지정된 범위의 대상에게 [무장 해제] 디버프를 부여합니다. 지속 턴은 피격된 인원 수와 같습니다.",
+        targetType: "all_enemies",
+        execute: (caster, allies, enemies, battleLog) => {
+            const hitArea = "0,0;1,0;2,0;3,0;4,0;0,2;1,2;3,2;4,2;0,4;1,4;2,4;3,4;4,4".split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+            
+            const targets = enemies.filter(target => target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY));
+            const debuffDuration = targets.length;
 
-                enemies.forEach(target => {
-                    if (!target.isAlive) return;
-                    // 초록 피격 범위: 데미지
-                    if (greenHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                         battleLog(`✦피해✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 적중!`);
-                         target.takeDamage(damage, battleLog, caster);
-                    }
-                    // 파란 피격 범위: 무장 해제
-                    if (blueHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                        battleLog(`✦디버프✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 [무장 해제] 부여!`);
-                        target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
-                    }
+            if (debuffDuration > 0) {
+                 battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 포자]가 ${targets.map(t=>t.name).join(', ')}에게 적중!`);
+                targets.forEach(target => {
+                    target.addDebuff('disarm', '[무장 해제]', debuffDuration, {
+                        description: `공격 유형 스킬 사용 불가 (${debuffDuration}턴)`
+                    });
                 });
-                return true;
+            } else {
+                battleLog(`✦효과 없음✦ [침묵의 포자]의 영향을 받은 대상이 없습니다.`);
             }
-        },
+            return true;
+        }
+    },
+        
+        SKILL_Seeds_Wrath: {
+        id: "SKILL_Seeds_Wrath",
+        name: "씨앗의 분노",
+        type: "광역 복합",
+        script: `\n<pre>땅속 깊은 곳에서 들려오는 불길한 진동.\n잠들어 있던 씨앗이 한순간 깨어난다.\n"분노하라. 그리하여 너희를 삼킬 것이다."</pre>\n`,
+        description: "두 종류의 범위에 각각 다른 효과를 부여합니다.",
+        targetType: "all_enemies",
+        execute: (caster, allies, enemies, battleLog) => {
+            const greenHitArea = "1,1;1,2;1,3;2,1;2,3;3,1;3,2;3,3".split(';').map(s => s.split(',').map(Number));
+            const blueHitArea = "0,0;0,4;4,0;4,4".split(';').map(s => s.split(',').map(Number));
+            const damage = caster.getEffectiveStat('matk');
+
+            enemies.forEach(target => {
+                if (!target.isAlive) return;
+                // 초록 피격 범위: 데미지
+                if (greenHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                     battleLog(`✦피해✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 적중!`);
+                     target.takeDamage(damage, battleLog, caster);
+                }
+                // 파란 피격 범위: 무장 해제
+                if (blueHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                    battleLog(`✦디버프✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 [무장 해제] 부여!`);
+                    target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
+                }
+            });
+            return true;
+        }
+    },
         
     GIMMICK_Path_of_Ruin: {
         id: "GIMMICK_Path_of_Ruin",
@@ -913,88 +916,58 @@ const SKILLS = {
             type: "기믹",
             description: "세 가지 형태의 기믹 중 하나를 무작위로 발동합니다.",
             targetType: "self",
-            execute: (caster, allies, enemies, battleLog) => {
-                if (activeGimmickState) return false;
+            execute: (caster, allies, enemies, battleLog, dynamicData) => {
+        if (activeGimmickState) return false;
 
-                const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
-                const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
-                const gimmickCoordsStr = GIMMICK_DATA.GIMMICK_Seed_of_Devour.coords;
-                const availableCoords = gimmickCoordsStr.split(';').map(s => {
-                    const [x, y] = s.split(',').map(Number);
-                    return { x, y };
-                }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
-
-                battleLog(`\n<pre>${gimmickInfo.script}</pre>\n`);
-                battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
-
-                activeGimmickState = {
-                    type: null,
-                    startTurn: currentTurn,
-                    objectIds: []
-                };
-
-                if (subGimmickChoice === 1) { // 열매 파괴
-                    activeGimmickState.type = 'fruit_destruction';
-                    for (let i = 0; i < 2; i++) {
-                        if (availableCoords.length === 0) break;
-                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-                        const pos = availableCoords.splice(spawnIndex, 1)[0];
-                        const fruit = {
-                            id: `fruit_${Math.random()}`,
-                            type: 'fruit',
-                            name: '열매',
-                            posX: pos.x,
-                            posY: pos.y,
-                            isAlive: true,
-                            hp: 1, // 한 번의 공격으로 파괴
-                            isGimmickObject: true,
-                        };
-                        mapObjects.push(fruit);
-                        characterPositions[`${pos.x},${pos.y}`] = fruit.id;
-                        activeGimmickState.objectIds.push(fruit.id);
-                    }
-                } else if (subGimmickChoice === 2) { // 불안정한 균열
-                    activeGimmickState.type = 'unstable_fissure';
-                    for (let i = 0; i < 3; i++) {
-                        if (availableCoords.length === 0) break;
-                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-                        const pos = availableCoords.splice(spawnIndex, 1)[0];
-                        const fissure = {
-                            id: `fissure_${Math.random()}`,
-                            type: 'fissure',
-                            name: '불안정한 균열',
-                            posX: pos.x,
-                            posY: pos.y,
-                            isGimmickObject: true,
-                        };
-                        mapObjects.push(fissure);
-                        activeGimmickState.objectIds.push(fissure.id);
-                    }
-                } else if (subGimmickChoice === 3) { // 메마른 생명의 샘
-                    activeGimmickState.type = 'drying_spring';
-                    if (availableCoords.length > 0) {
-                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-                        const pos = availableCoords.splice(spawnIndex, 1)[0];
-                        const spring = {
-                            id: `spring_${Math.random()}`,
-                            type: 'spring',
-                            name: '메마른 생명의 샘',
-                            posX: pos.x,
-                            posY: pos.y,
-                            isAlive: true,
-                            healingReceived: 0,
-                            healingGoal: 50,
-                            isGimmickObject: true,
-                        };
-                        mapObjects.push(spring);
-                        characterPositions[`${pos.x},${pos.y}`] = spring.id;
-                        activeGimmickState.objectIds.push(spring.id);
-                    }
-                }
-                displayCharacters();
-                return true;
-            }
+        // 예고 단계에서 미리 결정된 데이터를 받습니다.
+        const { subGimmickChoice, objectsToSpawnInfo } = dynamicData;
+        
+        if (!subGimmickChoice || !objectsToSpawnInfo) {
+            console.error("[ERROR] Seed of Devour 실행 오류: dynamicData를 받지 못했습니다.");
+            return false;
         }
+        
+        const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
+        battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
+
+        activeGimmickState = {
+            type: `subGimmick${subGimmickChoice}`, // 타입을 명확히 저장
+            startTurn: currentTurn,
+            objectIds: []
+        };
+        
+        // 미리 계산된 정보에 따라 오브젝트를 생성합니다.
+        objectsToSpawnInfo.forEach(info => {
+            let newObject = {
+                id: `${info.type}_${Math.random().toString(36).substring(2, 9)}`,
+                type: info.type,
+                name: '',
+                posX: info.pos.x,
+                posY: info.pos.y,
+                isGimmickObject: true,
+                isAlive: true,
+            };
+
+            if (info.type === 'fruit') {
+                newObject.name = '열매';
+                newObject.hp = 1;
+            } else if (info.type === 'fissure') {
+                newObject.name = '불안정한 균열';
+            } else if (info.type === 'spring') {
+                newObject.name = '메마른 생명의 샘';
+                newObject.healingReceived = 0;
+                newObject.healingGoal = 50;
+            }
+            
+            mapObjects.push(newObject);
+            characterPositions[`${info.pos.x},${info.pos.y}`] = newObject.id;
+            activeGimmickState.objectIds.push(newObject.id);
+        });
+
+        displayCharacters();
+        return true;
+    }
+}
     };
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
@@ -2266,7 +2239,6 @@ function confirmAction() {
             return; // 행동 확정 중단
         }
     }
-    // --- 여기까지 ---
 
     let actionDetails = { caster: caster, type: selectedAction.type };
     let targetDescription = "정보 없음"; 
@@ -2506,71 +2478,115 @@ async function executeBattleTurn() {
 }
 
 function previewEnemyAction(enemyChar) {
-    // 기믹 활성화 로직 (Terrmor_1 용)
-    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0 && enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
-        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
-        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
-        enemyChar.activeGimmick = newGimmickId;
-        const gimmickData = GIMMICK_DATA[newGimmickId];
-        if (gimmickData) {
-            logToBattleLog(`\n<pre>${gimmickData.flavorText || gimmickData.description}</pre>\n`);
-        }
-    }
+    console.log(`[DEBUG] Turn ${currentTurn}: previewEnemyAction 시작. 대상: ${enemyChar.name}`);
 
-    const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+    const allSkills = { ...SKILLS, ...MONSTER_SKILLS, ...GIMMICK_DATA };
     let skillToUseId = null;
+    let hitArea = [];
 
     // --- 몬스터별 행동 결정 로직 ---
     if (enemyChar.skills.includes("SKILL_Birth_of_Vines")) { // A-2 몬스터 (Terrmor_2)
         const allActions = [...enemyChar.gimmicks, ...enemyChar.skills];
-        const actionIndex = (currentTurn - 1) % allActions.length;
-        skillToUseId = allActions[actionIndex];
+        skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
+        console.log(`[DEBUG] A-2 보스 행동 결정: ${skillToUseId}`);
     } else if (enemyChar.skills.includes("SKILL_Seismic_Fissure")) { // A-1 몬스터 (Terrmor_1)
-        const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill);
-        if (usableSkills.length > 0) {
-            const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
-            skillToUseId = skillToUse.id;
+        // A-1 보스의 Aegis of Earth 기믹은 패시브처럼 매 턴 순차적으로 적용됩니다.
+        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
+        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
+        enemyChar.activeGimmick = newGimmickId;
+        const gimmickData = GIMMICK_DATA[newGimmickId];
+        if (gimmickData && gimmickData.flavorText) {
+             logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
         }
+        
+        // 실제 사용하는 공격 스킬은 랜덤으로 선택합니다.
+        const usableSkills = enemyChar.skills.filter(id => allSkills[id]);
+        skillToUseId = usableSkills[Math.floor(Math.random() * usableSkills.length)];
+        console.log(`[DEBUG] A-1 보스 행동 결정: ${skillToUseId} (패시브 기믹: ${newGimmickId})`);
     }
 
-    if (!skillToUseId) return null;
+    if (!skillToUseId) {
+        console.log(`[DEBUG] previewEnemyAction: 사용할 스킬 ID를 결정하지 못함.`);
+        return null;
+    }
 
-    const skillDefinition = allSkills[skillToUseId];
-    let hitArea = [];
-    let dynamicData = {}; // 동적 데이터를 저장할 객체 추가
+    const skillDefinition = allSkills[skillToUseId] || GIMMICK_DATA[skillToUseId];
+    if (!skillDefinition) {
+         console.log(`[DEBUG] previewEnemyAction: 스킬 ID [${skillToUseId}]에 대한 정의를 찾을 수 없음.`);
+         return null;
+    }
 
-    // GIMMICK_Path_of_Ruin
+    // --- 규칙 ➁: 예고 타일과 관계없이 스크립트(Flavor Text)를 먼저 출력 ---
+    if (skillDefinition.script) {
+        logToBattleLog(skillDefinition.script);
+    }
+
+    // --- 규칙 ➀: 특정 기믹에 대해서만 예고 타일(hitArea)을 계산 ---
     if (skillToUseId === 'GIMMICK_Path_of_Ruin') {
         const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
         const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
-        dynamicData = { predictedCol, predictedRow }; // 생성된 데이터를 저장
-
-        // 예고 영역(hitArea) 배열 생성
-        for (let x = 0; x < MAP_WIDTH; x++) {
-            hitArea.push({ x: x, y: predictedRow });
-        }
+        
+        for (let x = 0; x < MAP_WIDTH; x++) hitArea.push({ x, y: predictedRow });
         for (let y = 0; y < MAP_HEIGHT; y++) {
-            if (y !== predictedRow) { // 교차 지점 중복 방지
-                hitArea.push({ x: predictedCol, y: y });
-            }
+            if (y !== predictedRow) hitArea.push({ x: predictedCol, y });
         }
-    } else if (skillDefinition && skillDefinition.execute) {
-        const executeCode = skillDefinition.execute.toString();
-        const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
-        if (areaMatch && areaMatch[1]) {
-            hitArea = areaMatch[1].split(';').map(s => {
-                const [x, y] = s.split(',').map(Number);
-                return { x, y };
-            });
+        skillDefinition.previewData = { predictedCol, predictedRow }; // 실행 함수에 데이터 전달
+        console.log(`[DEBUG] '균열의 길' 예고 범위 생성: col=${predictedCol}, row=${predictedRow}`);
+
+    } else if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
+    console.log(`[DEBUG] '흡수의 술식' 예고 로직 시작.`);
+    // 1. 세 가지 하위 기믹 중 하나를 무작위로 선택합니다.
+    const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
+    const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
+    const gimmickCoordsStr = GIMMICK_DATA.GIMMICK_Seed_of_Devour.coords;
+    const availableCoords = gimmickCoordsStr.split(';').map(s => {
+        const [x, y] = s.split(',').map(Number);
+        return { x, y };
+    }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
+
+    let subGimmickType = '';
+    let objectsToSpawnInfo = [];
+
+    // 2. 선택된 하위 기믹에 따라 생성될 오브젝트의 '위치'를 미리 결정합니다.
+    if (subGimmickChoice === 1) { // 열매 파괴
+        subGimmickType = 'fruit_destruction';
+        for (let i = 0; i < 2 && availableCoords.length > 0; i++) {
+            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+            const pos = availableCoords.splice(spawnIndex, 1)[0];
+            objectsToSpawnInfo.push({ type: 'fruit', pos: pos });
+        }
+    } else if (subGimmickChoice === 2) { // 불안정한 균열
+        subGimmickType = 'unstable_fissure';
+        for (let i = 0; i < 3 && availableCoords.length > 0; i++) {
+            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+            const pos = availableCoords.splice(spawnIndex, 1)[0];
+            objectsToSpawnInfo.push({ type: 'fissure', pos: pos });
+        }
+    } else if (subGimmickChoice === 3) { // 메마른 생명의 샘
+        subGimmickType = 'drying_spring';
+        if (availableCoords.length > 0) {
+            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+            const pos = availableCoords.splice(spawnIndex, 1)[0];
+            objectsToSpawnInfo.push({ type: 'spring', pos: pos });
         }
     }
+    
+    // 3. 결정된 위치 정보로 예고 범위(hitArea)를 설정하고, 실행 함수에 필요한 정보를 전달합니다.
+    hitArea = objectsToSpawnInfo.map(info => info.pos);
+    skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo }; 
+    
+    // 4. 선택된 하위 기믹의 스크립트를 로그에 출력합니다.
+    if (gimmickInfo && gimmickInfo.script) {
+        logToBattleLog(`${gimmickInfo.script}`);
+    }
+    console.log(`[DEBUG] '흡수의 술식' 예고 완료: ${subGimmickType}, ${hitArea.length}개 위치 예고.`);
+}
 
-    // 예고 정보를 담아 반환
     return {
         casterId: enemyChar.id,
         skillId: skillToUseId,
         hitArea: hitArea,
-        dynamicData: dynamicData
+        dynamicData: skillDefinition.previewData || {}
     };
 }
 
@@ -2606,7 +2622,13 @@ function checkAndApplyEnrage(character, battleLog) {
     // 조건 만족 시 광폭화 효과 적용
     if (enrageTriggered) {
         character.isEnraged = true; // 광폭화 상태로 변경 (중복 적용 방지)
-        battleLog(`✦광폭화✦ ${triggerReason} ${character.name}, 분노에 휩싸입니다.`);
+        const originalName = character.name;
+        
+        if (originalName.includes("테르모르")) {
+            character.name = '분노한 테르모르';
+        }
+        
+        battleLog(`✦광폭화✦ ${triggerReason}, ${originalName}이(가) 분노에 휩싸입니다.`);
 
         // 모든 스탯 1.5배 증가
         character.atk = Math.round(character.atk * 1.5);
@@ -2614,9 +2636,7 @@ function checkAndApplyEnrage(character, battleLog) {
         character.def = Math.round(character.def * 1.5);
         character.mdef = Math.round(character.mdef * 1.5);
         
-        battleLog(`  ✦효과✦ ${character.name}의 모든 능력치가 1.5배 증가합니다.`);
-        
-        // 변경된 스탯을 UI에 즉시 반영
+        // 변경된 스탯과 이름을 UI에 즉시 반영
         displayCharacters(); 
     }
 }
