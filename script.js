@@ -1463,6 +1463,7 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
         });
         return Math.max(0, value); // 스탯은 0 이상
     }
+}
 
 
 // --- 3. 유틸리티 및 UI 관리 함수 ---
