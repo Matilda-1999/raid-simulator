@@ -307,7 +307,6 @@
         .map-cell .char-marker.ally { background-color: var(--color-accent-blue); color: white; }
         .map-cell .char-marker.enemy { background-color: var(--color-accent-red); color: white; }
 
-        /* /// 신규 추가: 시작 지점(스폰 존) 시각화를 위한 CSS /// */
         /* .map-cell.clown-spawn {
             background-color: rgba(255, 0, 0, 0.2);
             border: 1px dashed #FF6347;
@@ -317,7 +316,6 @@
             border: 1px dashed #4169E1;
         }
         */
-        /* /// 여기까지 추가 /// */
 
         .map-cell.skill-preview-zone {
             background-color: rgba(255, 165, 0, 0.4); /* 주황색 반투명 배경 */
@@ -577,11 +575,13 @@
         </div>
     </div>
 
+    <div class="container">
         <div class="map-display-area">
             <h2><span class="material-icons-outlined">map</span>맵 상황</h2>
             <div id="mapGridContainer" class="map-grid-container"></div>
              <div id="mapInfo"></div>
         </div>
+    </div>
 
     <div class="container battle-log-container"> <h2><span class="material-icons-outlined">receipt_long</span>전투 로그</h2>
         <div class="battle-log" id="battleLog"></div>
