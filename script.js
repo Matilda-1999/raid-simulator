@@ -1692,7 +1692,7 @@ function displayCharacters() {
             .map(e => e.areaEffect);
         
         const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
-        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, activeAreaEffects, previewedHitArea);
+        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea);
     }
 }
 
