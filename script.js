@@ -46,6 +46,7 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [반격]
     SKILL_COUNTER: {
         id: "SKILL_COUNTER",
@@ -125,6 +126,7 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [역습]
     SKILL_REVERSAL: {
         id: "SKILL_REVERSAL",
@@ -150,35 +152,59 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [허상]
     SKILL_ILLUSION: {
         id: "SKILL_ILLUSION",
         name: "허상",
         type: "지정 버프",
-        description: "무엇을 찾으려 했는가. 애초에 목적을 알고 있었는가?<br><br>단일 강화. 자신에게 사용 시 (공격)x0.5 체력 회복. 다른 아군에게 사용 시 자신의 (공격)x0.2 체력 잃고 아군 (공격)x2.0 증가(2턴). <br>턴 종료 시 목표 적군에게 (공격)x0.5 추가 공격.",
+        description: "무엇을 찾으려 했는가. 애초에 목적을 알고 있었는가?<br><br>1. 단일 강화, 자신에게 사용 시 (공격)x0.5만큼 체력 회복.<br>2. 다른 아군에게 사용 시 자신의 (공격)x0.2만큼 체력을 잃고 아군의 (공격)x2.0 증가. 단, 받은 피해가 짝수일 시 마법 공격력, 홀수일 시 공격력 증가. 첫 턴에는 사용 불가능. 2 턴 지속.<br>3. 턴 종료 시 목표 적군에게 (공격)x0.5 추가 공격 개시.",
         targetType: "single_ally_or_self",
         targetSelection: "ally_or_self",
         execute: (caster, target, allies, enemies, battleLog) => {
+            console.log(`[DEBUG] 허상 스킬 실행: 시전자(${caster.name}), 대상(${target?.name}), 현재 턴(${currentTurn})`);
+
             if (!target) {
                 battleLog(`✦정보✦ ${caster.name} [허상]: 스킬 대상을 찾을 수 없습니다.`);
                 return false;
             }
+
+            // 2번 조건: 첫 턴에 다른 아군에게 사용 불가
+            if (caster.id !== target.id && currentTurn <= 1) {
+                battleLog(`✦정보✦ ${caster.name} [허상]: 첫 턴에는 다른 아군에게 사용할 수 없습니다.`);
+                console.log(`[DEBUG] 허상: 첫 턴(${currentTurn})에 아군 대상 지정으로 사용 불가.`);
+                return false;
+            }
+            
             if (caster.id === target.id) { // 자신에게 사용
-                const healAmount = Math.round(caster.getEffectiveStat('atk') * 0.5); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
+                const healAmount = Math.round(caster.getEffectiveStat('atk') * 0.5);
                 caster.currentHp = Math.min(caster.maxHp, caster.currentHp + healAmount);
-                battleLog(`✦회복✦ ${caster.name}, [허상] 사용 (자신): 체력 ${healAmount} 회복. (HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+                battleLog(`✦회복✦ ${caster.name}, [허상] 사용 (자신): 체력 ${healAmount} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
             } else { // 다른 아군에게 사용
-                const hpLoss = Math.round(caster.getEffectiveStat('atk') * 0.2); // ▼▼▼ 수정: 반올림 적용 ▼▼▼
+                const hpLoss = Math.round(caster.getEffectiveStat('atk') * 0.2);
                 caster.currentHp -= hpLoss;
                 if (caster.currentHp < 1) caster.currentHp = 1;
-                battleLog(`✦소모✦ ${caster.name}, [허상] 사용 (${target.name} 대상): 체력 ${hpLoss} 소모. (HP: ${caster.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+                battleLog(`✦소모✦ ${caster.name}, [허상] 사용 (${target.name} 대상): 체력 ${hpLoss} 소모. (HP: ${caster.currentHp.toFixed(0)})`);
                 
-                target.addBuff('illusion_atk_boost', '공격력 증가 (허상)', 2, { 
-                    type: 'atk_boost_multiplier',
-                    value: 2.0
-                 });
-                battleLog(`✦버프✦ ${target.name}: [허상 효과] 공격력 2배 증가 (2턴).`);
+                // 받은 피해 총합의 홀짝에 따라 버프 종류 결정
+                const totalDamageTaken = caster.totalDamageTakenThisBattle;
+                console.log(`[DEBUG] 허상: 시전자의 받은 피해 총합(${totalDamageTaken})`);
+                if (totalDamageTaken % 2 === 0) { // 짝수: 마법 공격력 증가
+                    target.addBuff('illusion_matk_boost', '마법 공격력 증가 (허상)', 2, { 
+                        type: 'matk_boost_multiplier',
+                        value: 2.0
+                     });
+                    battleLog(`✦버프✦ ${target.name}: [허상 효과] 마법 공격력 2배 증가 (2턴).`);
+                } else { // 홀수: 공격력 증가
+                    target.addBuff('illusion_atk_boost', '공격력 증가 (허상)', 2, { 
+                        type: 'atk_boost_multiplier',
+                        value: 2.0
+                     });
+                    battleLog(`✦버프✦ ${target.name}: [허상 효과] 공격력 2배 증가 (2턴).`);
+                }
             }
+
+            // 3번 조건: 턴 종료 추가 공격
             const firstAliveEnemy = enemies.find(e => e.isAlive);
             if (firstAliveEnemy) {
                  caster.addBuff('illusion_end_turn_attack', '턴 종료 추가 공격 (허상)', 1, { 
@@ -194,6 +220,7 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [허무]
     SKILL_NIHILITY: {
         id: "SKILL_NIHILITY",
@@ -235,10 +262,11 @@ const SKILLS = {
             ];
             const chosenBuffData = buffChoices[Math.floor(Math.random() * buffChoices.length)];
             target.addBuff(chosenBuffData.id, chosenBuffData.name, chosenBuffData.turns, chosenBuffData.effect);
-            battleLog(`✦버프✦ ${target.name}: [허무 효과] [${chosenBuffData.name}] 획득 (2턴).`);
+            battleLog(`✦버프✦ ${target.name}: [허무] 효과로 [${chosenBuffData.name}] 획득(2턴).`);
             return true;
         }
     },
+    
     // [실존]
     SKILL_REALITY: {
         id: "SKILL_REALITY",
@@ -264,7 +292,7 @@ const SKILLS = {
                     value: 1.3
                 });
             });
-            battleLog(`✦버프✦ 모든 아군: 방어력 30% 증가 (2턴).`);
+            battleLog(`✦버프✦ 모든 아군: 방어력 30% 증가(2턴).`);
 
             let realityStacksToAdd = 4;
             const realityBuff = caster.buffs.find(b => b.id === 'reality_stacks');
@@ -288,34 +316,39 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [진리]
     SKILL_TRUTH: {
         id: "SKILL_TRUTH",
         name: "진리",
         type: "광역 디버프",
-        description: "아래는 진창이었음을. 드디어 깨달은 당신에게 선사하는 아름다운 정론이다.<br><br>모든 적군에게 2턴 동안 [중독] 상태 부여 (턴 종료 시 사용자의 (공격력+마법공격력)/2 x0.5 고정 피해). <br>중독 결산 후 랜덤 적군에게 사용자의 (공격력+마법공격력)/2 x0.3 추가 공격 부여.",
+        description: "아래는 진창이었음을. 드디어 깨달은 당신에게 선사하는 아름다운 정론이다.<br><br>1. 광역 디버프<br>2. 모든 적군에게 2턴 동안 [중독](턴 종료 시 대상자에게 (사용자의 공격)x0.5 고정 피해) 상태 부여.<br>3. 중독 결산 후 랜덤 적군에게 [맹독](사용자의 공격)x0.3 추가 공격 부여.",
         targetType: "all_enemies",
         targetSelection: "all_enemies",
         execute: (caster, enemies, battleLog) => {
             battleLog(`✦스킬✦ ${caster.name}, [진리] 사용: 모든 적에게 [중독]을 부여합니다.`);
-            const averageAttack = (caster.getEffectiveStat('atk') + caster.getEffectiveStat('matk')) / 2;
+            const attackStat = caster.getEffectiveStat('atk');
+            console.log(`[DEBUG] 진리: [중독] 피해 계산 기반 공격력: ${attackStat}`);
+
             enemies.filter(e => e.isAlive).forEach(enemy => {
                 enemy.addDebuff('poison_truth', '[중독](진리)', 2, { 
-                    damagePerTurn: averageAttack * 0.5, 
+                    damagePerTurn: attackStat * 0.5, 
                     type: 'fixed',
                     casterId: caster.id,
                     category: '상태 이상'
                 });
                 battleLog(`✦상태 이상✦ ${enemy.name}, [중독](진리) 효과 적용 (2턴).`);
             });
-            caster.addBuff('truth_end_turn_attack_marker', '진리 추가 공격 대기', 1, { 
+            // 턴 종료 후 [맹독] 공격을 위한 마커 추가
+            caster.addBuff('truth_end_turn_attack_marker', '맹독 추가 공격 대기', 1, { 
                 originalCasterId: caster.id,
-                power: 0.3,
-                damageBaseStatAverage: true
+                power: 0.3
+                // damageBaseStatAverage: true 속성 제거
             });
             return true;
         }
     },
+    
     // [서막]
     SKILL_OVERTURE: {
         id: "SKILL_OVERTURE",
@@ -1151,19 +1184,26 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
                 if (buff.effect.type === `${statName}_boost_multiplier`) value *= buff.effect.value;
                 if (buff.effect.type === `${statName}_boost_flat`) value += buff.effect.value;
                 
-                // [실재] 스택 효과 (공격력/마법공격력)
+                // [실재] 스택 효과
                 if (buff.id === 'reality_stacks' && buff.effect.stacks > 0) {
+                    // 이전 공격력/마법공격력 효과 (호환성을 위해 남겨둘 수 있음)
                     if (statName === 'atk' && buff.effect.atkBoostPerStack) {
-                        value += (this.atk * buff.effect.atkBoostPerStack * buff.effect.stacks); // 기본 공격력 비례
+                        value += (this.atk * buff.effect.atkBoostPerStack * buff.effect.stacks);
                     }
                     if (statName === 'matk' && buff.effect.matkBoostPerStack) {
-                        value += (this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks); // 기본 마법 공격력 비례
+                        value += (this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks);
                     }
-                }
-                // [허상] 공격력 증가 효과
-                if (buff.id === 'illusion_atk_boost' && statName === 'atk' && buff.effect.multiplier) {
-                    // value *= buff.effect.multiplier; // 중첩 적용될 수 있으므로, getEffectiveStat 설계 시 주의
-                    // illusion_atk_boost 버프 효과 정의 시 type을 'atk_boost_multiplier'로 통일했으면 위에서 처리됨
+                    // 신규 방어력/마법방어력 효과
+                    if (statName === 'def' && buff.effect.defBoostFromAllies) {
+                        const boostAmount = buff.effect.defBoostFromAllies * buff.effect.stacks;
+                        console.log(`[DEBUG] getEffectiveStat: ${this.name}의 [실재] 효과로 방어력 +${boostAmount.toFixed(2)}`);
+                        value += boostAmount;
+                    }
+                    if (statName === 'mdef' && buff.effect.mdefBoostFromAllies) {
+                        const boostAmount = buff.effect.mdefBoostFromAllies * buff.effect.stacks;
+                         console.log(`[DEBUG] getEffectiveStat: ${this.name}의 [실재] 효과로 마법방어력 +${boostAmount.toFixed(2)}`);
+                        value += boostAmount;
+                    }
                 }
             }
         });
@@ -1171,9 +1211,7 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
         this.debuffs.forEach(debuff => {
             if (debuff.turnsLeft > 0 && debuff.effect) {
                 // [흠집] 관련 로직 추가
-                // 'scratch' 디버프이고, 스택이 1 이상 존재하며, 디버프에 저장된 감소 타입이 현재 계산 중인 스탯과 일치할 때
                 if (debuff.id === 'scratch' && debuff.effect.reductionType === statName && debuff.stacks > 0) {
-                    // 스택 수와 무관하게 고정된 값(10%)으로 방어력 감소
                     const reductionValue = debuff.effect.reductionValue || 0.10; // 기본값 10%
                     value *= (1 - reductionValue); 
                 }
@@ -1181,7 +1219,6 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
         });
         return Math.max(0, value); // 스탯은 0 이상
     }
-}
 
 
 // --- 3. 유틸리티 및 UI 관리 함수 ---
@@ -1599,17 +1636,17 @@ function processEndOfTurnEffects(actingChar) {
         actingChar.removeBuffById('illusion_end_turn_attack'); // 사용 후 제거
     }
 
-    // [진리] 턴 종료 추가 공격
+    // [진리] 턴 종료 추가 공격 -> [맹독]
     const truthBuff = actingChar.buffs.find(b => b.id === 'truth_end_turn_attack_marker' && b.turnsLeft > 0);
     if (truthBuff && truthBuff.effect) {
         const casterOfTruth = findCharacterById(truthBuff.effect.originalCasterId);
         const aliveEnemiesForTruth = enemyCharacters.filter(e => e.isAlive);
         if (casterOfTruth && aliveEnemiesForTruth.length > 0) {
             const randomEnemyTarget = aliveEnemiesForTruth[Math.floor(Math.random() * aliveEnemiesForTruth.length)];
-            const baseStatForTruth = truthBuff.effect.damageBaseStatAverage ? (casterOfTruth.getEffectiveStat('atk') + casterOfTruth.getEffectiveStat('matk')) / 2 : casterOfTruth.getEffectiveStat('atk');
-            const truthDamage = calculateDamage(casterOfTruth, randomEnemyTarget, truthBuff.effect.power, 'physical', truthBuff.effect.damageBaseStatAverage ? null : 'atk'); // 임시로 물리피해, 스탯타입은 평균이면 null
-
-            logToBattleLog(`✦추가 공격✦ ${casterOfTruth.name} [진리 턴 종료]: ${randomEnemyTarget.name}에게 ${truthDamage.toFixed(0)} 추가 피해.`);
+            // [맹독] 피해는 시전자의 '공격력' 기반 물리 피해로 계산
+            const truthDamage = calculateDamage(casterOfTruth, randomEnemyTarget, truthBuff.effect.power, 'physical', 'atk');
+            console.log(`[DEBUG] 맹독: ${casterOfTruth.name}가 ${randomEnemyTarget.name}에게 ${truthDamage} 피해.`);
+            logToBattleLog(`✦추가 공격✦ ${casterOfTruth.name}의 [맹독]: ${randomEnemyTarget.name}에게 ${truthDamage.toFixed(0)} 추가 피해.`);
             randomEnemyTarget.takeDamage(truthDamage, logToBattleLog, casterOfTruth);
         }
         actingChar.removeBuffById('truth_end_turn_attack_marker');
