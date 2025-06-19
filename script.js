@@ -2454,7 +2454,7 @@ async function executeBattleTurn() {
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
     enemyCharacters.forEach(enemy => {
         const telegraphBuff = enemy.buffs.find(b => b.id === 'path_of_ruin_telegraph');
-        if (telegraphBuff && telegraphBuff.turnsLeft === 1) { // 예고 후 다음 턴 시작 시
+        if (telegraphBuff && telegraphBuff.turnsLeft === 2) { // 예고 후 다음 턴 시작 시
             logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다.`);
             const { predictedCol, predictedRow } = telegraphBuff.effect;
             const targets = allyCharacters.filter(ally => ally.isAlive && (ally.posX === predictedCol || ally.posY === predictedRow));
@@ -2464,7 +2464,10 @@ async function executeBattleTurn() {
                 const damage = enemy.getEffectiveStat('matk');
                 targets.forEach(target => {
                     target.takeDamage(damage, logToBattleLog, enemy);
-                    target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
+                    target.addDebuff('disarm', '[무장 해제]', 1, { 
+                        description: `공격 유형 스킬 사용 불가 (1턴)`,
+                        category: '제어' // 디버프 카테고리 추가 권장
+                    });
                 });
             } else { // 파훼 성공
                 logToBattleLog(`  파훼 성공: 균열의 길 위에 아무도 없습니다.`);
