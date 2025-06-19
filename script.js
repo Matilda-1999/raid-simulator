@@ -780,6 +780,133 @@ const SKILLS = {
             return true;
         }
         }
+
+        SKILL_Birth_of_Vines: {
+            id: "SKILL_Birth_of_Vines",
+            name: "덩굴 탄생",
+            type: "광역 공격",
+            description: "지정된 범위에 마법 공격력만큼 피해를 줍니다.",
+            targetType: "all_enemies", // 몬스터 입장에서 플레이어는 enemy
+            execute: (caster, allies, enemies, battleLog) => {
+                battleLog(`\n<pre>바닥으로부터 수많은 덩굴이 솟구친다.\n벗어날 수 없는 공포가 당신의 발목을 옥죄어 온다.\n"이 땅에 모습을 드러낸 이들을, 잊지 않겠다."</pre>\n`);
+                const hitArea = "0,0;0,2;0,4;1,1;1,3;2,0;2,2;2,4;3,1;3,3;4,0;4,2;4,4".split(';').map(s => {
+                    const [x, y] = s.split(',').map(Number);
+                    return { x, y };
+                });
+                const damage = caster.getEffectiveStat('matk');
+                
+                enemies.forEach(target => {
+                    if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                        battleLog(`✦광역 피해✦ ${caster.name}의 [덩굴 탄생]이 ${target.name}에게 적중!`);
+                        target.takeDamage(damage, battleLog, caster);
+                    }
+                });
+                return true;
+            }
+        },
+        SKILL_Spores_of_Silence: {
+            id: "SKILL_Spores_of_Silence",
+            name: "침묵의 포자",
+            type: "광역 디버프",
+            description: "지정된 범위의 대상에게 [무장 해제] 디버프를 부여합니다. 지속 턴은 피격된 인원 수와 같습니다.",
+            targetType: "all_enemies",
+            execute: (caster, allies, enemies, battleLog) => {
+                battleLog(`\n<pre>고운 꽃가루가 하늘을 뒤덮는다.\n생경한 아름다움은 고요한 찬사만을 강요한다.\n"많은 말은 필요하지 않은 법."</pre>\n`);
+                const hitArea = "0,0;1,0;2,0;3,0;4,0;0,2;1,2;3,2;4,2;0,4;1,4;2,4;3,4;4,4".split(';').map(s => {
+                    const [x, y] = s.split(',').map(Number);
+                    return { x, y };
+                });
+                
+                const targets = enemies.filter(target => target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY));
+                const debuffDuration = targets.length;
+
+                if (debuffDuration > 0) {
+                     battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 포자]가 ${targets.map(t=>t.name).join(', ')}에게 적중!`);
+                    targets.forEach(target => {
+                        target.addDebuff('disarm', '[무장 해제]', debuffDuration, {
+                            description: `공격 유형 스킬 사용 불가 (${debuffDuration}턴)`
+                        });
+                    });
+                } else {
+                    battleLog(`✦효과 없음✦ [침묵의 포자]의 영향을 받은 대상이 없습니다.`);
+                }
+                return true;
+            }
+        },
+        SKILL_Seeds_Wrath: {
+            id: "SKILL_Seeds_Wrath",
+            name: "씨앗의 분노",
+            type: "광역 복합",
+            description: "두 종류의 범위에 각각 다른 효과를 부여합니다.",
+            targetType: "all_enemies",
+            execute: (caster, allies, enemies, battleLog) => {
+                battleLog(`\n<pre>땅속 깊은 곳에서 들려오는 불길한 진동.\n잠들어 있던 씨앗이 한순간 깨어난다.\n"분노하라. 그리하여 너희를 삼킬 것이다."</pre>\n`);
+                const greenHitArea = "1,1;1,2;1,3;2,1;2,3;3,1;3,2;3,3".split(';').map(s => s.split(',').map(Number));
+                const blueHitArea = "0,0;0,4;4,0;4,4".split(';').map(s => s.split(',').map(Number));
+                const damage = caster.getEffectiveStat('matk');
+
+                enemies.forEach(target => {
+                    if (!target.isAlive) return;
+                    // 초록 피격 범위: 데미지
+                    if (greenHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                         battleLog(`✦피해✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 적중!`);
+                         target.takeDamage(damage, battleLog, caster);
+                    }
+                    // 파란 피격 범위: 무장 해제
+                    if (blueHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                        battleLog(`✦디버프✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 [무장 해제] 부여!`);
+                        target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
+                    }
+                });
+                return true;
+            }
+        },
+        GIMMICK_Path_of_Ruin: {
+            id: "GIMMICK_Path_of_Ruin",
+            name: "균열의 길",
+            type: "기믹",
+            description: "무작위 행과 열에 공격을 예고합니다.",
+            targetType: "self",
+            execute: (caster, allies, enemies, battleLog) => {
+                // 이미 예고가 진행 중이면 발동하지 않음
+                if (caster.hasBuff('path_of_ruin_telegraph')) return false;
+
+                battleLog(`\n<pre>${GIMMICK_DATA.GIMMICK_Path_of_Ruin.script}</pre>\n`);
+                
+                const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
+                const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
+
+                // 몬스터에게 예고 상태를 저장하는 버프 추가 (2턴 = 현재 턴 + 다음 턴)
+                caster.addBuff('path_of_ruin_telegraph', '균열의 길 예고', 2, { predictedCol, predictedRow });
+                battleLog(`✦기믹 예고✦ [균열의 길]: ${predictedCol+1}열과 ${predictedRow+1}행에 공격이 예고됩니다. 다음 턴 시작 시 발동.`);
+                
+                // TODO: UI에 예고 타일 하이라이트 기능 추가 필요
+                // highlightTelegraphedTiles([{col: predictedCol, row: predictedRow}]);
+                return true;
+            }
+        },
+
+        GIMMICK_Seed_of_Devour: {
+            id: "GIMMICK_Seed_of_Devour",
+            name: "흡수의 술식",
+            type: "기믹",
+            description: "세 가지 형태의 기믹 중 하나를 무작위로 발동합니다.",
+            targetType: "self",
+            execute: (caster, allies, enemies, battleLog) => {
+                // 1. 맵에 상호 작용 가능한 오브젝트(열매, 샘)를 생성/관리하는 기능 필요
+                // 2. 특정 좌표에 아군이 서 있는지 지속적으로 확인하는 로직 필요
+                // 3. 특정 오브젝트에 가해진 '힐량'을 추적하는 기능 필요
+                const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
+                const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
+                
+                battleLog(`\n<pre>${gimmickInfo.script}</pre>\n`);
+                battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
+
+                // 실제 기믹 로직은 여기에 추가되어야 합니다.
+                console.log(`[DEBUG] '흡수의 술식' 기믹 ${subGimmickChoice}번(${gimmickInfo.name}) 발동. (구현 필요)`);
+                return true;
+            }
+        }
     };
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
@@ -1210,10 +1337,20 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
         
         this.debuffs.forEach(debuff => {
             if (debuff.turnsLeft > 0 && debuff.effect) {
-                // [흠집] 관련 로직 추가
+                // [흠집
                 if (debuff.id === 'scratch' && debuff.effect.reductionType === statName && debuff.stacks > 0) {
                     const reductionValue = debuff.effect.reductionValue || 0.10; // 기본값 10%
                     value *= (1 - reductionValue); 
+                }
+
+                // [붕괴]
+                if (debuff.id === 'rupture_debuff') {
+                    if (statName === 'def' && debuff.effect.defReduction) {
+                        value *= (1 - debuff.effect.defReduction);
+                    }
+                    if (statName === 'mdef' && debuff.effect.mdefReduction) {
+                        value *= (1 - debuff.effect.mdefReduction);
+                    }
                 }
             }
         });
@@ -1365,6 +1502,66 @@ function loadMap(mapId) {
     } else {
         logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
     }
+
+    enemyCharacters = []; // 적군 목록 초기화
+    
+    mapConfig.enemies.forEach(mapEnemy => {
+        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
+        if (!template) {
+            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+            return;
+        }
+        let monsterType;
+        if (Array.isArray(template.type)) {
+            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
+        } else {
+            monsterType = template.type;
+        }
+        const newEnemy = new Character(template.name, monsterType);
+        
+        newEnemy.maxHp = template.maxHp || 100;
+        newEnemy.currentHp = newEnemy.maxHp;
+        newEnemy.atk = template.atk || 15;
+        newEnemy.matk = template.matk || 15;
+        newEnemy.def = template.def || 15;
+        newEnemy.mdef = template.mdef || 15;
+        newEnemy.skills = template.skills ? [...template.skills] : [];
+        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+
+        const posX = mapEnemy.pos.x;
+        const posY = mapEnemy.pos.y;
+        
+        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+            newEnemy.posX = posX;
+            newEnemy.posY = posY;
+        } else {
+            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
+            const randomCell = getRandomEmptyCell();
+            if (randomCell) {
+                newEnemy.posX = randomCell.x;
+                newEnemy.posY = randomCell.y;
+            }
+        }
+        enemyCharacters.push(newEnemy);
+        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}] (HP: ${newEnemy.currentHp}/${newEnemy.maxHp}), [${newEnemy.posX},${newEnemy.posY}].`);
+    });
+
+    // --- 아군 위치 보존 로직 ---
+    const newCharacterPositions = {};
+    // 1. 기존 아군 위치 먼저 등록
+    allyCharacters.forEach(char => {
+        if (char.posX !== -1 && char.posY !== -1) {
+            newCharacterPositions[`${char.posX},${char.posY}`] = char.id;
+        }
+    });
+    // 2. 새로 불러온 적군 위치 등록(겹치면 덮어쓰기)
+    enemyCharacters.forEach(char => {
+        if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
+            newCharacterPositions[`${char.posX},${char.posY}`] = char.id;
+        }
+    });
+    
+    characterPositions = newCharacterPositions;
 
     enemyCharacters = [];
     
@@ -1856,7 +2053,7 @@ function selectSkill(skillId, caster) {
         if (skillDescriptionArea) skillDescriptionArea.innerHTML = '스킬 선택이 취소되었습니다.';
         if (confirmActionButton) confirmActionButton.style.display = 'none';
         selectedTargetName.textContent = '없음';
-        return; // 함수 종료
+        return;
     }
     
     selectedAction.type = 'skill';
@@ -2000,6 +2197,25 @@ function confirmAction() {
         return;
     }
 
+    // --- '무장 해제' 디버프 확인 로직 ---
+    if (selectedAction.type === 'skill') {
+        const skill = SKILLS[selectedAction.skillId];
+        const hasDisarmDebuff = caster.hasDebuff('disarm');
+        // 스킬 타입에 '공격'이 포함되는지 확인
+        const isAttackSkill = skill.type.includes('공격');
+
+        if (hasDisarmDebuff && isAttackSkill) {
+            logToBattleLog(`✦정보✦ ${caster.name}의 [무장 해제] 상태로 인해 공격 스킬을 사용할 수 없습니다.`);
+            // 선택 초기화
+            selectedAction.type = null;
+            selectedAction.skillId = null;
+            selectedAction.targetId = null;
+            showSkillSelectionForCharacter(caster); // 다시 스킬 선택 창으로
+            return; // 행동 확정 중단
+        }
+    }
+    // --- 여기까지 ---
+
     let actionDetails = { caster: caster, type: selectedAction.type };
     let targetDescription = "정보 없음"; 
 
@@ -2026,11 +2242,10 @@ function confirmAction() {
                     targetDescription += `, ${subTargetObj.name}`; 
                     actionDetails.subTarget = subTargetObj;
                 } else {
-                    alert('두 번째 대상을 선택해야 합니다.'); return; // 두 대상 선택 스킬인데 부가 대상이 없으면 확정 불가
+                    alert('두 번째 대상을 선택해야 합니다.'); return;
                 }
             }
         } else if (skill.targetSelection !== 'self' && skill.targetType !== 'all_allies' && skill.targetType !== 'all_enemies') {
-            // 단일/다중 대상 스킬인데 대상 선택이 안 된 경우
             alert('스킬 대상을 선택해야 합니다.'); return;
         }
         logToBattleLog(`✦준비✦ ${caster.name}, [${skill.name}] 스킬 사용 준비. (대상: ${targetDescription})`);
@@ -2159,9 +2374,8 @@ async function executeBattleTurn() {
     if (!isBattleStarted) { alert('전투를 시작해 주세요.'); return; }
     
     const aliveAlliesCount = allyCharacters.filter(c => c.isAlive).length;
-    if (playerActionsQueue.length < aliveAlliesCount && aliveAlliesCount > 0) { // 살아 있는 아군이 있는데 행동큐가 비어있으면 안됨
+    if (playerActionsQueue.length < aliveAlliesCount && aliveAlliesCount > 0) {
          alert('모든 살아 있는 아군의 행동을 선택해 주세요.');
-         // 선택 UI를 다시 띄워주거나 하는 처리가 필요할 수 있음
          promptAllySelection();
          return;
     }
@@ -2170,6 +2384,44 @@ async function executeBattleTurn() {
     if(executeTurnButton) executeTurnButton.style.display = 'none';
     if(allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'none';
     if(skillDescriptionArea) skillDescriptionArea.innerHTML = ''; 
+
+    logToBattleLog(`\n--- ${currentTurn} 턴 아군 행동 실행 ---`);
+    for (const action of playerActionsQueue) {
+        if (!action.caster.isAlive) continue;
+        if (await executeSingleAction(action)) {
+            return;
+        }
+    }
+
+    if (checkBattleEnd()) return;
+
+    // --- '균열의 길' 기믹 판정 로직 추가 ---
+    logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
+    enemyCharacters.forEach(enemy => {
+        const telegraphBuff = enemy.buffs.find(b => b.id === 'path_of_ruin_telegraph');
+        if (telegraphBuff && telegraphBuff.turnsLeft === 1) { // 예고 후 다음 턴 시작 시
+            logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다!`);
+            const { predictedCol, predictedRow } = telegraphBuff.effect;
+            const targets = allyCharacters.filter(ally => ally.isAlive && (ally.posX === predictedCol || ally.posY === predictedRow));
+
+            if (targets.length > 0) { // 파훼 실패
+                logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}이(가) 균열의 길 위에 있습니다.`);
+                const damage = enemy.getEffectiveStat('matk');
+                targets.forEach(target => {
+                    target.takeDamage(damage, logToBattleLog, enemy);
+                    target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
+                });
+            } else { // 파훼 성공
+                logToBattleLog(`  파훼 성공: 균열의 길 위에 아무도 없습니다.`);
+                enemy.addDebuff('rupture_debuff', '[붕괴]', 2, {
+                    defReduction: 0.3, // 방어력 30% 감소
+                    mdefReduction: 0.3 // 마법 방어력 30% 감소
+                });
+                logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다! (2턴)`);
+            }
+            enemy.removeBuffById('path_of_ruin_telegraph');
+        }
+    });
 
     logToBattleLog(`\n--- ${currentTurn} 턴 아군 행동 실행 ---`);
     // 플레이어 행동 순서는 playerActionsQueue에 담긴 순서대로 (사용자가 선택한 순서)
@@ -2203,76 +2455,59 @@ async function executeBattleTurn() {
 }
 
 function previewEnemyAction(enemyChar) {
-    // 1. 기믹 결정
-    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
+    // 기믹 활성화 로직 (Terrmor_1 용)
+    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0 && enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
         const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
         const newGimmickId = enemyChar.gimmicks[gimmickIndex];
         enemyChar.activeGimmick = newGimmickId;
         const gimmickData = GIMMICK_DATA[newGimmickId];
         if (gimmickData) {
-            logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
-        }
-    }
-
-    // 2. 사용할 스킬 결정
-    const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
-    const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill); // 쿨타임 등은 실제 사용 시 체크
-    if (usableSkills.length === 0) return null;
-    
-    const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
-
-    // 3. 스킬 범위 계산
-    let hitArea = [];
-    const skillDefinition = allSkills[skillToUse.id];
-    // 스킬 execute 함수는 실제 실행 전이라 호출 불가. 대신, 스킬 데이터에 'area' 속성을 추가하거나 execute 코드에서 파싱해야 함
-    // 여기서는 간단하게 execute 코드에서 좌표 문자열을 파싱하는 예시를 사용
-    const executeCode = skillDefinition.execute.toString();
-    const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
-    if (areaMatch && areaMatch[1]) {
-        hitArea = areaMatch[1].split(';').map(s => {
-            const [x, y] = s.split(',').map(Number);
-            return { x, y };
-        });
-    }
-
-    return {
-        casterId: enemyChar.id,
-        skillId: skillToUse.id,
-        hitArea: hitArea
-    };
-}
-
-function previewEnemyAction(enemyChar) {
-    if (enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
-        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
-        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
-        enemyChar.activeGimmick = newGimmickId;
-        const gimmickData = GIMMICK_DATA[newGimmickId];
-        if (gimmickData) {
-            logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
+            logToBattleLog(`\n<pre>${gimmickData.flavorText || gimmickData.description}</pre>\n`);
         }
     }
 
     const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
-    const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill);
-    if (usableSkills.length === 0) return null;
-    
-    const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
+    let skillToUseId = null;
 
+    // --- 몬스터별 행동 결정 로직 ---
+    // A-2 몬스터 (Terrmor_2)
+    if (enemyChar.skills.includes("SKILL_Birth_of_Vines")) {
+        const allActions = [...enemyChar.gimmicks, ...enemyChar.skills];
+        const actionIndex = (currentTurn - 1) % allActions.length;
+        skillToUseId = allActions[actionIndex];
+    }
+    // A-1 몬스터 (Terrmor)
+    else if (enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
+        const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill);
+        if (usableSkills.length > 0) {
+            const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
+            skillToUseId = skillToUse.id;
+        }
+    }
+    // --- 여기까지 ---
+
+    if (!skillToUseId) return null;
+
+    const skillDefinition = allSkills[skillToUseId];
     let hitArea = [];
-    const skillDefinition = allSkills[skillToUse.id];
-    const executeCode = skillDefinition.execute.toString();
-    const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
-    if (areaMatch && areaMatch[1]) {
-        hitArea = areaMatch[1].split(';').map(s => {
-            const [x, y] = s.split(',').map(Number);
-            return { x, y };
-        });
+
+    // 스킬 정의에서 피격 범위를 파싱
+    if (skillDefinition && skillDefinition.execute) {
+        const executeCode = skillDefinition.execute.toString();
+        const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
+        if (areaMatch && areaMatch[1]) {
+            hitArea = areaMatch[1].split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+        }
     }
 
+
+    // 예고 정보를 담아 반환
     return {
         casterId: enemyChar.id,
-        skillId: skillToUse.id,
+        skillId: skillToUseId,
         hitArea: hitArea
     };
 }
