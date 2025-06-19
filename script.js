@@ -2193,11 +2193,13 @@ function selectTarget(targetCharId) {
 
     // 새로운 대상 선택 로직
     if (skill.targetSelection === 'enemy') {
-        if (enemyCharacters.includes(targetChar)) {
+        if (enemyCharacters.includes(targetChar) || targetChar.isGimmickObject) {
             selectedAction.targetId = targetCharId;
             selectedTargetName.textContent = targetChar.name;
             canConfirm = true;
-        } else alert('적군을 대상으로 선택해야 합니다.');
+        } else {
+             alert('적군 또는 파괴 가능한 기믹 오브젝트를 대상으로 선택해야 합니다.');
+        }
     } else if (skill.targetSelection === 'ally') {
         if (allyCharacters.includes(targetChar)) {
             selectedAction.targetId = targetCharId;
