@@ -562,12 +562,28 @@ const SKILLS = {
         id: "SKILL_RESONANCE",
         name: "공명",
         type: "지정 버프",
-        description: "두 사람의 완벽한 조화는 곧 전체의 완성이다.<br><br>1) 지정 대상이 (잃은 체력x50%) 회복<br>2) 모든 상태 이상 정화<br>3) 시전자 [환원] 상태 진입. <br> [환원] 상태 시,스킬 시전할 때 가장 낮은 체력 아군 (시전자 방어력x60%) 추가 회복 3턴 지속, 연달아 사용하더라도 최대 3턴",
-        targetType: "single_ally",
+        description: "두 사람의 완벽한 조화는 곧 전체의 완성이다.<br><br>1) 지정 대상이 (잃은 체력x50%) 회복<br>2) 모든 상태 이상 정화<br>3) 시전자 [환원] 상태 진입. <br> [환원] 상태 시,스킬 시전할 때 가장 낮은 체력 아군 (시전자 방어력x60%) 추가 회복 3턴 지속, 연달아 사용하더라도 최대 3턴. <br><b>* 기믹 오브젝트 '메마른 생명의 샘'에 사용 가능</b>",
+        targetType: "single_ally_or_gimmick",
         targetSelection: "ally",
         execute: (caster, target, allies, enemies, battleLog) => {
-            if (!target || !target.isAlive) {
-                battleLog(`✦정보✦ ${caster.name} [공명]: 대상을 찾을 수 없거나 대상이 쓰러져 있습니다.`);
+            if (!target) {
+                battleLog(`✦정보✦ ${caster.name} [공명]: 대상을 찾을 수 없습니다.`);
+                return false;
+            }
+
+            // 대상이 '메마른 생명의 샘'인 경우
+            if (target.type === 'spring') {
+                const healAmount = Math.round(caster.getEffectiveStat('def') * 2); // 샘은 방어력 기반으로 치유
+                target.healingReceived += healAmount;
+                battleLog(`✦스킬✦ ${caster.name}, [${target.name}]에 [공명] 사용.`);
+                logToBattleLog(`✦회복✦ [${target.name}]에 생명력을 ${healAmount} 주입합니다. (현재: ${target.healingReceived}/${target.healingGoal})`);
+                displayCharacters(); // 샘의 숫자 UI 업데이트
+                return true;
+            }
+
+            // 대상이 일반 아군인 경우 (기존 로직)
+            if (!target.isAlive) {
+                 battleLog(`✦정보✦ ${caster.name} [공명]: 대상이 쓰러져 있습니다.`);
                 return false;
             }
             
@@ -575,7 +591,7 @@ const SKILLS = {
             const healAmount = Math.round(lostHp * 0.5);
             target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용.`);
-            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount} 회복. (HP: ${target.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount} 회복. (HP: ${target.currentHp.toFixed(0)})`);
 
             if (target.debuffs.length > 0) {
                 const cleansedDebuffs = target.debuffs.map(d => d.name).join(', ');
@@ -630,7 +646,7 @@ const SKILLS = {
         id: "SKILL_SEDIMENTATION",
         name: "침전",
         type: "광역 버프",
-        description: "희생은 언제나 숭고하다. 그러나 희생자는 누가 구할 것인가.<br><br>1) 시전자 (전체 체력x20%) 차감<br>2) 시전자 제외 전원 (잃은 체력x70%) 회복<br>3) [면역] 1회 부여. <br>[면역] 상태 시, 이후 상태 이상 1회 무조건 적용되지 않음.",
+        description: "희생은 언제나 숭고하다. 그러나 희생자는 누가 구할 것인가.<br><br>1) 시전자 (전체 체력x20%) 차감<br>2) 시전자 제외 전원 (잃은 체력x70%) 회복<br>3) [면역] 1회 부여. <br>[면역] 상태 시, 이후 상태 이상 1회 무조건 적용되지 않음. <br><b>* 기믹 오브젝트 '메마른 생명의 샘'에 회복 효과 적용 가능</b>",
         targetType: "all_allies",
         targetSelection: "all_allies",
         execute: (caster, allies, enemies, battleLog) => {
@@ -638,26 +654,36 @@ const SKILLS = {
 
             const hpCost = Math.round(caster.maxHp * 0.2); 
             caster.currentHp -= hpCost;
-            battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost}을 소모합니다.`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+            battleLog(`✦소모✦ ${caster.name}: 자신을 희생하여 체력 ${hpCost}을 소모합니다.`);
             if (caster.currentHp <= 0) {
                 caster.currentHp = 1;
                 battleLog(`✦효과✦ ${caster.name}, 쓰러지기 직전이지만 효과는 발동됩니다.`);
             }
 
+            // 1. 아군에게 효과 적용 (기존 로직)
             allies.filter(a => a.isAlive && a.id !== caster.id).forEach(ally => {
                 const lostHp = ally.maxHp - ally.currentHp;
                 if (lostHp > 0) {
                     const healAmount = Math.round(lostHp * 0.7); 
                     ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
-                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount} 회복. (HP: ${ally.currentHp.toFixed(0)})`); // ▼▼▼ 수정: toFixed 제거 ▼▼▼
+                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount} 회복. (HP: ${ally.currentHp.toFixed(0)})`);
                 }
                 ally.addBuff('immunity', '[면역]', 2, {
                     description: "다음 상태 이상 공격을 1회 무효화합니다.",
                     singleUse: true
                 });
-                battleLog(`✦버프✦ ${ally.name}: [면역] 효과를 얻었습니다. (1회)`);
+                battleLog(`✦버프✦ ${ally.name}: [면역](1회) 효과를 얻었습니다.`);
             });
 
+            // 2. 기믹 오브젝트에게 효과 적용 (새로운 로직)
+            const spring = mapObjects.find(obj => obj.type === 'spring');
+            if (spring) {
+                const healAmount = hpCost; // 시전자가 소모한 체력만큼 샘을 회복
+                spring.healingReceived += healAmount;
+                battleLog(`✦회복✦ [${spring.name}]에 생명력을 ${healAmount} 주입합니다. (현재: ${spring.healingReceived}/${spring.healingGoal})`);
+            }
+            
+            displayCharacters(); // UI 즉시 갱신
             return true;
         }
     },
@@ -890,20 +916,89 @@ const SKILLS = {
             description: "세 가지 형태의 기믹 중 하나를 무작위로 발동합니다.",
             targetType: "self",
             execute: (caster, allies, enemies, battleLog) => {
-                // 1. 맵에 상호 작용 가능한 오브젝트(열매, 샘)를 생성/관리하는 기능 필요
-                // 2. 특정 좌표에 아군이 서 있는지 지속적으로 확인하는 로직 필요
-                // 3. 특정 오브젝트에 가해진 '힐량'을 추적하는 기능 필요
+                if (activeGimmickState) return false;
+
                 const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
                 const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
-                
+                const gimmickCoordsStr = GIMMICK_DATA.GIMMICK_Seed_of_Devour.coords;
+                const availableCoords = gimmickCoordsStr.split(';').map(s => {
+                    const [x, y] = s.split(',').map(Number);
+                    return { x, y };
+                }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
+
                 battleLog(`\n<pre>${gimmickInfo.script}</pre>\n`);
                 battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
 
-                // 실제 기믹 로직은 여기에 추가되어야 합니다.
-                console.log(`[DEBUG] '흡수의 술식' 기믹 ${subGimmickChoice}번(${gimmickInfo.name}) 발동. (구현 필요)`);
+                activeGimmickState = {
+                    type: null,
+                    startTurn: currentTurn,
+                    objectIds: []
+                };
+
+                if (subGimmickChoice === 1) { // 열매 파괴
+                    activeGimmickState.type = 'fruit_destruction';
+                    for (let i = 0; i < 2; i++) {
+                        if (availableCoords.length === 0) break;
+                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+                        const pos = availableCoords.splice(spawnIndex, 1)[0];
+                        const fruit = {
+                            id: `fruit_${Math.random()}`,
+                            type: 'fruit',
+                            name: '열매',
+                            posX: pos.x,
+                            posY: pos.y,
+                            isAlive: true,
+                            hp: 1, // 한 번의 공격으로 파괴
+                            isGimmickObject: true,
+                        };
+                        mapObjects.push(fruit);
+                        characterPositions[`${pos.x},${pos.y}`] = fruit.id;
+                        activeGimmickState.objectIds.push(fruit.id);
+                    }
+                } else if (subGimmickChoice === 2) { // 불안정한 균열
+                    activeGimmickState.type = 'unstable_fissure';
+                    for (let i = 0; i < 3; i++) {
+                        if (availableCoords.length === 0) break;
+                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+                        const pos = availableCoords.splice(spawnIndex, 1)[0];
+                        const fissure = {
+                            id: `fissure_${Math.random()}`,
+                            type: 'fissure',
+                            name: '불안정한 균열',
+                            posX: pos.x,
+                            posY: pos.y,
+                            isGimmickObject: true,
+                        };
+                        mapObjects.push(fissure);
+                        activeGimmickState.objectIds.push(fissure.id);
+                    }
+                } else if (subGimmickChoice === 3) { // 메마른 생명의 샘
+                    activeGimmickState.type = 'drying_spring';
+                    if (availableCoords.length > 0) {
+                        const spawnIndex = Math.floor(Math.random() * availableCoords.length);
+                        const pos = availableCoords.splice(spawnIndex, 1)[0];
+                        const spring = {
+                            id: `spring_${Math.random()}`,
+                            type: 'spring',
+                            name: '메마른 생명의 샘',
+                            posX: pos.x,
+                            posY: pos.y,
+                            isAlive: true,
+                            healingReceived: 0,
+                            healingGoal: 50,
+                            isGimmickObject: true,
+                        };
+                        mapObjects.push(spring);
+                        characterPositions[`${pos.x},${pos.y}`] = spring.id;
+                        activeGimmickState.objectIds.push(spring.id);
+                    }
+                }
+                displayCharacters();
                 return true;
             }
+            // --- 여기까지 교체 ---
         }
+    };
     };
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
@@ -1110,6 +1205,20 @@ class Character {
     takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
         if (!this.isAlive) return;
 
+        if (this.isGimmickObject) { // 대상이 기믹 오브젝트(열매)일 경우
+            this.hp -= rawDamage;
+            if (this.hp <= 0) {
+                this.isAlive = false;
+                logFn(`✦파괴✦ 기믹 오브젝트 [${this.name}] 파괴`);
+                // 맵에서 제거
+                mapObjects = mapObjects.filter(obj => obj.id !== this.id);
+                const posKey = Object.keys(characterPositions).find(key => characterPositions[key] === this.id);
+                if(posKey) delete characterPositions[posKey];
+                displayCharacters();
+            }
+            return;
+        }
+        
         // 상성 관련
         if (attacker && attacker.isAlive) {
             // 상성 우위 체크
@@ -2110,7 +2219,11 @@ function selectTarget(targetCharId) {
 
     const caster = findCharacterById(selectedAction.casterId);
     const skill = SKILLS[selectedAction.skillId];
-    const targetChar = findCharacterById(targetCharId);
+    
+    let targetChar = findCharacterById(targetCharId); // 1. 캐릭터 배열에서 먼저 검색
+    if (!targetChar) { // 2. 캐릭터가 아니면, 기믹 오브젝트 배열에서 검색
+        targetChar = mapObjects.find(obj => obj.id === targetCharId);
+    }
 
     if (!targetChar || !targetChar.isAlive) { 
         logToBattleLog('유효하지 않은 대상입니다 (이미 쓰러졌거나 없음).');
@@ -2394,17 +2507,19 @@ async function executeBattleTurn() {
 
     if (checkBattleEnd()) return;
 
+    resolveGimmickEffects(); // 적 턴 시작 전 기믹 효과 판정
+    
     // --- '균열의 길' 기믹 판정 로직 추가 ---
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
     enemyCharacters.forEach(enemy => {
         const telegraphBuff = enemy.buffs.find(b => b.id === 'path_of_ruin_telegraph');
         if (telegraphBuff && telegraphBuff.turnsLeft === 1) { // 예고 후 다음 턴 시작 시
-            logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다!`);
+            logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다.`);
             const { predictedCol, predictedRow } = telegraphBuff.effect;
             const targets = allyCharacters.filter(ally => ally.isAlive && (ally.posX === predictedCol || ally.posY === predictedRow));
 
             if (targets.length > 0) { // 파훼 실패
-                logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}이(가) 균열의 길 위에 있습니다.`);
+                logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}, 균열의 길 위에 있습니다.`);
                 const damage = enemy.getEffectiveStat('matk');
                 targets.forEach(target => {
                     target.takeDamage(damage, logToBattleLog, enemy);
@@ -2416,7 +2531,7 @@ async function executeBattleTurn() {
                     defReduction: 0.3, // 방어력 30% 감소
                     mdefReduction: 0.3 // 마법 방어력 30% 감소
                 });
-                logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다! (2턴)`);
+                logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다. (2턴)`);
             }
             enemy.removeBuffById('path_of_ruin_telegraph');
         }
@@ -2558,6 +2673,94 @@ function checkAndApplyEnrage(character, battleLog) {
     }
 }
 
+function resolveGimmickEffects() {
+    if (!activeGimmickState || currentTurn < activeGimmickState.startTurn + 3) {
+        return; // 활성화된 기믹이 없거나 아직 3턴이 지나지 않음
+    }
+
+    logToBattleLog(`✦기믹 판정✦ [${activeGimmickState.type}]의 효과를 판정합니다.`);
+    const boss = enemyCharacters.find(e => e.name === "테르모르");
+    if (!boss) return;
+
+    if (activeGimmickState.type === 'fruit_destruction') {
+        const remainingFruits = mapObjects.filter(obj => activeGimmickState.objectIds.includes(obj.id));
+        if (remainingFruits.length === 0) { // 파훼 성공
+            logToBattleLog(`  파훼 성공: 모든 열매를 파괴했습니다!`);
+            const damageToBoss = Math.round(boss.maxHp * 0.05);
+            boss.takeDamage(damageToBoss, logToBattleLog, null);
+            logToBattleLog(`  테르모르가 폭발로 ${damageToBoss}의 추가 피해를 입습니다!`);
+            allyCharacters.filter(a => a.isAlive).forEach(ally => {
+                const healAmount = Math.round(ally.maxHp * 0.10);
+                ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
+                logToBattleLog(`  ${ally.name}의 체력이 ${healAmount} 회복됩니다.`);
+            });
+        } else { // 파훼 실패
+            logToBattleLog(`  파훼 실패: ${remainingFruits.length}개의 열매가 남았습니다.`);
+            const bossHeal = Math.round(boss.maxHp * 0.10);
+            boss.currentHp = Math.min(boss.maxHp, boss.currentHp + bossHeal);
+            logToBattleLog(`  테르모르의 체력이 ${bossHeal} 회복됩니다.`);
+            const debuffCount = remainingFruits.length * 3;
+            const livingAllies = allyCharacters.filter(a => a.isAlive);
+            for(let i = 0; i < debuffCount && livingAllies.length > 0; i++) {
+                const target = livingAllies[Math.floor(Math.random() * livingAllies.length)];
+                target.addDebuff('disarm', '[무장 해제]', 1, {});
+                logToBattleLog(`  ${target.name}에게 [무장 해제]가 1턴 부여됩니다.`);
+            }
+        }
+    } else if (activeGimmickState.type === 'unstable_fissure') {
+        const fissures = mapObjects.filter(obj => activeGimmickState.objectIds.includes(obj.id));
+        const emptyFissures = fissures.filter(f => !allyCharacters.some(a => a.isAlive && a.posX === f.posX && a.posY === f.posY));
+        
+        fissures.forEach(fissure => {
+            const playerOnTop = allyCharacters.find(a => a.isAlive && a.posX === fissure.posX && a.posY === fissure.posY);
+            if (playerOnTop) { // 파훼 성공 (개별)
+                logToBattleLog(`  ${playerOnTop.name}, [불안정한 균열]의 폭발을 막았습니다.`);
+                playerOnTop.addDebuff('fissure_dot', '[균열]', 2, {
+                     description: "턴 종료 시 현재 체력의 10% 피해 (2턴)",
+                     dotPercent: 0.10
+                });
+                 logToBattleLog(`  대가로 ${playerOnTop.name}에게 [균열] 디버프를 얻습니다.`);
+            }
+        });
+
+        if (emptyFissures.length > 0) { // 파훼 실패
+             logToBattleLog(`  파훼 실패: ${emptyFissures.length}개의 균열이 폭발하여 광역 피해를 입힙니다.`);
+             const damage = Math.round(boss.getEffectiveStat('matk') * emptyFissures.length);
+             allyCharacters.filter(a => a.isAlive).forEach(ally => {
+                ally.takeDamage(damage, logToBattleLog, boss);
+             });
+        }
+    } else if (activeGimmickState.type === 'drying_spring') {
+        const spring = mapObjects.find(obj => activeGimmickState.objectIds.includes(obj.id));
+        if(spring) {
+            if(spring.healingReceived >= spring.healingGoal) { // 성공
+                logToBattleLog(`  파훼 성공: 메마른 샘이 정화되었으나, 넘치는 생명력에 모두가 피해를 입습니다.`);
+                const damage = 0.05;
+                 allyCharacters.filter(a => a.isAlive).forEach(ally => {
+                    const dmgAmount = Math.round(ally.maxHp * damage);
+                    ally.takeDamage(dmgAmount, logToBattleLog, null);
+                 });
+            } else { // 실패
+                logToBattleLog(`  파훼 실패: 메마른 샘이 분노하여 모두에게 강력한 피해를 입힙니다.`);
+                const damage = 0.30;
+                 allyCharacters.filter(a => a.isAlive).forEach(ally => {
+                    const dmgAmount = Math.round(ally.maxHp * damage);
+                    ally.takeDamage(dmgAmount, logToBattleLog, null);
+                 });
+            }
+        }
+    }
+    
+    // 기믹 종료 후 정리
+    mapObjects = mapObjects.filter(obj => !activeGimmickState.objectIds.includes(obj.id));
+    activeGimmickState.objectIds.forEach(id => {
+        const posKey = Object.keys(characterPositions).find(key => characterPositions[key] === id);
+        if(posKey) delete characterPositions[posKey];
+    });
+    activeGimmickState = null;
+    displayCharacters();
+}
+    
 async function performEnemyAction(enemyChar) {
     if (!enemyChar.isAlive) return false;
 
