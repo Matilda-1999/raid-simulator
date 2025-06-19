@@ -997,7 +997,6 @@ const SKILLS = {
                 displayCharacters();
                 return true;
             }
-            // --- 여기까지 교체 ---
         }
     };
 
