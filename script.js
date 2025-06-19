@@ -888,25 +888,22 @@ const SKILLS = {
             }
         },
         
-        GIMMICK_Path_of_Ruin: {
-            id: "GIMMICK_Path_of_Ruin",
-            name: "균열의 길",
-            type: "기믹",
-            description: "무작위 행과 열에 공격을 예고합니다.",
-            targetType: "self",
-            execute: (caster, allies, enemies, battleLog) => {
-                // 이미 예고가 진행 중이면 발동하지 않음
-                if (caster.hasBuff('path_of_ruin_telegraph')) return false;
-
-                battleLog(`\n<pre>${GIMMICK_DATA.GIMMICK_Path_of_Ruin.script}</pre>\n`);
-                
-                const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
-                const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
-
-                // 몬스터에게 예고 상태를 저장하는 버프 추가(2턴 = 현재 턴 + 다음 턴)
-                caster.addBuff('path_of_ruin_telegraph', '균열의 길 예고', 2, { predictedCol, predictedRow });
-                
-                return true;
+    GIMMICK_Path_of_Ruin: {
+        id: "GIMMICK_Path_of_Ruin",
+        name: "균열의 길",
+        type: "기믹",
+        description: "무작위 행과 열에 공격을 예고합니다.",
+        targetType: "self",
+        execute: (caster, allies, enemies, battleLog, dynamicData) => {
+            if (caster.hasBuff('path_of_ruin_telegraph')) return false;
+    
+            battleLog(`\n<pre>${GIMMICK_DATA.GIMMICK_Path_of_Ruin.script}</pre>\n`);
+            
+            const { predictedCol, predictedRow } = dynamicData;
+    
+            caster.addBuff('path_of_ruin_telegraph', '균열의 길 예고', 2, { predictedCol, predictedRow });
+            
+            return true;
             }
         },
 
@@ -1911,7 +1908,7 @@ function startBattle() {
     currentTurn = 0; 
     playerActionsQueue = [];
     actedAlliesThisTurn = [];
-    logToBattleLog('     【전투 시작】     \n');
+    logToBattleLog('\n【전투 시작】\n');
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         char.currentHp = char.maxHp; // 체력 완전 회복
         char.isAlive = true;
@@ -1945,11 +1942,11 @@ function prepareNewTurnCycle() {
         checkAndApplyEnrage(enemy, logToBattleLog);
     });
     
-    logToBattleLog(`\n--- ${currentTurn} 턴 행동 선택 시작 ---`);
+    logToBattleLog(`\n --- ${currentTurn} 턴 행동 선택 시작 --- \n`);
 
     // 맵 ID가 'B-1'일 경우에만 4턴마다 추가 몬스터를 소환합니다.
     if (currentMapId === 'B-1' && currentTurn > 0 && currentTurn % 4 === 0) {
-        logToBattleLog(`--- 4턴 경과, 추가 몬스터가 소환됩니다. ---`);
+        logToBattleLog(`\n --- 4턴 경과, 추가 몬스터가 소환됩니다. --- \n`);
         summonMonster("Clown");
         summonMonster("Pierrot");
     }
@@ -2535,8 +2532,24 @@ function previewEnemyAction(enemyChar) {
 
     const skillDefinition = allSkills[skillToUseId];
     let hitArea = [];
+    let dynamicData = {}; // 동적 데이터를 저장할 객체 추가
 
-    if (skillDefinition && skillDefinition.execute) {
+    // GIMMICK_Path_of_Ruin
+    if (skillToUseId === 'GIMMICK_Path_of_Ruin') {
+        const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
+        const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
+        dynamicData = { predictedCol, predictedRow }; // 생성된 데이터를 저장
+
+        // 예고 영역(hitArea) 배열 생성
+        for (let x = 0; x < MAP_WIDTH; x++) {
+            hitArea.push({ x: x, y: predictedRow });
+        }
+        for (let y = 0; y < MAP_HEIGHT; y++) {
+            if (y !== predictedRow) { // 교차 지점 중복 방지
+                hitArea.push({ x: predictedCol, y: y });
+            }
+        }
+    } else if (skillDefinition && skillDefinition.execute) {
         const executeCode = skillDefinition.execute.toString();
         const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
         if (areaMatch && areaMatch[1]) {
@@ -2551,7 +2564,8 @@ function previewEnemyAction(enemyChar) {
     return {
         casterId: enemyChar.id,
         skillId: skillToUseId,
-        hitArea: hitArea
+        hitArea: hitArea,
+        dynamicData: dynamicData
     };
 }
 
@@ -2737,7 +2751,7 @@ async function performEnemyAction(enemyChar) {
 
         if (skillToExecute) {
             logToBattleLog(`${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전.`);
-            skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
+            skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog, enemyPreviewAction.dynamicData);
         }
     } else {
         // 예고된 행동이 없으면 기본 공격
@@ -2756,7 +2770,6 @@ async function performEnemyAction(enemyChar) {
 
 
     processEndOfTurnEffects(enemyChar);
-    // displayCharacters(); // executeBattleTurn의 마지막에서 한 번만 호출되도록 여기서 제거
     return checkBattleEnd();
 }
 
