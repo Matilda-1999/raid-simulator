@@ -805,7 +805,7 @@ const SKILLS = {
             });
             return true;
         }
-        }
+        },
 
         SKILL_Birth_of_Vines: {
             id: "SKILL_Birth_of_Vines",
@@ -887,6 +887,7 @@ const SKILLS = {
                 return true;
             }
         },
+        
         GIMMICK_Path_of_Ruin: {
             id: "GIMMICK_Path_of_Ruin",
             name: "균열의 길",
@@ -998,7 +999,6 @@ const SKILLS = {
             }
             // --- 여기까지 교체 ---
         }
-    };
     };
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
