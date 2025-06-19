@@ -2478,15 +2478,6 @@ async function executeBattleTurn() {
         }
     });
 
-    logToBattleLog(`\n--- ${currentTurn} 턴 아군 행동 실행 ---`);
-    // 플레이어 행동 순서는 playerActionsQueue에 담긴 순서대로 (사용자가 선택한 순서)
-    for (const action of playerActionsQueue) {
-        if (!action.caster.isAlive) continue; // 행동 전 이미 쓰러진 경우 스킵
-        if (await executeSingleAction(action)) {
-            return; // 전투 종료 시 즉시 함수 종료
-        }
-    }
-
     // 전투 종료 재확인 (아군 턴 중 적이 전멸할 수 있음)
     if (checkBattleEnd()) return;
 
@@ -2525,28 +2516,23 @@ function previewEnemyAction(enemyChar) {
     let skillToUseId = null;
 
     // --- 몬스터별 행동 결정 로직 ---
-    // A-2 몬스터 (Terrmor_2)
-    if (enemyChar.skills.includes("SKILL_Birth_of_Vines")) {
+    if (enemyChar.skills.includes("SKILL_Birth_of_Vines")) { // A-2 몬스터 (Terrmor_2)
         const allActions = [...enemyChar.gimmicks, ...enemyChar.skills];
         const actionIndex = (currentTurn - 1) % allActions.length;
         skillToUseId = allActions[actionIndex];
-    }
-    // A-1 몬스터 (Terrmor)
-    else if (enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
+    } else if (enemyChar.skills.includes("SKILL_Seismic_Fissure")) { // A-1 몬스터 (Terrmor_1)
         const usableSkills = enemyChar.skills.map(id => allSkills[id]).filter(skill => !!skill);
         if (usableSkills.length > 0) {
             const skillToUse = usableSkills[Math.floor(Math.random() * usableSkills.length)];
             skillToUseId = skillToUse.id;
         }
     }
-    // --- 여기까지 ---
 
     if (!skillToUseId) return null;
 
     const skillDefinition = allSkills[skillToUseId];
     let hitArea = [];
 
-    // 스킬 정의에서 피격 범위를 파싱
     if (skillDefinition && skillDefinition.execute) {
         const executeCode = skillDefinition.execute.toString();
         const areaMatch = executeCode.match(/const hitArea = "([^"]+)"/);
@@ -2557,7 +2543,6 @@ function previewEnemyAction(enemyChar) {
             });
         }
     }
-
 
     // 예고 정보를 담아 반환
     return {
@@ -2711,7 +2696,6 @@ async function performEnemyAction(enemyChar) {
     logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
 
     // --- 1. 특수 이동 로직 (클라운, 삐에로) ---
-    // 이 부분은 그대로 유지됩니다.
     let possibleMoves = [];
     if (enemyChar.name === "클라운") {
         possibleMoves = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // 상하좌우
@@ -2742,9 +2726,7 @@ async function performEnemyAction(enemyChar) {
     }
     // --- 이동 로직 끝 ---
 
-
-    // --- 2. 행동 실행 로직 (수정된 부분) ---
-    // 기믹 순환 및 스킬 결정 로직을 삭제하고, 예고된 행동을 실행하는 로직으로 변경합니다.
+    // --- 2. 행동 실행 로직
     if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
         // 예고된 행동이 있으면 실행
         const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
@@ -2752,15 +2734,12 @@ async function performEnemyAction(enemyChar) {
 
         if (skillToExecute) {
             logToBattleLog(`${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전.`);
-            // execute 함수는 caster, allies, enemies, battleLog 순서로 인자를 받습니다.
-            // 몬스터 입장에서 enemies는 플레이어의 아군(allyCharacters)입니다.
             skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
         }
     } else {
-        // 예고된 행동이 없으면 기본 공격 (예: 테르모르가 아닌 다른 몬스터)
+        // 예고된 행동이 없으면 기본 공격
         const aliveAllies = allyCharacters.filter(a => a.isAlive);
         if (aliveAllies.length > 0) {
-            // 가장 체력이 낮은 아군을 공격하는 기본 AI
             const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
                 (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
             
@@ -2771,6 +2750,7 @@ async function performEnemyAction(enemyChar) {
             logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
         }
     }
+
 
     processEndOfTurnEffects(enemyChar);
     // displayCharacters(); // executeBattleTurn의 마지막에서 한 번만 호출되도록 여기서 제거
