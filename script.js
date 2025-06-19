@@ -876,12 +876,9 @@ const SKILLS = {
                 const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
                 const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
 
-                // 몬스터에게 예고 상태를 저장하는 버프 추가 (2턴 = 현재 턴 + 다음 턴)
+                // 몬스터에게 예고 상태를 저장하는 버프 추가(2턴 = 현재 턴 + 다음 턴)
                 caster.addBuff('path_of_ruin_telegraph', '균열의 길 예고', 2, { predictedCol, predictedRow });
-                battleLog(`✦기믹 예고✦ [균열의 길]: ${predictedCol+1}열과 ${predictedRow+1}행에 공격이 예고됩니다. 다음 턴 시작 시 발동.`);
                 
-                // TODO: UI에 예고 타일 하이라이트 기능 추가 필요
-                // highlightTelegraphedTiles([{col: predictedCol, row: predictedRow}]);
                 return true;
             }
         },
@@ -917,6 +914,8 @@ function getElement(id) {
 // --- 1. 전역 변수 및 UI 요소 ---
 let allyCharacters = [];
 let enemyCharacters = [];
+let mapObjects = [];
+let activeGimmickState = null;
 let currentTurn = 0;
 let isBattleStarted = false;
 let currentMapId = null;
