@@ -1739,44 +1739,13 @@ function loadMap(mapId) {
     enemyCharacters = []; 
     console.log("[DEBUG] loadMap: 적군 목록 초기화 완료.");
     
-    // B-1, B-2 맵이 아닐 때의 기본 적군 배치
-    if (mapId !== 'B-1' && mapId !== 'B-2') {
-        mapConfig.enemies.forEach(mapEnemy => {
-            const template = MONSTER_TEMPLATES[mapEnemy.templateId];
-            if (!template) {
-                logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-                return;
-            }
-            const newEnemy = new Character(template.name, template.type);
-            
-            // ... (newEnemy 스탯 설정 등 나머지 부분은 기존과 동일)
-
-            const posX = mapEnemy.pos.x;
-            const posY = mapEnemy.pos.y;
-            
-            if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-                newEnemy.posX = posX;
-                newEnemy.posY = posY;
-            } else {
-                const randomCell = getRandomEmptyCell();
-                if (randomCell) {
-                    newEnemy.posX = randomCell.x;
-                    newEnemy.posY = randomCell.y;
-                }
-            }
-            enemyCharacters.push(newEnemy);
-            logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
-        });
-    }
+    // Carnabloom 과 같은 나머지 몬스터 배치
+    mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
 
     // B-1, B-2 맵 전용 초기 배치 (광대 2, 삐에로 2)
     if (mapId === 'B-1' || mapId === 'B-2') {
         console.log(`[DEBUG] loadMap: 맵 ${mapId} 전용 초기 배치 실행.`);
         
-        // Carnabloom 배치 (Mapdata.js의 enemies 배열에서 읽어옴)
-        mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
-
-        // 광대/삐에로 고정 위치 배치
         summonMonsterAt("Clown", {x: 1, y: 1});
         summonMonsterAt("Clown", {x: 7, y: 7});
         summonMonsterAt("Pierrot", {x: 7, y: 1});
@@ -2852,7 +2821,7 @@ function resolveGimmickEffects() {
     const boss = enemyCharacters.find(e => e.name === "테르모르");
     if (!boss) return;
 
-    if (activeGimmickState.type === 'fruit_destruction') {
+    if (activeGimmickState.type === 'subGimmick1') {
         const remainingFruits = mapObjects.filter(obj => activeGimmickState.objectIds.includes(obj.id));
         if (remainingFruits.length === 0) { // 파훼 성공
             logToBattleLog(`  파훼 성공: 모든 열매를 파괴했습니다!`);
@@ -2877,7 +2846,7 @@ function resolveGimmickEffects() {
                 logToBattleLog(`  ${target.name}에게 [무장 해제]가 1턴 부여됩니다.`);
             }
         }
-    } else if (activeGimmickState.type === 'unstable_fissure') {
+    } else if (activeGimmickState.type === 'subGimmick2') {
         const fissures = mapObjects.filter(obj => activeGimmickState.objectIds.includes(obj.id));
         const emptyFissures = fissures.filter(f => !allyCharacters.some(a => a.isAlive && a.posX === f.posX && a.posY === f.posY));
         
@@ -2900,7 +2869,7 @@ function resolveGimmickEffects() {
                 ally.takeDamage(damage, logToBattleLog, boss);
              });
         }
-    } else if (activeGimmickState.type === 'drying_spring') {
+    } else if (activeGimmickState.type === 'subGimmick3') {
         const spring = mapObjects.find(obj => activeGimmickState.objectIds.includes(obj.id));
         if(spring) {
             if(spring.healingReceived >= spring.healingGoal) { // 성공
@@ -3020,13 +2989,20 @@ async function performEnemyAction(enemyChar) {
 
     // --- 2. 행동 실행 로직
     if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
-        // 예고된 행동이 있으면 실행
-        const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
-        const skillToExecute = allSkills[enemyPreviewAction.skillId];
+        // 대지의 수호 기믹
+        if (enemyPreviewAction.skillId.startsWith("GIMMICK_Aegis_of_Earth")) {
+            enemyChar.activeGimmick = enemyPreviewAction.skillId;
+            console.log(`[DEBUG] performEnemyAction: ${enemyChar.name}에게 [${enemyChar.activeGimmick}] 활성화됨.`);
+            // 별도의 execute 함수 없이 활성화되는 것만으로 효과
+        } else {
+            // "대지의 수호"가 아닌 다른 스킬/기믹 실행 로직
+            const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+            const skillToExecute = allSkills[enemyPreviewAction.skillId] || GIMMICK_DATA[enemyPreviewAction.skillId];
 
-        if (skillToExecute) {
-            logToBattleLog(`${enemyChar.name}, 예고했던 [${skillToExecute.name}] 시전.`);
-            skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog, enemyPreviewAction.dynamicData);
+            if (skillToExecute && skillToExecute.execute) {
+                logToBattleLog(`${enemyChar.name}, [${skillToExecute.name}] 시전.`);
+                skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog, enemyPreviewAction.dynamicData);
+            }
         }
     } else {
         // 예고된 행동이 없으면 기본 공격
