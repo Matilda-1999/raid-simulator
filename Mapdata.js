@@ -39,12 +39,31 @@ const MONSTER_TEMPLATES = {
             "GIMMICK_Seed_of_Devour"]
     },
 
-    "Carnabloom_1": { name: "카르나블룸", type: "야수" },
-    "Carnabloom_2": { name: "카르나블룸", type: "천체" },
+    "Carnabloom_1": { name: "카르나블룸", type: "야수", maxHP: 4000 },
+    "Carnabloom_2": { name: "카르나블룸", type: "천체", maxHP: 5000 },
 
     // 2. 랜덤 타입을 갖는 몬스터
-    "Pierrot": { name: "삐에로", type: ["암석", "나무"] },
-    "Clown": { name: "클라운", type: ["암석", "나무"] }
+    "Pierrot": { 
+        name: "피에로",
+        type: ["암석", "나무"], 
+        maxHp: 300,
+        atk: 20,
+        matk: 20,
+        def: 20,
+        mdef: 20,
+        skills: [ "SKILL_Slapstick_Comdey_P", "SKILL_Get_a_Present_P" ],
+        gimmicks: [ "GIMMICK_Tears_of"]
+        },
+    "Clown": {
+        name: "클라운",
+        type: ["암석", "나무"], 
+        maxHp: 300,
+        atk: 20,
+        matk: 20,
+        def: 20,
+        mdef: 20,
+        skills: [ "SKILL_Slapstick_Comdey_C", "SKILL_Get_a_Present_C" ],
+        gimmicks: [ "GIMMICK_Laugh_of"]
 };
 
 const MAP_CONFIGS = {
@@ -165,7 +184,7 @@ const GIMMICK_DATA = {
     }
 };
 
-// --- 추가: 클라운과 삐에로의 시작 지점(소환 지점) 정의 ---
+// --- 추가: 클라운과 피에로의 시작 지점(소환 지점) 정의 ---
 // 좌표는 (0,0)을 기준으로
 const SPAWN_POINTS = {
     "Clown": [ // 빨간색 시작 지점
