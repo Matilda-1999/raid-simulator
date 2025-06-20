@@ -564,7 +564,7 @@ const SKILLS = {
         type: "지정 버프",
         description: "두 사람의 완벽한 조화는 곧 전체의 완성이다.<br><br>1) 지정 대상이 (잃은 체력x50%) 회복<br>2) 모든 상태 이상 정화<br>3) 시전자 [환원] 상태 진입. <br> [환원] 상태 시,스킬 시전할 때 가장 낮은 체력 아군 (시전자 방어력x60%) 추가 회복 3턴 지속, 연달아 사용하더라도 최대 3턴. <br><b>* 기믹 오브젝트 '메마른 생명의 샘'에 사용 가능</b>",
         targetType: "single_ally_or_gimmick",
-        targetSelection: "ally",
+        targetSelection: "single_ally_or_gimmick",
         execute: (caster, target, allies, enemies, battleLog) => {
             if (!target) {
                 battleLog(`✦정보✦ ${caster.name} [공명]: 대상을 찾을 수 없습니다.`);
@@ -2176,6 +2176,14 @@ function selectTarget(targetCharId) {
             selectedTargetName.textContent = targetChar.name;
             canConfirm = true;
         } else alert('아군을 대상으로 선택해야 합니다.');
+    } else if (skill.targetSelection === 'single_ally_or_gimmick') { 
+        if (allyCharacters.includes(targetChar) || (targetChar.isGimmickObject && targetChar.type === 'spring')) {
+            selectedAction.targetId = targetCharId;
+            selectedTargetName.textContent = targetChar.name;
+            canConfirm = true;
+        } else {
+            alert('아군 또는 메마른 생명의 샘을 대상으로 선택해야 합니다.');
+        }
     } else if (skill.targetSelection === 'ally_or_self') {
         if (allyCharacters.includes(targetChar) || caster.id === targetCharId) { // 시전자 자신도 포함
             selectedAction.targetId = targetCharId;
@@ -2541,9 +2549,8 @@ function previewEnemyAction(enemyChar) {
         } else if (subGimmickChoice === 3) {
             if (availableCoords.length > 0) objectsToSpawnInfo.push({ type: 'spring', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
         }
-        hitArea = objectsToSpawnInfo.map(info => info.pos);
+        // hitArea = objectsToSpawnInfo.map(info => info.pos);
         skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo };
-        console.log(`[DEBUG] '흡수의 술식' 예고 완료: ${hitArea.length}개 위치 예고.`);
     }
 
     return {
