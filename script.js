@@ -861,7 +861,7 @@ const SKILLS = {
 
     SKILL_Slapstick_Comdey_P: {
         id: "SKILL_Slapstick_Comdey_P",
-        name: "슬랩스틱 코미디(삐에로)",
+        name: "슬랩스틱 코미디(피에로)",
         type: "광역 공격",
         script: `\n<pre>와장창! 어때, 어때? 놀랐지?!</pre>\n`,
         description: "자신을 기준으로 고정된 범위에 물리 피해를 줍니다.",
@@ -905,7 +905,7 @@ const SKILLS = {
     },
     SKILL_Get_a_Present_P: {
         id: "SKILL_Get_a_Present_P",
-        name: "선물 받아!(삐에로)",
+        name: "선물 받아!(피에로)",
         type: "광역 공격",
         script: `\n<pre>깜~짝 선물 등장이요!</pre>\n`,
         description: "자신을 기준으로 고정된 범위에 물리 피해를 줍니다.",
@@ -963,7 +963,7 @@ const SKILLS = {
                 battleLog("✦정보✦ 이미 광대의 감정 기믹이 활성화되어 있습니다.");
                 return false;
             }
-            logToBattleLog("✦기믹 발생✦ [광대의 웃음]: 클라운을 5회 이상, 삐에로를 5회 이하로 공격해야 합니다.");
+            logToBattleLog("✦기믹 발생✦ [광대의 웃음]: 클라운을 5회 이상, 피에로를 5회 이하로 공격해야 합니다.");
             activeGimmickState = {
                 type: 'clown_emotion_laugh',
                 turnStart: currentTurn,
@@ -985,7 +985,7 @@ const SKILLS = {
                 battleLog("✦정보✦ 이미 광대의 감정 기믹이 활성화되어 있습니다.");
                 return false;
             }
-            logToBattleLog("✦기믹 발생✦ [광대의 눈물]: 삐에로를 5회 이상, 클라운을 5회 이하로 공격해야 합니다.");
+            logToBattleLog("✦기믹 발생✦ [광대의 눈물]: 피에로를 5회 이상, 클라운을 5회 이하로 공격해야 합니다.");
              activeGimmickState = {
                 type: 'clown_emotion_tear',
                 turnStart: currentTurn,
@@ -1383,16 +1383,16 @@ class Character {
 
         // activeGimmickState가 null이 아니고, 'clown_emotion' 기믹이 활성화 상태일 때
     if (activeGimmickState && activeGimmickState.type.startsWith('clown_emotion') && actualHpLoss > 0) {
-        // 피해를 입은 대상('this')의 이름이 '클라운' 또는 '삐에로'일 경우
+        // 피해를 입은 대상('this')의 이름이 '클라운' 또는 '피에로'일 경우
         if (this.name === '클라운') {
             activeGimmickState.clownHits++;
             const emotionType = activeGimmickState.type === 'clown_emotion_laugh' ? '웃음' : '눈물';
             console.log(`[DEBUG] takeDamage: 광대의 감정(${emotionType}) 기믹 활성 중. 피격자: ${this.name}`);
             logFn(`✦기믹✦ [광대의 ${emotionType}] 활성 중. 클라운 유효타 +1 (현재: ${activeGimmickState.clownHits})`);
-        } else if (this.name === '삐에로') {
+        } else if (this.name === '피에로') {
             activeGimmickState.pierrotHits++;
             const emotionType = activeGimmickState.type === 'clown_emotion_laugh' ? '웃음' : '눈물';
-            logFn(`✦기믹✦ [광대의 ${emotionType}] 활성 중. 삐에로 유효타 +1 (현재: ${activeGimmickState.pierrotHits})`);
+            logFn(`✦기믹✦ [광대의 ${emotionType}] 활성 중. 피에로 유효타 +1 (현재: ${activeGimmickState.pierrotHits})`);
         }
     }
     
@@ -1742,7 +1742,7 @@ function loadMap(mapId) {
     // Carnabloom 과 같은 나머지 몬스터 배치
     mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
 
-    // B-1, B-2 맵 전용 초기 배치 (광대 2, 삐에로 2)
+    // B-1, B-2 맵 전용 초기 배치 (광대 2, 피에로 2)
     if (mapId === 'B-1' || mapId === 'B-2') {
         console.log(`[DEBUG] loadMap: 맵 ${mapId} 전용 초기 배치 실행.`);
         
@@ -2110,7 +2110,7 @@ function prepareNewTurnCycle() {
         if (pierrotCell) {
             summonMonsterAt("Pierrot", pierrotCell);
         } else {
-            logToBattleLog("✦정보✦ 삐에로를 소환할 빈 공간이 없습니다.");
+            logToBattleLog("✦정보✦ 피에로를 소환할 빈 공간이 없습니다.");
         }
     }
     
@@ -2688,7 +2688,7 @@ function previewEnemyAction(enemyChar) {
 
     // --- 몬스터별 행동 결정 로직 ---
     const isBoss = enemyChar.skills.includes("SKILL_Birth_of_Vines") || enemyChar.skills.includes("SKILL_Seismic_Fissure");
-    const isClownOrPierrot = enemyChar.name === '클라운' || enemyChar.name === '삐에로';
+    const isClownOrPierrot = enemyChar.name === '클라운' || enemyChar.name === '피에로';
 
     if (isBoss) {
         // 보스는 기믹과 스킬 중 하나를 무작위로 선택
@@ -2908,7 +2908,7 @@ function resolveClownGimmick() {
     if (currentTurn >= activeGimmickState.turnStart) {
         let success = false;
         const state = activeGimmickState;
-        logToBattleLog(`✦기믹 판정✦ [광대의 감정] 결과: 클라운 ${state.clownHits}회, 삐에로 ${state.pierrotHits}회 타격.`);
+        logToBattleLog(`✦기믹 판정✦ [광대의 감정] 결과: 클라운 ${state.clownHits}회, 피에로 ${state.pierrotHits}회 타격.`);
 
         if (state.type === 'clown_emotion_laugh') {
             if (state.clownHits >= 5 && state.pierrotHits <= 5) success = true;
@@ -2920,7 +2920,7 @@ function resolveClownGimmick() {
             console.log("[DEBUG] resolveClownGimmick: 기믹 판정 결과 - 성공");
             logToBattleLog('✦기믹 성공✦ 광대의 감정 기믹 파훼 성공! 모든 광대가 1턴간 행동 불가 상태가 됩니다.');
             enemyCharacters.forEach(e => {
-                if (e.isAlive && (e.name === '클라운' || e.name === '삐에로')) {
+                if (e.isAlive && (e.name === '클라운' || e.name === '피에로')) {
                     e.addDebuff('stun', '[행동 불가]', 2, { category: '제어' });
                 }
             });
@@ -2933,7 +2933,7 @@ function resolveClownGimmick() {
                 }
             });
             enemyCharacters.forEach(e => {
-                if (e.isAlive && (e.name === '클라운' || e.name === '삐에로')) {
+                if (e.isAlive && (e.name === '클라운' || e.name === '피에로')) {
                     e.addBuff('enraged_range', '[폭주: 범위 증가]', 4, { rangeIncrease: 1 });
                     logToBattleLog(`✦버프✦ ${e.name}이(가) [폭주]하여 공격 범위가 증가합니다(3턴).`);
                 }
@@ -2953,11 +2953,11 @@ async function performEnemyAction(enemyChar) {
 
     logToBattleLog(`\n--- ${enemyChar.name} 행동 (${currentTurn}턴) ---`);
 
-    // --- 1. 특수 이동 로직 (클라운, 삐에로) ---
+    // --- 1. 특수 이동 로직 (클라운, 피에로) ---
     let possibleMoves = [];
     if (enemyChar.name === "클라운") {
         possibleMoves = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // 상하좌우
-    } else if (enemyChar.name === "삐에로") {
+    } else if (enemyChar.name === "피에로") {
         possibleMoves = [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // 대각선
     }
 
