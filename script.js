@@ -1742,6 +1742,7 @@ function loadMap(mapId) {
     // Carnabloom 과 같은 나머지 몬스터 배치
     mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
 
+    /* 중복 로그라 삭제
     // B-1, B-2 맵 전용 초기 배치 (광대 2, 피에로 2)
     if (mapId === 'B-1' || mapId === 'B-2') {
         console.log(`[DEBUG] loadMap: 맵 ${mapId} 전용 초기 배치 실행.`);
@@ -1751,6 +1752,7 @@ function loadMap(mapId) {
         summonMonsterAt("Pierrot", {x: 7, y: 1});
         summonMonsterAt("Pierrot", {x: 1, y: 7});
     }
+    */
 
     // 모든 캐릭터의 위치 정보 최종 정리
     characterPositions = {};
@@ -1839,7 +1841,7 @@ function summonMonsterAt(monsterTemplateId, position) {
     }
     const posKey = `${position.x},${position.y}`;
     if (characterPositions[posKey]) {
-        logToBattleLog(`✦정보✦ 소환 지점(${position.x},${position.y})이 막혀있어 ${monsterTemplateId} 소환에 실패했습니다.`);
+        logToBattleLog(`✦정보✦ 소환 지점(${position.x},${position.y})이 막혀 있어 ${monsterTemplateId} 소환에 실패했습니다.`);
         return;
     }
 
