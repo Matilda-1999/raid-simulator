@@ -2480,29 +2480,19 @@ async function executeBattleTurn() {
 function previewEnemyAction(enemyChar) {
     console.log(`[DEBUG] Turn ${currentTurn}: previewEnemyAction 시작. 대상: ${enemyChar.name}`);
 
+    // GIMMICK_DATA도 검색 대상에 포함하여 모든 행동 정보 호출
     const allSkills = { ...SKILLS, ...MONSTER_SKILLS, ...GIMMICK_DATA };
     let skillToUseId = null;
     let hitArea = [];
 
     // --- 몬스터별 행동 결정 로직 ---
-    if (enemyChar.skills.includes("SKILL_Birth_of_Vines")) { // A-2 몬스터 (Terrmor_2)
+    // A-1, A-2 보스 모두 자신의 모든 행동(기믹+스킬) 중 하나만 무작위로 선택하도록 통합
+    if (enemyChar.skills.includes("SKILL_Birth_of_Vines") || enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
         const allActions = [...enemyChar.gimmicks, ...enemyChar.skills];
-        skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
-        console.log(`[DEBUG] A-2 보스 행동 결정: ${skillToUseId}`);
-    } else if (enemyChar.skills.includes("SKILL_Seismic_Fissure")) { // A-1 몬스터 (Terrmor_1)
-        // A-1 보스의 Aegis of Earth 기믹은 패시브처럼 매 턴 순차적으로 적용됩니다.
-        const gimmickIndex = (currentTurn - 1) % enemyChar.gimmicks.length;
-        const newGimmickId = enemyChar.gimmicks[gimmickIndex];
-        enemyChar.activeGimmick = newGimmickId;
-        const gimmickData = GIMMICK_DATA[newGimmickId];
-        if (gimmickData && gimmickData.flavorText) {
-             logToBattleLog(`\n<pre>${gimmickData.flavorText}</pre>\n`);
+        if (allActions.length > 0) {
+            skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
+            console.log(`[DEBUG] 보스 행동 결정: ${skillToUseId}`);
         }
-        
-        // 실제 사용하는 공격 스킬은 랜덤으로 선택합니다.
-        const usableSkills = enemyChar.skills.filter(id => allSkills[id]);
-        skillToUseId = usableSkills[Math.floor(Math.random() * usableSkills.length)];
-        console.log(`[DEBUG] A-1 보스 행동 결정: ${skillToUseId} (패시브 기믹: ${newGimmickId})`);
     }
 
     if (!skillToUseId) {
@@ -2510,15 +2500,20 @@ function previewEnemyAction(enemyChar) {
         return null;
     }
 
-    const skillDefinition = allSkills[skillToUseId] || GIMMICK_DATA[skillToUseId];
+    const skillDefinition = allSkills[skillToUseId];
     if (!skillDefinition) {
          console.log(`[DEBUG] previewEnemyAction: 스킬 ID [${skillToUseId}]에 대한 정의를 찾을 수 없음.`);
          return null;
     }
 
     // --- 규칙 ➁: 예고 타일과 관계없이 스크립트(Flavor Text)를 먼저 출력 ---
-    if (skillDefinition.script) {
-        logToBattleLog(skillDefinition.script);
+    const scriptToShow = skillDefinition.script || skillDefinition.flavorText;
+    if (scriptToShow) {
+        logToBattleLog(scriptToShow);
+    } else if (skillDefinition.subGimmick1 && skillDefinition.subGimmick1.script) {
+        // 흡수의 술식의 경우, 하위 기믹의 스크립트를 출력
+        const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
+        logToBattleLog(skillDefinition[`subGimmick${subGimmickChoice}`].script);
     }
 
     // --- 규칙 ➀: 특정 기믹에 대해서만 예고 타일(hitArea)을 계산 ---
@@ -2530,57 +2525,29 @@ function previewEnemyAction(enemyChar) {
         for (let y = 0; y < MAP_HEIGHT; y++) {
             if (y !== predictedRow) hitArea.push({ x: predictedCol, y });
         }
-        skillDefinition.previewData = { predictedCol, predictedRow }; // 실행 함수에 데이터 전달
+        skillDefinition.previewData = { predictedCol, predictedRow };
         console.log(`[DEBUG] '균열의 길' 예고 범위 생성: col=${predictedCol}, row=${predictedRow}`);
 
     } else if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
-    console.log(`[DEBUG] '흡수의 술식' 예고 로직 시작.`);
-    // 1. 세 가지 하위 기믹 중 하나를 무작위로 선택합니다.
-    const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
-    const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
-    const gimmickCoordsStr = GIMMICK_DATA.GIMMICK_Seed_of_Devour.coords;
-    const availableCoords = gimmickCoordsStr.split(';').map(s => {
-        const [x, y] = s.split(',').map(Number);
-        return { x, y };
-    }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
+        const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
+        const gimmickCoordsStr = skillDefinition.coords;
+        const availableCoords = gimmickCoordsStr.split(';').map(s => {
+            const [x, y] = s.split(',').map(Number);
+            return { x, y };
+        }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
 
-    let subGimmickType = '';
-    let objectsToSpawnInfo = [];
-
-    // 2. 선택된 하위 기믹에 따라 생성될 오브젝트의 '위치'를 미리 결정합니다.
-    if (subGimmickChoice === 1) { // 열매 파괴
-        subGimmickType = 'fruit_destruction';
-        for (let i = 0; i < 2 && availableCoords.length > 0; i++) {
-            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-            const pos = availableCoords.splice(spawnIndex, 1)[0];
-            objectsToSpawnInfo.push({ type: 'fruit', pos: pos });
+        let objectsToSpawnInfo = [];
+        if (subGimmickChoice === 1) {
+            for (let i = 0; i < 2 && availableCoords.length > 0; i++) objectsToSpawnInfo.push({ type: 'fruit', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
+        } else if (subGimmickChoice === 2) {
+            for (let i = 0; i < 3 && availableCoords.length > 0; i++) objectsToSpawnInfo.push({ type: 'fissure', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
+        } else if (subGimmickChoice === 3) {
+            if (availableCoords.length > 0) objectsToSpawnInfo.push({ type: 'spring', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
         }
-    } else if (subGimmickChoice === 2) { // 불안정한 균열
-        subGimmickType = 'unstable_fissure';
-        for (let i = 0; i < 3 && availableCoords.length > 0; i++) {
-            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-            const pos = availableCoords.splice(spawnIndex, 1)[0];
-            objectsToSpawnInfo.push({ type: 'fissure', pos: pos });
-        }
-    } else if (subGimmickChoice === 3) { // 메마른 생명의 샘
-        subGimmickType = 'drying_spring';
-        if (availableCoords.length > 0) {
-            const spawnIndex = Math.floor(Math.random() * availableCoords.length);
-            const pos = availableCoords.splice(spawnIndex, 1)[0];
-            objectsToSpawnInfo.push({ type: 'spring', pos: pos });
-        }
+        hitArea = objectsToSpawnInfo.map(info => info.pos);
+        skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo };
+        console.log(`[DEBUG] '흡수의 술식' 예고 완료: ${hitArea.length}개 위치 예고.`);
     }
-    
-    // 3. 결정된 위치 정보로 예고 범위(hitArea)를 설정하고, 실행 함수에 필요한 정보를 전달합니다.
-    hitArea = objectsToSpawnInfo.map(info => info.pos);
-    skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo }; 
-    
-    // 4. 선택된 하위 기믹의 스크립트를 로그에 출력합니다.
-    if (gimmickInfo && gimmickInfo.script) {
-        logToBattleLog(`${gimmickInfo.script}`);
-    }
-    console.log(`[DEBUG] '흡수의 술식' 예고 완료: ${subGimmickType}, ${hitArea.length}개 위치 예고.`);
-}
 
     return {
         casterId: enemyChar.id,
