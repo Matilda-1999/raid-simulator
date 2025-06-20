@@ -1760,11 +1760,8 @@ function loadMap(mapId) {
         }
     });
 
+    // 변경된 캐릭터 목록과 맵을 화면에 다시 그립니다.
     displayCharacters();
-}
-
-// 변경된 캐릭터 목록과 맵을 화면에 다시 그립니다.
-displayCharacters();
 }
 
 /**
