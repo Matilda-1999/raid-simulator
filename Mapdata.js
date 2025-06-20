@@ -77,7 +77,11 @@ const MAP_CONFIGS = {
         width: 9,
         height: 9,
         enemies: [
-            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } } ],
+            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } },
+            { templateId: "Clown", pos: { x: 1, y: 1 } },
+            { templateId: "Clown", pos: { x: 7, y: 7 } },
+            { templateId: "Pierrot", pos: { x: 7, y: 1 } },
+            { templateId: "Pierrot", pos: { x: 1, y: 7 } } ],
         flavorText:
             "텅 비어 있는 무대임에도 웃음소리와 울음소리로 소란스럽다.\n" +
             "붉은 천막이 열리고, 끈에 묶인 인형들이 삐걱이며 걸어나온다.\n" +
@@ -91,7 +95,11 @@ const MAP_CONFIGS = {
         width: 9,
         height: 9,
         enemies: [
-            { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } } ],
+            { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } },
+            { templateId: "Clown", pos: { x: 1, y: 1 } },
+            { templateId: "Clown", pos: { x: 7, y: 7 } },
+            { templateId: "Pierrot", pos: { x: 7, y: 1 } },
+            { templateId: "Pierrot", pos: { x: 1, y: 7 } } ],
         flavorText:
             "퍼레이드의 흐름이 끊긴다.\n" +
             "인형사는 움직임을 멈춘 인형들을 조용히 감싸 안는다.\n" +
@@ -132,7 +140,7 @@ const GIMMICK_DATA = {
         description: "무작위 행과 열에 공격을 예고합니다. 1턴 뒤 예고된 타일에 피해를 줍니다. 해당 타일에 아군이 없으면 파훼 성공.",
         success: "보스에게 [붕괴] 디버프(방어력/마법 방어력 30% 감소, 2턴) 부여.",
         failure: "범위 내 아군에게 (마법 공격력) 피해 및 [무장 해제](공격 스킬 사용 불가, 1턴) 부여.",
-        script: "\n<pre>균열이 퍼지며, 땅 아래서 검은 뿌리가 꿈틀댄다.\n번져오는 재해 앞에서 길을 찾아야 한다.\n\"생명의 뿌리를 꺾을 수 있다고 믿는가?</pre>\n""
+        script: "<pre>\n균열이 퍼지며, 땅 아래서 검은 뿌리가 꿈틀댄다.\n번져오는 재해 앞에서 길을 찾아야 한다.\n\"생명의 뿌리를 꺾을 수 있다고 믿는가?\"\n</pre>"
     },
     
     "GIMMICK_Seed_of_Devour": {
