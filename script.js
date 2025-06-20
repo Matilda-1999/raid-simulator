@@ -2,6 +2,7 @@
 let MAP_WIDTH = 5;
 let MAP_HEIGHT = 5;
 let enemyPreviewAction = null; // 몬스터가 예고한 행동 정보 저장
+let clownGimmickState = null;
 
 const TYPE_ADVANTAGE_MODIFIER = 1.3; // 상성일 때 피해량 30% 증가
 const TYPE_DISADVANTAGE_MODIFIER = 0.7; // 역상성일 때 피해량 30% 감소
@@ -781,7 +782,7 @@ const SKILLS = {
         }
     },
         
-        SKILL_Crushing_Sky: {
+    SKILL_Crushing_Sky: {
         id: "SKILL_Crushing_Sky",
         name: "무너지는 하늘",
         type: "광역 공격",
@@ -806,16 +807,14 @@ const SKILLS = {
         }
     },
 
-        SKILL_Birth_of_Vines: {
+    SKILL_Birth_of_Vines: {
         id: "SKILL_Birth_of_Vines",
         name: "덩굴 탄생",
         type: "광역 공격",
-        // ▼▼▼ battleLog 대신 script 속성으로 분리 ▼▼▼
         script: `\n<pre>바닥으로부터 수많은 덩굴이 솟구친다.\n벗어날 수 없는 공포가 당신의 발목을 옥죄어 온다.\n"이 땅에 모습을 드러낸 이들을, 잊지 않겠다."</pre>\n`,
         description: "지정된 범위에 마법 공격력만큼 피해를 줍니다.",
         targetType: "all_enemies",
         execute: (caster, allies, enemies, battleLog) => {
-            // ▼▼▼ execute 함수 내의 script 출력 로직 제거 ▼▼▼
             const hitArea = "0,0;0,2;0,4;1,1;1,3;2,0;2,2;2,4;3,1;3,3;4,0;4,2;4,4".split(';').map(s => {
                 const [x, y] = s.split(',').map(Number);
                 return { x, y };
@@ -832,7 +831,7 @@ const SKILLS = {
         }
     },
         
-        SKILL_Spores_of_Silence: {
+    SKILL_Spores_of_Silence: {
         id: "SKILL_Spores_of_Silence",
         name: "침묵의 포자",
         type: "광역 디버프",
@@ -859,10 +858,147 @@ const SKILLS = {
                 battleLog(`✦효과 없음✦ [침묵의 포자]의 영향을 받은 대상이 없습니다.`);
             }
             return true;
+        },
+
+    SKILL_Slapstick_Comdey_P: {
+        id: "SKILL_Slapstick_Comdey_P",
+        name: "슬랩스틱 코미디(삐에로)",
+        type: "광역 공격",
+        script: `\n<pre>와장창! 어때, 어때? 놀랐지?!</pre>\n`,
+        description: "자신을 기준으로 고정된 범위에 물리 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const relativeOffsets = [{dx: 0, dy: -2}, {dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: 0, dy: 2}];
+            const damage = caster.getEffectiveStat('atk');
+
+            enemies.forEach(target => {
+                const isHit = relativeOffsets.some(offset => 
+                    (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
+                );
+                if (isHit) {
+                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+    SKILL_Slapstick_Comdey_C: {
+        id: "SKILL_Slapstick_Comdey_C",
+        name: "슬랩스틱 코미디(클라운)",
+        type: "광역 공격",
+        script: `\n<pre>하핫! 다, 다들 즐겁지? 응……?</pre>\n`,
+        description: "자신을 기준으로 고정된 범위에 마법 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const relativeOffsets = [{dx: -2, dy: 0}, {dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 2, dy: 0}];
+            const damage = caster.getEffectiveStat('matk');
+
+            enemies.forEach(target => {
+                const isHit = relativeOffsets.some(offset => 
+                    (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
+                );
+                if (isHit) {
+                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+    SKILL_Get_a_Present_P: {
+        id: "SKILL_Get_a_Present_P",
+        name: "선물 받아!(삐에로)",
+        type: "광역 공격",
+        script: `\n<pre>깜~짝 선물 등장이요!</pre>\n`,
+        description: "자신을 기준으로 고정된 범위에 물리 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const relativeOffsets = [
+                {dx: -1, dy: -1}, {dx: -1, dy: 0}, {dx: -1, dy: 1},
+                {dx: 0,  dy: -1},                 {dx: 0,  dy: 1},
+                {dx: 1,  dy: -1}, {dx: 1,  dy: 0}, {dx: 1,  dy: 1}
+            ];
+            const damage = caster.getEffectiveStat('atk');
+            enemies.forEach(target => {
+                const isHit = relativeOffsets.some(offset => 
+                    (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
+                );
+                if (isHit) {
+                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+    SKILL_Get_a_Present_C: {
+        id: "SKILL_Get_a_Present_C",
+        name: "선물 받아!(클라운)",
+        type: "광역 공격",
+        script: `\n<pre>깜짝 선물, 줘야 한댔어…….</pre>\n`,
+        description: "자신을 기준으로 고정된 범위에 마법 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const relativeOffsets = [
+                {dx: -2, dy: -2}, {dx: -2, dy: 2}, {dx: -1, dy: -1}, {dx: -1, dy: 1},
+                {dx: 1,  dy: -1}, {dx: 1,  dy: 1}, {dx: 2,  dy: -2}, {dx: 2,  dy: 2}
+            ];
+            const damage = caster.getEffectiveStat('matk');
+            enemies.forEach(target => {
+                const isHit = relativeOffsets.some(offset => 
+                    (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
+                );
+                if (isHit) {
+                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+    GIMMICK_Laugh_of: {
+        id: "GIMMICK_Laugh_of",
+        name: "광대의 웃음",
+        type: "기믹",
+        script: `\n<pre>퍼레이드 음악이 늘어지며, 일그러진다.\n불협화음 속으로 섬찟한 웃음소리가 들린다.\n"광대는 언제나 감정에 따라 춤을 추지. 함께 웃어 줄래?"</pre>\n`,
+        description: "광대의 감정 기믹을 발동시킵니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            if (activeGimmickState && activeGimmickState.type.startsWith('clown_emotion')) {
+                battleLog("✦정보✦ 이미 광대의 감정 기믹이 활성화되어 있습니다.");
+                return false;
+            }
+            logToBattleLog("✦기믹 발생✦ [광대의 웃음]: 클라운을 5회 이상, 삐에로를 5회 이하로 공격해야 합니다.");
+            activeGimmickState = {
+                type: 'clown_emotion_laugh',
+                turnStart: currentTurn,
+                clownHits: 0,
+                pierrotHits: 0
+            };
+            return true;
         }
     },
         
-        SKILL_Seeds_Wrath: {
+    GIMMICK_Tears_of: {
+        id: "GIMMICK_Tears_of",
+        name: "광대의 눈물",
+        type: "기믹",
+        script: `\n<pre>퍼레이드 음악이 늘어지며, 일그러진다.\n불협화음 속으로 섬찟한 울음소리가 들린다.\n"광대는 언제나 감정에 따라 춤을 추지. 함께 울어 줄래?"</pre>\n`,
+        description: "광대의 감정 기믹을 발동시킵니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            if (activeGimmickState && activeGimmickState.type.startsWith('clown_emotion')) {
+                battleLog("✦정보✦ 이미 광대의 감정 기믹이 활성화되어 있습니다.");
+                return false;
+            }
+            logToBattleLog("✦기믹 발생✦ [광대의 눈물]: 삐에로를 5회 이상, 클라운을 5회 이하로 공격해야 합니다.");
+             activeGimmickState = {
+                type: 'clown_emotion_tear',
+                turnStart: currentTurn,
+                clownHits: 0,
+                pierrotHits: 0
+            };
+            return true;
+        }
+    }
+    },
+        
+    SKILL_Seeds_Wrath: {
         id: "SKILL_Seeds_Wrath",
         name: "씨앗의 분노",
         type: "광역 복합",
@@ -1245,11 +1381,26 @@ class Character {
             }
         }
         this.lastAttackedBy = attacker ? attacker.id : null;
+
+        // activeGimmickState가 null이 아니고, 'clown_emotion' 기믹이 활성화 상태일 때
+    if (activeGimmickState && activeGimmickState.type.startsWith('clown_emotion') && actualHpLoss > 0) {
+        // 피해를 입은 대상('this')의 이름이 '클라운' 또는 '삐에로'일 경우
+        if (this.name === '클라운') {
+            activeGimmickState.clownHits++;
+            const emotionType = activeGimmickState.type === 'clown_emotion_laugh' ? '웃음' : '눈물';
+            console.log(`[DEBUG] takeDamage: 광대의 감정(${emotionType}) 기믹 활성 중. 피격자: ${this.name}`);
+            logFn(`✦기믹✦ [광대의 ${emotionType}] 활성 중. 클라운 유효타 +1 (현재: ${activeGimmickState.clownHits})`);
+        } else if (this.name === '삐에로') {
+            activeGimmickState.pierrotHits++;
+            const emotionType = activeGimmickState.type === 'clown_emotion_laugh' ? '웃음' : '눈물';
+            logFn(`✦기믹✦ [광대의 ${emotionType}] 활성 중. 삐에로 유효타 +1 (현재: ${activeGimmickState.pierrotHits})`);
+        }
+    }
     
         // 반격 로직 ([응수], [격노], [역습])
-if (attacker && attacker.isAlive && actualHpLoss > 0) {
-    const alliesOfAttacked = allyCharacters.includes(this) ? allyCharacters : enemyCharacters;
-    const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters; // 공격자의 적 = 피격자 편
+    if (attacker && attacker.isAlive && actualHpLoss > 0) {
+        const alliesOfAttacked = allyCharacters.includes(this) ? allyCharacters : enemyCharacters;
+        const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters; // 공격자의 적 = 피격자 편
 
     // 1. 피격자 본인 또는 아군이 [응수]/[격노] 버프를 가졌을 때
     // 피격자 본인
@@ -1337,7 +1488,7 @@ if (attacker && attacker.isAlive && actualHpLoss > 0) {
             }
         }
 
-                // [전이] 효과 (피격자가 디버프를 가짐)
+        // [전이] 효과 (피격자가 디버프를 가짐)
         const transferDebuff = this.debuffs.find(d => d.id === 'transfer' && d.turnsLeft > 0);
         if (transferDebuff && attacker && attacker.isAlive) {
             const healToAttacker = this.getEffectiveStat('atk'); // 대상(피격자) 공격력 100%
@@ -1565,76 +1716,56 @@ function loadSelectedMap() {
  * mapId를 받아 mapdata.js의 설정에 따라 맵의 적군을 불러오고 배치합니다.
  * @param {string} mapId - 불러올 맵의 ID
  */
-function loadMap(mapId) {
-    currentMapId = mapId;
-    const mapConfig = MAP_CONFIGS[mapId];
-    if (!mapConfig) {
-        logToBattleLog(`✦경고✦: 맵 [${mapId}]의 설정 정보를 찾을 수 없습니다.`);
-        return;
-    }
-
-    // 맵 크기 설정 로직 추가
-    MAP_WIDTH = mapConfig.width || 5; // 맵 설정에서 너비 값을 읽어오거나, 없으면 기본값 5 사용
-    MAP_HEIGHT = mapConfig.height || 5; // 맵 설정에서 높이 값을 읽어오거나, 없으면 기본값 5 사용
-    logToBattleLog(`✦정보✦ 맵 크기가 ${MAP_WIDTH}x${MAP_HEIGHT}(으)로 설정되었습니다.`);
-
-
-    if (mapConfig.flavorText) {
-        logToBattleLog(`\n<pre>${mapConfig.flavorText}</pre>\n`);
-    } else {
-        logToBattleLog(`\n✦정보✦ 맵 [${mapConfig.name}]을(를) 불러옵니다.\n`);
-    }
-
-    enemyCharacters = []; // 적군 목록 초기화
-    
-    mapConfig.enemies.forEach(mapEnemy => {
-    const template = MONSTER_TEMPLATES[mapEnemy.templateId];
-    if (!template) {
-        logToBattleLog(`\n✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-        return;
-    }
-    let monsterType;
-    if (Array.isArray(template.type)) {
-        monsterType = template.type[Math.floor(Math.random() * template.type.length)];
-    } else {
-        monsterType = template.type;
-    }
-    const newEnemy = new Character(template.name, monsterType);
-    
-    newEnemy.maxHp = template.maxHp || 100;
-    newEnemy.currentHp = newEnemy.maxHp;
-    newEnemy.atk = template.atk || 15;
-    newEnemy.matk = template.matk || 15;
-    newEnemy.def = template.def || 15;
-    newEnemy.mdef = template.mdef || 15;
-    newEnemy.skills = template.skills ? [...template.skills] : [];
-    newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
-
-    const posX = mapEnemy.pos.x;
-    const posY = mapEnemy.pos.y;
-    
-    if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-        newEnemy.posX = posX;
-        newEnemy.posY = posY;
-    } else {
-        logToBattleLog(`\n✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
-        const randomCell = getRandomEmptyCell();
-        if (randomCell) {
-            newEnemy.posX = randomCell.x;
-            newEnemy.posY = randomCell.y;
+mapConfig.enemies.forEach(mapEnemy => {
+        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
+        if (!template) {
+            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+            return;
         }
-    }
-    enemyCharacters.push(newEnemy);
-    logToBattleLog(`\n✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
-});
+        let monsterType;
+        if (Array.isArray(template.type)) {
+            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
+        } else {
+            monsterType = template.type;
+        }
+        const newEnemy = new Character(template.name, monsterType);
+        
+        newEnemy.maxHp = template.maxHp || 100;
+        newEnemy.currentHp = newEnemy.maxHp;
+        newEnemy.atk = template.atk || 15;
+        newEnemy.matk = template.matk || 15;
+        newEnemy.def = template.def || 15;
+        newEnemy.mdef = template.mdef || 15;
+        newEnemy.skills = template.skills ? [...template.skills] : [];
+        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
 
-// 아군과 새로 불러온 적군의 위치 정보를 모두 포함하여 전체 위치 맵을 다시 생성
-characterPositions = {};
-[...allyCharacters, ...enemyCharacters].forEach(char => {
-    if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
-        characterPositions[`${char.posX},${char.posY}`] = char.id;
-    }
-});
+        const posX = mapEnemy.pos.x;
+        const posY = mapEnemy.pos.y;
+        
+        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+            newEnemy.posX = posX;
+            newEnemy.posY = posY;
+        } else {
+            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
+            const randomCell = getRandomEmptyCell();
+            if (randomCell) {
+                newEnemy.posX = randomCell.x;
+                newEnemy.posY = randomCell.y;
+            }
+        }
+        enemyCharacters.push(newEnemy);
+        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
+    });
+
+    characterPositions = {};
+    [...allyCharacters, ...enemyCharacters].forEach(char => {
+        if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
+            characterPositions[`${char.posX},${char.posY}`] = char.id;
+        }
+    });
+
+    displayCharacters();
+}
 
 // 변경된 캐릭터 목록과 맵을 화면에 다시 그립니다.
 displayCharacters();
@@ -1700,6 +1831,55 @@ function summonMonster(monsterTemplateId) {
 
     logToBattleLog(`\n✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${spawnPos.x},${spawnPos.y}]에 나타났습니다.`);
     displayCharacters(); // 맵과 캐릭터 카드 UI 갱신
+}
+
+/**
+ * 지정된 좌표에 몬스터를 소환하는 함수
+ * @param {string} monsterTemplateId - 소환할 몬스터의 템플릿 ID
+ * @param {{x: number, y: number}} position - 소환할 정확한 좌표
+ */
+function summonMonsterAt(monsterTemplateId, position) {
+    // 좌표가 맵 밖이거나, 해당 위치가 이미 점유되었는지 확인
+    if (position.x < 0 || position.x >= MAP_WIDTH || position.y < 0 || position.y >= MAP_HEIGHT) {
+        logToBattleLog(`✦정보✦ 소환 지점(${position.x},${position.y})이 맵 범위를 벗어납니다.`);
+        return;
+    }
+    const posKey = `${position.x},${position.y}`;
+    if (characterPositions[posKey]) {
+        logToBattleLog(`✦정보✦ 소환 지점(${position.x},${position.y})이 막혀있어 ${monsterTemplateId} 소환에 실패했습니다.`);
+        return;
+    }
+
+    const template = MONSTER_TEMPLATES[monsterTemplateId];
+    if (!template) {
+        logToBattleLog(`✦경고✦: 소환할 몬스터 템플릿 [${monsterTemplateId}]를 찾을 수 없습니다.`);
+        return;
+    }
+
+    // 템플릿 타입이 배열이면 랜덤 선택
+    let monsterType = Array.isArray(template.type) 
+                    ? template.type[Math.floor(Math.random() * template.type.length)] 
+                    : template.type;
+
+    const newEnemy = new Character(template.name, monsterType);
+    
+    // 템플릿의 스탯 적용
+    newEnemy.maxHp = template.maxHp || 100;
+    newEnemy.currentHp = newEnemy.maxHp;
+    newEnemy.atk = template.atk || 15;
+    newEnemy.matk = template.matk || 15;
+    newEnemy.def = template.def || 15;
+    newEnemy.mdef = template.mdef || 15;
+    newEnemy.skills = template.skills ? [...template.skills] : [];
+    newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+    
+    newEnemy.posX = position.x;
+    newEnemy.posY = position.y;
+    
+    enemyCharacters.push(newEnemy);
+    characterPositions[posKey] = newEnemy.id;
+
+    logToBattleLog(`✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${position.x},${position.y}]에 나타났습니다.`);
 }
 
 function displayCharacters() {
@@ -1921,12 +2101,26 @@ function prepareNewTurnCycle() {
     
     logToBattleLog(`\n --- ${currentTurn} 턴 행동 선택 시작 --- \n`);
 
-    // 맵 ID가 'B-1'일 경우에만 4턴마다 추가 몬스터를 소환합니다.
-    if (currentMapId === 'B-1' && currentTurn > 0 && currentTurn % 4 === 0) {
+    // 4턴마다 랜덤 위치에 몬스터 소환 (B-1, B-2 맵)
+    if ((currentMapId === 'B-1' || currentMapId === 'B-2') && currentTurn > 0 && currentTurn % 4 === 0) {
+        console.log(`[DEBUG] prepareNewTurnCycle: 4의 배수 턴(${currentTurn}턴)이므로 추가 소환을 실행`);
         logToBattleLog(`\n --- 4턴 경과, 추가 몬스터가 소환됩니다. --- \n`);
-        summonMonster("Clown");
-        summonMonster("Pierrot");
+        
+        const clownCell = getRandomEmptyCell();
+        if (clownCell) {
+            summonMonsterAt("Clown", clownCell);
+        } else {
+            logToBattleLog("✦정보✦ 클라운을 소환할 빈 공간이 없습니다.");
+        }
+
+        const pierrotCell = getRandomEmptyCell();
+        if (pierrotCell) {
+            summonMonsterAt("Pierrot", pierrotCell);
+        } else {
+            logToBattleLog("✦정보✦ 삐에로를 소환할 빈 공간이 없습니다.");
+        }
     }
+    
 
     // 적 행동 예고
     const firstLivingEnemy = enemyCharacters.find(e => e.isAlive);
@@ -2424,42 +2618,49 @@ async function executeBattleTurn() {
     if(allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'none';
     if(skillDescriptionArea) skillDescriptionArea.innerHTML = ''; 
 
+    // --- 1. 아군 턴 행동 실행 ---
     logToBattleLog(`\n--- ${currentTurn} 턴 아군 행동 실행 ---`);
     for (const action of playerActionsQueue) {
         if (!action.caster.isAlive) continue;
         if (await executeSingleAction(action)) {
-            return;
+            return; // 전투가 종료되면 즉시 중단
         }
     }
 
+    // --- 2. 아군 턴 종료 후 전투 상태 확인 ---
     if (checkBattleEnd()) return;
 
-    resolveGimmickEffects(); // 적 턴 시작 전 기믹 효과 판정
-    
-    // --- '균열의 길' 기믹 판정 로직 추가 ---
+    // --- 3. 적군 턴 시작 전 기믹 효과 처리 ---
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
+    
+    // 일반 기믹 판정
+    resolveGimmickEffects();
+    // 광대 기믹 판정
+    resolveClownGimmick();
+    
+    // '균열의 길' 기믹 판정
     enemyCharacters.forEach(enemy => {
         const telegraphBuff = enemy.buffs.find(b => b.id === 'path_of_ruin_telegraph');
-        if (telegraphBuff && telegraphBuff.turnsLeft === 2) { // 예고 후 다음 턴 시작 시
+        if (telegraphBuff && telegraphBuff.turnsLeft === 2) { 
             logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다.`);
             const { predictedCol, predictedRow } = telegraphBuff.effect;
             const targets = allyCharacters.filter(ally => ally.isAlive && (ally.posX === predictedCol || ally.posY === predictedRow));
 
-            if (targets.length > 0) { // 파훼 실패
+            if (targets.length > 0) {
                 logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}, 균열의 길 위에 있습니다.`);
                 const damage = enemy.getEffectiveStat('matk');
                 targets.forEach(target => {
                     target.takeDamage(damage, logToBattleLog, enemy);
                     target.addDebuff('disarm', '[무장 해제]', 1, { 
                         description: `공격 유형 스킬 사용 불가 (1턴)`,
-                        category: '제어' // 디버프 카테고리 추가 권장
+                        category: '제어'
                     });
                 });
-            } else { // 파훼 성공
+            } else {
                 logToBattleLog(`  파훼 성공: 균열의 길 위에 아무도 없습니다.`);
                 enemy.addDebuff('rupture_debuff', '[붕괴]', 2, {
-                    defReduction: 0.3, // 방어력 30% 감소
-                    mdefReduction: 0.3 // 마법 방어력 30% 감소
+                    defReduction: 0.3,
+                    mdefReduction: 0.3
                 });
                 logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다. (2턴)`);
             }
@@ -2467,25 +2668,24 @@ async function executeBattleTurn() {
         }
     });
 
-    // 전투 종료 재확인 (아군 턴 중 적이 전멸할 수 있음)
+    // 기믹 처리 후 전투가 종료될 수도 있으므로 한 번 더 확인
     if (checkBattleEnd()) return;
 
+    // --- 4. 적군 턴 행동 실행 ---
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 실행 ---`);
     for (const enemyChar of enemyCharacters) {
         if (enemyChar.isAlive) {
-            if (await performEnemyAction(enemyChar)) { // performEnemyAction도 async/await 처리
+            if (await performEnemyAction(enemyChar)) {
                 return; // 전투 종료 시 즉시 함수 종료
             }
         }
     }
     
-    // 전투 종료 최종 확인
+    // --- 5. 모든 행동 종료 후 다음 턴 준비 ---
     if (!checkBattleEnd() && isBattleStarted) { 
-        prepareNewTurnCycle(); // 다음 턴 준비
+        prepareNewTurnCycle(); 
     } else {
-        // 전투가 여기서 끝났거나, 이미 시작되지 않은 상태면 아무것도 안 함
-        if (!isBattleStarted && startButton) startButton.style.display = 'block'; // 전투가 완전히 끝났다면 시작 버튼 다시 표시
-        // nextTurnButton, executeTurnButton 등은 이미 숨겨져 있을 것임
+        if (!isBattleStarted && startButton) startButton.style.display = 'block';
     }
 }
 
