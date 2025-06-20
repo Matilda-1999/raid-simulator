@@ -899,9 +899,6 @@ const SKILLS = {
         targetType: "self",
         execute: (caster, allies, enemies, battleLog, dynamicData) => {
             if (caster.hasBuff('path_of_ruin_telegraph')) return false;
-    
-            battleLog(`\n<pre>${GIMMICK_DATA.GIMMICK_Path_of_Ruin.script}</pre>\n`);
-            
             const { predictedCol, predictedRow } = dynamicData;
     
             caster.addBuff('path_of_ruin_telegraph', '균열의 길 예고', 2, { predictedCol, predictedRow });
@@ -917,58 +914,58 @@ const SKILLS = {
             description: "세 가지 형태의 기믹 중 하나를 무작위로 발동합니다.",
             targetType: "self",
             execute: (caster, allies, enemies, battleLog, dynamicData) => {
-        if (activeGimmickState) return false;
+            // previewEnemyAction에서 스크립트 출력 및 모든 결정을 처리하므로, 여기서는 받은 데이터를 기반으로 실행만
+            if (activeGimmickState) return false;
 
-        // 예고 단계에서 미리 결정된 데이터를 받습니다.
-        const { subGimmickChoice, objectsToSpawnInfo } = dynamicData;
-        
-        if (!subGimmickChoice || !objectsToSpawnInfo) {
-            console.error("[ERROR] Seed of Devour 실행 오류: dynamicData를 받지 못했습니다.");
-            return false;
-        }
-        
-        const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
-        battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
-
-        activeGimmickState = {
-            type: `subGimmick${subGimmickChoice}`, // 타입을 명확히 저장
-            startTurn: currentTurn,
-            objectIds: []
-        };
-        
-        // 미리 계산된 정보에 따라 오브젝트를 생성합니다.
-        objectsToSpawnInfo.forEach(info => {
-            let newObject = {
-                id: `${info.type}_${Math.random().toString(36).substring(2, 9)}`,
-                type: info.type,
-                name: '',
-                posX: info.pos.x,
-                posY: info.pos.y,
-                isGimmickObject: true,
-                isAlive: true,
-            };
-
-            if (info.type === 'fruit') {
-                newObject.name = '열매';
-                newObject.hp = 1;
-            } else if (info.type === 'fissure') {
-                newObject.name = '불안정한 균열';
-            } else if (info.type === 'spring') {
-                newObject.name = '메마른 생명의 샘';
-                newObject.healingReceived = 0;
-                newObject.healingGoal = 50;
+            const { subGimmickChoice, objectsToSpawnInfo } = dynamicData;
+            
+            if (!subGimmickChoice || !objectsToSpawnInfo) {
+                console.error("[ERROR] Seed of Devour 실행 오류: dynamicData를 받지 못했습니다.");
+                return false;
             }
             
-            mapObjects.push(newObject);
-            characterPositions[`${info.pos.x},${info.pos.y}`] = newObject.id;
-            activeGimmickState.objectIds.push(newObject.id);
-        });
+            const gimmickInfo = GIMMICK_DATA.GIMMICK_Seed_of_Devour[`subGimmick${subGimmickChoice}`];
+            // ✦기믹 발생✦ 로그는 행동의 결과를 알려 주므로 유지
+            battleLog(`✦기믹 발생✦ [흡수의 술식 - ${gimmickInfo.name}]: ${gimmickInfo.description}`);
 
-        displayCharacters();
-        return true;
+            activeGimmickState = {
+                type: `subGimmick${subGimmickChoice}`,
+                startTurn: currentTurn,
+                objectIds: []
+            };
+            
+            objectsToSpawnInfo.forEach(info => {
+                let newObject = {
+                    id: `${info.type}_${Math.random().toString(36).substring(2, 9)}`,
+                    type: info.type,
+                    name: '',
+                    posX: info.pos.x,
+                    posY: info.pos.y,
+                    isGimmickObject: true,
+                    isAlive: true,
+                };
+
+                if (info.type === 'fruit') {
+                    newObject.name = '열매';
+                    newObject.hp = 1;
+                } else if (info.type === 'fissure') {
+                    newObject.name = '불안정한 균열';
+                } else if (info.type === 'spring') {
+                    newObject.name = '메마른 생명의 샘';
+                    newObject.healingReceived = 0;
+                    newObject.healingGoal = 50;
+                }
+                
+                mapObjects.push(newObject);
+                characterPositions[`${info.pos.x},${info.pos.y}`] = newObject.id;
+                activeGimmickState.objectIds.push(newObject.id);
+            });
+
+            displayCharacters();
+            return true;
+        }
     }
-}
-    };
+};
 
 // --- 0.5. HTML 요소 가져오기 헬퍼 함수 ---
 function getElement(id) {
