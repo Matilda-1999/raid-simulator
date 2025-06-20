@@ -1,6 +1,6 @@
 // --- 0. 상수 정의 ---
-const MAP_WIDTH = 5;
-const MAP_HEIGHT = 5;
+let MAP_WIDTH = 5;
+let MAP_HEIGHT = 5;
 let enemyPreviewAction = null; // 몬스터가 예고한 행동 정보 저장
 
 const TYPE_ADVANTAGE_MODIFIER = 1.3; // 상성일 때 피해량 30% 증가
@@ -1572,10 +1572,17 @@ function loadMap(mapId) {
         logToBattleLog(`✦경고✦: 맵 [${mapId}]의 설정 정보를 찾을 수 없습니다.`);
         return;
     }
+
+    // 맵 크기 설정 로직 추가
+    MAP_WIDTH = mapConfig.width || 5; // 맵 설정에서 너비 값을 읽어오거나, 없으면 기본값 5 사용
+    MAP_HEIGHT = mapConfig.height || 5; // 맵 설정에서 높이 값을 읽어오거나, 없으면 기본값 5 사용
+    logToBattleLog(`✦정보✦ 맵 크기가 ${MAP_WIDTH}x${MAP_HEIGHT}(으)로 설정되었습니다.`);
+
+
     if (mapConfig.flavorText) {
         logToBattleLog(`\n<pre>${mapConfig.flavorText}</pre>\n`);
     } else {
-        logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
+        logToBattleLog(`\n✦정보✦ 맵 [${mapConfig.name}]을(를) 불러옵니다.\n`);
     }
 
     enemyCharacters = []; // 적군 목록 초기화
@@ -1583,7 +1590,7 @@ function loadMap(mapId) {
     mapConfig.enemies.forEach(mapEnemy => {
     const template = MONSTER_TEMPLATES[mapEnemy.templateId];
     if (!template) {
-        logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+        logToBattleLog(`\n✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
         return;
     }
     let monsterType;
@@ -1610,7 +1617,7 @@ function loadMap(mapId) {
         newEnemy.posX = posX;
         newEnemy.posY = posY;
     } else {
-        logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
+        logToBattleLog(`\n✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
         const randomCell = getRandomEmptyCell();
         if (randomCell) {
             newEnemy.posX = randomCell.x;
@@ -1618,7 +1625,7 @@ function loadMap(mapId) {
         }
     }
     enemyCharacters.push(newEnemy);
-    logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
+    logToBattleLog(`\n✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
 });
 
 // 아군과 새로 불러온 적군의 위치 정보를 모두 포함하여 전체 위치 맵을 다시 생성
@@ -1642,13 +1649,13 @@ displayCharacters();
 function summonMonster(monsterTemplateId) {
     const template = MONSTER_TEMPLATES[monsterTemplateId];
     if (!template) {
-        logToBattleLog(`✦경고✦: 소환할 몬스터 템플릿 [${monsterTemplateId}]를 찾을 수 없습니다.`);
+        logToBattleLog(`\n✦경고✦: 소환할 몬스터 템플릿 [${monsterTemplateId}]를 찾을 수 없습니다.`);
         return;
     }
 
     const spawnPoints = SPAWN_POINTS[monsterTemplateId]; //
     if (!spawnPoints || spawnPoints.length === 0) {
-        logToBattleLog(`✦경고✦: [${monsterTemplateId}]의 스폰 지점 정보가 없습니다.`);
+        logToBattleLog(`\n✦경고✦: [${monsterTemplateId}]의 스폰 지점 정보가 없습니다.`);
         return;
     }
 
@@ -1662,7 +1669,7 @@ function summonMonster(monsterTemplateId) {
     }
     
     if (spawnPos === null) {
-        logToBattleLog(`✦정보✦: [${template.name}]을(를) 소환할 비어있는 스폰 지점이 없습니다.`);
+        logToBattleLog(`\n✦정보✦: [${template.name}]을(를) 소환할 비어있는 스폰 지점이 없습니다.`);
         return;
     }
 
@@ -1691,7 +1698,7 @@ function summonMonster(monsterTemplateId) {
     enemyCharacters.push(newEnemy);
     characterPositions[`${spawnPos.x},${spawnPos.y}`] = newEnemy.id;
 
-    logToBattleLog(`✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${spawnPos.x},${spawnPos.y}]에 나타났습니다!`);
+    logToBattleLog(`\n✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${spawnPos.x},${spawnPos.y}]에 나타났습니다.`);
     displayCharacters(); // 맵과 캐릭터 카드 UI 갱신
 }
 
@@ -1743,11 +1750,11 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
 
             if (isAttackerInSafeZone) {
                 // 영역 안에서 공격: 피해량 1.5배
-                logToBattleLog(`✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다.`);
+                logToBattleLog(`\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다.`);
                 skillPower *= 1.5;
             } else {
                 // 영역 밖에서 공격: 피해량 0
-                logToBattleLog(`✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다.`);
+                logToBattleLog(`\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다.`);
                 return 0; // 데미지 계산을 중단하고 0을 반환
             }
         }
