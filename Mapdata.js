@@ -1,4 +1,3 @@
-
 const MONSTER_TEMPLATES = {
     // 1. 고정 타입을 갖는 몬스터
     "Terrmor_1": {
@@ -39,8 +38,8 @@ const MONSTER_TEMPLATES = {
             "GIMMICK_Seed_of_Devour"]
     },
 
-    "Carnabloom_1": { name: "카르나블룸", type: "야수", maxHP: 4000 },
-    "Carnabloom_2": { name: "카르나블룸", type: "천체", maxHP: 5000 },
+    "Carnabloom_1": { name: "카르나블룸", type: "야수", maxHp: 4000 },
+    "Carnabloom_2": { name: "카르나블룸", type: "천체", maxHp: 5000 },
 
     // 2. 랜덤 타입을 갖는 몬스터
     "Pierrot": { 
@@ -51,9 +50,10 @@ const MONSTER_TEMPLATES = {
         matk: 20,
         def: 20,
         mdef: 20,
-        skills: [ "SKILL_Slapstick_Comdey_P", "SKILL_Get_a_Present_P" ],
-        gimmicks: [ "GIMMICK_Tears_of"]
+        skills: [ "SKILL_Slapstick_Comdey_P", "SKILL_Get_a_Present_P", "GIMMICK_Tears_of" ],
+        gimmicks: []
         },
+    
     "Clown": {
         name: "클라운",
         type: ["암석", "나무"], 
@@ -62,8 +62,9 @@ const MONSTER_TEMPLATES = {
         matk: 20,
         def: 20,
         mdef: 20,
-        skills: [ "SKILL_Slapstick_Comdey_C", "SKILL_Get_a_Present_C" ],
-        gimmicks: [ "GIMMICK_Laugh_of"]
+        skills: [ "SKILL_Slapstick_Comdey_C", "SKILL_Get_a_Present_C", "GIMMICK_Laugh_of" ],
+        gimmicks: []
+    }
 };
 
 const MAP_CONFIGS = {
@@ -184,21 +185,16 @@ const GIMMICK_DATA = {
     }
 };
 
-// --- 추가: 클라운과 피에로의 시작 지점(소환 지점) 정의 ---
-// 좌표는 (0,0)을 기준으로
 const SPAWN_POINTS = {
-    "Clown": [ // 빨간색 시작 지점
+    "Clown": [
         { x: 0, y: 0 }, { x: 4, y: 0 }, { x: 0, y: 2 }, { x: 4, y: 2 }
     ],
-    "Pierrot": [ // 파란색 시작 지점
+    "Pierrot": [
         { x: 2, y: 0 }, { x: 0, y: 4 }, { x: 2, y: 4 }, { x: 4, y: 4 }
     ]
 };
 
-/**
- * 맵 그리드와 캐릭터 위치를 화면에 그리는 함수
- */
-function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [], activeAreaEffects = [], previewedHitArea = []) { // mapObjs 파라미터 추가
+function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [], activeAreaEffects = [], previewedHitArea = []) {
     if (!mapContainerElement) return;
     mapContainerElement.innerHTML = '';
 
@@ -206,7 +202,7 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [],
     const clownSpawns = new Set(SPAWN_POINTS.Clown.map(p => `${p.x},${p.y}`));
     const pierrotSpawns = new Set(SPAWN_POINTS.Pierrot.map(p => `${p.x},${p.y}`));
 
-    const gridContentMap = {}; // 캐릭터와 오브젝트를 함께 관리
+    const gridContentMap = {};
     [...allyChars, ...enemyChars].forEach(char => {
         if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
             const key = `${char.posX},${char.posY}`;
@@ -220,13 +216,12 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [],
         }
     });
 
-    // 맵 오브젝트 렌더링 로직
     mapObjs.forEach(obj => {
         const key = `${obj.posX},${obj.posY}`;
         if (!gridContentMap[key]) gridContentMap[key] = [];
         gridContentMap[key].push({
             type: 'gimmick',
-            gimmickType: obj.type, // 'fruit', 'fissure', 'spring'
+            gimmickType: obj.type,
             obj: obj
         });
     });
@@ -246,7 +241,6 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [],
             if (gridContentMap[key]) {
                 const gimmickContent = gridContentMap[key].find(c => c.type === 'gimmick' && c.obj);
                 if (gimmickContent) {
-                    // 기믹 오브젝트가 있으면 셀 전체를 클릭 가능하게
                     cellDiv.onclick = () => {
                         if (typeof selectTarget === 'function') {
                             selectTarget(gimmickContent.obj.id);
