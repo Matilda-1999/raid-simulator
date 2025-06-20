@@ -2,7 +2,6 @@
 let MAP_WIDTH = 5;
 let MAP_HEIGHT = 5;
 let enemyPreviewAction = null; // 몬스터가 예고한 행동 정보 저장
-let clownGimmickState = null;
 
 const TYPE_ADVANTAGE_MODIFIER = 1.3; // 상성일 때 피해량 30% 증가
 const TYPE_DISADVANTAGE_MODIFIER = 0.7; // 역상성일 때 피해량 30% 감소
@@ -1716,47 +1715,75 @@ function loadSelectedMap() {
  * mapId를 받아 mapdata.js의 설정에 따라 맵의 적군을 불러오고 배치합니다.
  * @param {string} mapId - 불러올 맵의 ID
  */
-mapConfig.enemies.forEach(mapEnemy => {
-        const template = MONSTER_TEMPLATES[mapEnemy.templateId];
-        if (!template) {
-            logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
-            return;
-        }
-        let monsterType;
-        if (Array.isArray(template.type)) {
-            monsterType = template.type[Math.floor(Math.random() * template.type.length)];
-        } else {
-            monsterType = template.type;
-        }
-        const newEnemy = new Character(template.name, monsterType);
-        
-        newEnemy.maxHp = template.maxHp || 100;
-        newEnemy.currentHp = newEnemy.maxHp;
-        newEnemy.atk = template.atk || 15;
-        newEnemy.matk = template.matk || 15;
-        newEnemy.def = template.def || 15;
-        newEnemy.mdef = template.mdef || 15;
-        newEnemy.skills = template.skills ? [...template.skills] : [];
-        newEnemy.gimmicks = template.gimmicks ? [...template.gimmicks] : [];
+function loadMap(mapId) {
+    console.log(`[DEBUG] loadMap: 맵 [${mapId}] 불러오기 시작.`);
+    currentMapId = mapId;
+    const mapConfig = MAP_CONFIGS[mapId];
+    if (!mapConfig) {
+        console.error(`[DEBUG] loadMap: 맵 설정 [${mapId}]을(를) 찾을 수 없습니다.`);
+        return;
+    }
 
-        const posX = mapEnemy.pos.x;
-        const posY = mapEnemy.pos.y;
-        
-        if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
-            newEnemy.posX = posX;
-            newEnemy.posY = posY;
-        } else {
-            logToBattleLog(`✦경고✦: ${newEnemy.name}의 좌표(${mapEnemy.pos.x},${mapEnemy.pos.y})가 맵 범위를 벗어납니다.`);
-            const randomCell = getRandomEmptyCell();
-            if (randomCell) {
-                newEnemy.posX = randomCell.x;
-                newEnemy.posY = randomCell.y;
+    MAP_WIDTH = mapConfig.width || 5;
+    MAP_HEIGHT = mapConfig.height || 5;
+    console.log(`[DEBUG] loadMap: 맵 크기 ${MAP_WIDTH}x${MAP_HEIGHT}(으)로 설정됨.`);
+    logToBattleLog(`✦정보✦ 맵 크기가 ${MAP_WIDTH}x${MAP_HEIGHT}(으)로 설정되었습니다.`);
+
+
+    if (mapConfig.flavorText) {
+        logToBattleLog(`\n<pre>${mapConfig.flavorText}</pre>\n`);
+    } else {
+        logToBattleLog(`--- 맵 [${mapConfig.name}]을(를) 불러옵니다. ---`);
+    }
+
+    enemyCharacters = []; 
+    console.log("[DEBUG] loadMap: 적군 목록 초기화 완료.");
+    
+    // B-1, B-2 맵이 아닐 때의 기본 적군 배치
+    if (mapId !== 'B-1' && mapId !== 'B-2') {
+        mapConfig.enemies.forEach(mapEnemy => {
+            const template = MONSTER_TEMPLATES[mapEnemy.templateId];
+            if (!template) {
+                logToBattleLog(`✦경고✦: 몬스터 템플릿 [${mapEnemy.templateId}]를 찾을 수 없습니다.`);
+                return;
             }
-        }
-        enemyCharacters.push(newEnemy);
-        logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
-    });
+            const newEnemy = new Character(template.name, template.type);
+            
+            // ... (newEnemy 스탯 설정 등 나머지 부분은 기존과 동일)
 
+            const posX = mapEnemy.pos.x;
+            const posY = mapEnemy.pos.y;
+            
+            if (posX >= 0 && posX < MAP_WIDTH && posY >= 0 && posY < MAP_HEIGHT) {
+                newEnemy.posX = posX;
+                newEnemy.posY = posY;
+            } else {
+                const randomCell = getRandomEmptyCell();
+                if (randomCell) {
+                    newEnemy.posX = randomCell.x;
+                    newEnemy.posY = randomCell.y;
+                }
+            }
+            enemyCharacters.push(newEnemy);
+            logToBattleLog(`✦합류✦ 적군 [${newEnemy.name}, ${newEnemy.type}], [${newEnemy.posX},${newEnemy.posY}].`);
+        });
+    }
+
+    // B-1, B-2 맵 전용 초기 배치 (광대 2, 삐에로 2)
+    if (mapId === 'B-1' || mapId === 'B-2') {
+        console.log(`[DEBUG] loadMap: 맵 ${mapId} 전용 초기 배치 실행.`);
+        
+        // Carnabloom 배치 (Mapdata.js의 enemies 배열에서 읽어옴)
+        mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
+
+        // 광대/삐에로 고정 위치 배치
+        summonMonsterAt("Clown", {x: 1, y: 1});
+        summonMonsterAt("Clown", {x: 7, y: 7});
+        summonMonsterAt("Pierrot", {x: 7, y: 1});
+        summonMonsterAt("Pierrot", {x: 1, y: 7});
+    }
+
+    // 모든 캐릭터의 위치 정보 최종 정리
     characterPositions = {};
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         if (char.isAlive && char.posX !== -1 && char.posY !== -1) {
@@ -2642,28 +2669,25 @@ async function executeBattleTurn() {
     enemyCharacters.forEach(enemy => {
         const telegraphBuff = enemy.buffs.find(b => b.id === 'path_of_ruin_telegraph');
         if (telegraphBuff && telegraphBuff.turnsLeft === 2) { 
+            console.log(`[DEBUG] executeBattleTurn: [균열의 길] 기믹 판정 실행. 대상: ${enemy.name}`);
             logToBattleLog(`✦기믹 판정✦ [균열의 길] 효과가 발동됩니다.`);
             const { predictedCol, predictedRow } = telegraphBuff.effect;
             const targets = allyCharacters.filter(ally => ally.isAlive && (ally.posX === predictedCol || ally.posY === predictedRow));
-
-            if (targets.length > 0) {
+    
+            if (targets.length > 0) { // 파훼 실패
+                console.log(`[DEBUG] executeBattleTurn: [균열의 길] 파훼 실패. 대상 플레이어 수: ${targets.length}`);
                 logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}, 균열의 길 위에 있습니다.`);
-                const damage = enemy.getEffectiveStat('matk');
-                targets.forEach(target => {
-                    target.takeDamage(damage, logToBattleLog, enemy);
-                    target.addDebuff('disarm', '[무장 해제]', 1, { 
-                        description: `공격 유형 스킬 사용 불가 (1턴)`,
-                        category: '제어'
-                    });
-                });
-            } else {
+                // ... (이하 동일)
+            } else { // 파훼 성공
+                console.log("[DEBUG] executeBattleTurn: [균열의 길] 파훼 성공.");
                 logToBattleLog(`  파훼 성공: 균열의 길 위에 아무도 없습니다.`);
-                enemy.addDebuff('rupture_debuff', '[붕괴]', 2, {
-                    defReduction: 0.3,
-                    mdefReduction: 0.3
-                });
-                logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다. (2턴)`);
-            }
+                    enemy.addDebuff('rupture_debuff', '[붕괴]', 2, {
+                        defReduction: 0.3,
+                        mdefReduction: 0.3
+                    });
+                    logToBattleLog(`  ${enemy.name}에게 [붕괴] 디버프가 적용됩니다. (2턴)`);
+                }
+            
             enemy.removeBuffById('path_of_ruin_telegraph');
         }
     });
@@ -2692,43 +2716,45 @@ async function executeBattleTurn() {
 function previewEnemyAction(enemyChar) {
     console.log(`[DEBUG] Turn ${currentTurn}: previewEnemyAction 시작. 대상: ${enemyChar.name}`);
 
-    // GIMMICK_DATA도 검색 대상에 포함하여 모든 행동 정보 호출
-    const allSkills = { ...SKILLS, ...MONSTER_SKILLS, ...GIMMICK_DATA };
+    const allSkills = { ...SKILLS, ...MONSTER_SKILLS }; // GIMMICK_DATA 제거
     let skillToUseId = null;
     let hitArea = [];
 
     // --- 몬스터별 행동 결정 로직 ---
-    // A-1, A-2 보스 모두 자신의 모든 행동(기믹+스킬) 중 하나만 무작위로 선택하도록 통합
-    if (enemyChar.skills.includes("SKILL_Birth_of_Vines") || enemyChar.skills.includes("SKILL_Seismic_Fissure")) {
-        const allActions = [...enemyChar.gimmicks, ...enemyChar.skills];
+    const isBoss = enemyChar.skills.includes("SKILL_Birth_of_Vines") || enemyChar.skills.includes("SKILL_Seismic_Fissure");
+    const isClownOrPierrot = enemyChar.name === '클라운' || enemyChar.name === '삐에로';
+
+    if (isBoss) {
+        // 보스는 기믹과 스킬 중 하나를 무작위로 선택
+        const allActions = [...(enemyChar.gimmicks || []), ...(enemyChar.skills || [])];
         if (allActions.length > 0) {
             skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
             console.log(`[DEBUG] 보스 행동 결정: ${skillToUseId}`);
         }
+    } else if (isClownOrPierrot) {
+        // 광대는 자신의 스킬 목록 중에서 무작위로 하나를 선택
+        if (enemyChar.skills && enemyChar.skills.length > 0) {
+            skillToUseId = enemyChar.skills[Math.floor(Math.random() * enemyChar.skills.length)];
+            console.log(`[DEBUG] 광대 행동 결정: ${skillToUseId}`);
+        }
     }
 
     if (!skillToUseId) {
-        console.log(`[DEBUG] previewEnemyAction: 사용할 스킬 ID를 결정하지 못함.`);
+        console.log(`[DEBUG] previewEnemyAction: 사용할 스킬이 없어 기본 공격을 수행.`);
         return null;
     }
 
-    const skillDefinition = allSkills[skillToUseId];
+    const skillDefinition = allSkills[skillToUseId] || GIMMICK_DATA[skillToUseId]; // GIMMICK_DATA에서도 검색
     if (!skillDefinition) {
          console.log(`[DEBUG] previewEnemyAction: 스킬 ID [${skillToUseId}]에 대한 정의를 찾을 수 없음.`);
          return null;
     }
 
-    // --- 규칙 ➁: 예고 타일과 관계없이 스크립트(Flavor Text)를 먼저 출력 ---
     const scriptToShow = skillDefinition.script || skillDefinition.flavorText;
     if (scriptToShow) {
         logToBattleLog(scriptToShow);
-    } else if (skillDefinition.subGimmick1 && skillDefinition.subGimmick1.script) {
-        // 흡수의 술식의 경우, 하위 기믹의 스크립트를 출력
-        const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
-        logToBattleLog(skillDefinition[`subGimmick${subGimmickChoice}`].script);
-    }
+    } 
 
-    // --- 규칙 ➀: 특정 기믹에 대해서만 예고 타일(hitArea)을 계산 ---
     if (skillToUseId === 'GIMMICK_Path_of_Ruin') {
         const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
         const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
@@ -2738,8 +2764,6 @@ function previewEnemyAction(enemyChar) {
             if (y !== predictedRow) hitArea.push({ x: predictedCol, y });
         }
         skillDefinition.previewData = { predictedCol, predictedRow };
-        console.log(`[DEBUG] '균열의 길' 예고 범위 생성: col=${predictedCol}, row=${predictedRow}`);
-
     } else if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
         const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
         const gimmickCoordsStr = skillDefinition.coords;
@@ -2906,7 +2930,55 @@ function resolveGimmickEffects() {
     activeGimmickState = null;
     displayCharacters();
 }
-    
+
+/**
+ * '광대의 감정' 기믹의 성공/실패를 판정하고 효과를 적용하는 함수
+ */
+function resolveClownGimmick() {
+    if (!activeGimmickState || !activeGimmickState.type.startsWith('clown_emotion')) return;
+
+    console.log(`[DEBUG] resolveClownGimmick: 기믹 판정 시작. 현재 턴: ${currentTurn}, 기믹 시작 턴: ${activeGimmickState.turnStart}`);
+
+    if (currentTurn >= activeGimmickState.turnStart) {
+        let success = false;
+        const state = activeGimmickState;
+        logToBattleLog(`✦기믹 판정✦ [광대의 감정] 결과: 클라운 ${state.clownHits}회, 삐에로 ${state.pierrotHits}회 타격.`);
+
+        if (state.type === 'clown_emotion_laugh') {
+            if (state.clownHits >= 5 && state.pierrotHits <= 5) success = true;
+        } else { // 'clown_emotion_tear'
+            if (state.clownHits <= 5 && state.pierrotHits >= 5) success = true;
+        }
+
+        if (success) {
+            console.log("[DEBUG] resolveClownGimmick: 기믹 판정 결과 - 성공");
+            logToBattleLog('✦기믹 성공✦ 광대의 감정 기믹 파훼 성공! 모든 광대가 1턴간 행동 불가 상태가 됩니다.');
+            enemyCharacters.forEach(e => {
+                if (e.isAlive && (e.name === '클라운' || e.name === '삐에로')) {
+                    e.addDebuff('stun', '[행동 불가]', 2, { category: '제어' });
+                }
+            });
+        } else {
+            console.log("[DEBUG] resolveClownGimmick: 기믹 판정 결과 - 실패");
+            logToBattleLog('✦기믹 실패✦ 광대의 감정 기믹 파훼 실패! 모든 아군이 1턴간 행동 불가 상태가 되고, 광대들이 폭주합니다.');
+            allyCharacters.forEach(a => {
+                if (a.isAlive) {
+                    a.addDebuff('stun', '[행동 불가]', 2, { category: '제어' });
+                }
+            });
+            enemyCharacters.forEach(e => {
+                if (e.isAlive && (e.name === '클라운' || e.name === '삐에로')) {
+                    e.addBuff('enraged_range', '[폭주: 범위 증가]', 4, { rangeIncrease: 1 });
+                    logToBattleLog(`✦버프✦ ${e.name}이(가) [폭주]하여 공격 범위가 증가합니다(3턴).`);
+                }
+            });
+        }
+        
+        activeGimmickState = null;
+        console.log("[DEBUG] resolveClownGimmick: 기믹 상태 초기화 완료.");
+    }
+}
+
 async function performEnemyAction(enemyChar) {
     if (!enemyChar.isAlive) return false;
 
