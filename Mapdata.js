@@ -77,8 +77,7 @@ const MAP_CONFIGS = {
         width: 9,
         height: 9,
         enemies: [
-            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } },
-            { templateId: "Pierrot", pos: { x: 3, y: 4 } } ],
+            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } } ],
         flavorText:
             "텅 비어 있는 무대임에도 웃음소리와 울음소리로 소란스럽다.\n" +
             "붉은 천막이 열리고, 끈에 묶인 인형들이 삐걱이며 걸어나온다.\n" +
@@ -92,8 +91,7 @@ const MAP_CONFIGS = {
         width: 9,
         height: 9,
         enemies: [
-            { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } },
-            { templateId: "Clown", pos: { x: 3, y: 4 } } ],
+            { templateId: "Carnabloom_2", pos: { x: 4, y: 4 } } ],
         flavorText:
             "퍼레이드의 흐름이 끊긴다.\n" +
             "인형사는 움직임을 멈춘 인형들을 조용히 감싸 안는다.\n" +
