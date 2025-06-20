@@ -30,8 +30,13 @@ const MONSTER_TEMPLATES = {
         matk: 20,
         def: 45,
         mdef: 20,
-        skills: ["SKILL_Birth_of_Vines", "SKILL_Spores_of_Silence", "SKILL_Seeds_Wrath"],
-        gimmicks: ["GIMMICK_Path_of_Ruin", "GIMMICK_Seed_of_Devour"]
+        skills: [
+            "SKILL_Birth_of_Vines",
+            "SKILL_Spores_of_Silence",
+            "SKILL_Seeds_Wrath"],
+        gimmicks: [
+            "GIMMICK_Path_of_Ruin",
+            "GIMMICK_Seed_of_Devour"]
     },
 
     "Carnabloom_1": { name: "카르나블룸", type: "야수" },
