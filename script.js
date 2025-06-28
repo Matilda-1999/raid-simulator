@@ -322,7 +322,7 @@ const SKILLS = {
         id: "SKILL_TRUTH",
         name: "진리",
         type: "광역 디버프",
-        description: "아래는 진창이었음을. 드디어 깨달은 당신에게 선사하는 아름다운 정론이다.<br><br>1. 광역 디버프<br>2. 모든 적군에게 2턴 동안 [중독](턴 종료 시 대상자에게 (사용자의 공격)x0.5 고정 피해) 상태 부여.<br>3. 중독 결산 후 랜덤 적군에게 [맹독](사용자의 공격)x0.3 추가 공격 부여.",
+        description: "아래는 진창이었음을. 드디어 깨달은 당신에게 선사하는 아름다운 정론이다.<br><br>1. 광역 디버프<br>2. 모든 적군에게 2턴 동안 [중독](턴 종료 시 대상의 최대 체력의 1.5% 만큼의 고정 피해) 상태 부여.<br>3. 중독 결산 후 랜덤 적군에게 [맹독](사용자의 공격)x0.3 추가 공격 부여.",
         targetType: "all_enemies",
         targetSelection: "all_enemies",
         execute: (caster, enemies, battleLog) => {
@@ -455,7 +455,7 @@ const SKILLS = {
         id: "SKILL_DISCERNMENT",
         name: "간파",
         type: "단일 공격",
-        description: "숨죽인 무대에는 벌어질 틈이 감춰져 있다.<br><br>공격력 190% 물리/240% 마법 피해 (2타). 이후 공격력 50% 물리/마법 공격력 70% 마법 피해를 가하며 상대에게 [쇠약] 상태 부여. <br>[쇠약]: 지속 2 턴. 공격 시 피해량 -20%.",
+        description: "숨죽인 무대에는 벌어질 틈이 감춰져 있다.<br><br>공격력/마법 공격력 260% 공격(2타). 이후 공격력/마법 공격력 200%의 피해를 가하며 상대에게 [쇠약] 상태 부여. <br>[쇠약]: 지속 2 턴. 공격 시 피해량 -20%.",
         targetType: "single_enemy",
         targetSelection: "enemy",
         execute: (caster, target, allies, enemies, battleLog) => {
@@ -464,7 +464,7 @@ const SKILLS = {
 
             const damageType = caster.getEffectiveStat('atk') >= caster.getEffectiveStat('matk') ? 'physical' : 'magical';
             const damageTypeKorean = damageType === 'physical' ? '물리' : '마법';
-            const skillPower1 = damageType === 'physical' ? 1.9 : 2.4;
+            const skillPower1 = damageType === 'physical' ? 2.6 : 2.6;
 
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [간파] 2연타 공격.`);
             for (let i=0; i<2; i++) {
@@ -474,7 +474,7 @@ const SKILLS = {
                 if (!target.isAlive) return true;
             }
 
-            const skillPower2 = damageType === 'physical' ? 0.5 : 0.7;
+            const skillPower2 = damageType === 'physical' ? 2.0 : 2.0;
             const damage2 = calculateDamage(caster, target, skillPower2, damageType);
             target.takeDamage(damage2, battleLog, caster);
             battleLog(`✦추가 피해✦ ${caster.name} [간파 효과]: ${target.name}에게 ${damage2} 추가 ${damageTypeKorean} 피해.`);
@@ -1954,8 +1954,9 @@ function applyTurnStartEffects(character) {
 
         // '진리' 스킬의 중독(poison_truth) 효과 처리 로직 수정
         if (debuff.id === 'poison_truth' && debuff.turnsLeft > 0 && debuff.effect.type === 'fixed') {
-            // 최종 피해량은 항상 반올림하여 일관성 유지
-            const roundedDamage = Math.round(debuff.effect.damagePerTurn);
+            // [중독] 피해를 대상 최대 체력의 1.5%로 계산
+            const poisonDamage = character.maxHp * 0.015;
+            const roundedDamage = Math.round(poisonDamage);
             logToBattleLog(`✦상태 피해✦ ${character.name}, [${debuff.name} 효과]: ${roundedDamage} 고정 피해.`);
             character.takeDamage(roundedDamage, logToBattleLog, findCharacterById(debuff.effect.casterId) || null); 
         }
