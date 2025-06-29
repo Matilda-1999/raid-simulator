@@ -177,9 +177,8 @@ const SKILLS = {
             }
             
             if (caster.id === target.id) { // 자신에게 사용
-                const healAmount = Math.round(caster.getEffectiveStat('atk') * 0.5);
-                caster.currentHp = Math.min(caster.maxHp, caster.currentHp + healAmount);
-                battleLog(`✦회복✦ ${caster.name}, [허상] 사용 (자신): 체력 ${healAmount} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
+                let healAmount = Math.round(caster.getEffectiveStat('atk') * 0.5);
+                applyHeal(caster, healAmount, battleLog, '허상');
             } else { // 다른 아군에게 사용
                 const hpLoss = Math.round(caster.getEffectiveStat('atk') * 0.2);
                 caster.currentHp -= hpLoss;
@@ -217,6 +216,9 @@ const SKILLS = {
             } else {
                 battleLog(`✦정보✦ ${caster.name} [허상]: 턴 종료 추가 공격 대상을 찾을 수 없습니다.`);
             }
+
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
             return true;
         }
     },
@@ -263,6 +265,9 @@ const SKILLS = {
             const chosenBuffData = buffChoices[Math.floor(Math.random() * buffChoices.length)];
             target.addBuff(chosenBuffData.id, chosenBuffData.name, chosenBuffData.turns, chosenBuffData.effect);
             battleLog(`✦버프✦ ${target.name}: [허무] 효과로 [${chosenBuffData.name}] 획득(2턴).`);
+            
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
             return true;
         }
     },
@@ -313,6 +318,9 @@ const SKILLS = {
             battleLog(`✦버프✦ ${caster.name}: [실재] ${realityStacksToAdd}스택 추가 획득 (현재 ${currentRealityStacks}스택, 2턴, 해제 불가).`);
             
             caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] = currentTurnNum;
+            
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
             return true;
         }
     },
@@ -587,10 +595,17 @@ const SKILLS = {
             }
             
             const lostHp = target.maxHp - target.currentHp;
-            const healAmount = Math.round(lostHp * 0.5);
-            target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
+            let healAmount = Math.round(lostHp * 0.5);
+            
+            // 힐러 직업 효과 체크
+            if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
+                healAmount = Math.round(healAmount * 1.10);
+                caster.healerBoostCount++;
+                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+            }
+
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용.`);
-            battleLog(`✦회복✦ ${target.name}: 체력 ${healAmount} 회복. (HP: ${target.currentHp.toFixed(0)})`);
+            applyHeal(target, healAmount, battleLog, '공명');
 
             if (target.debuffs.length > 0) {
                 const cleansedDebuffs = target.debuffs.map(d => d.name).join(', ');
@@ -604,6 +619,8 @@ const SKILLS = {
             });
             battleLog(`✦버프✦ ${caster.name}: [환원] 상태가 되어 3턴간 스킬 사용 시 아군을 추가 회복합니다.`);
             
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
             return true;
         }
     },
@@ -658,14 +675,21 @@ const SKILLS = {
                 caster.currentHp = 1;
                 battleLog(`✦효과✦ ${caster.name}, 쓰러지기 직전이지만 효과는 발동됩니다.`);
             }
+            
+            // 힐러 직업 효과 체크용 변수
+            let healMultiplier = 1.0;
+            if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
+                healMultiplier = 1.10;
+                caster.healerBoostCount++;
+                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+            }
 
             // 1. 아군에게 효과 적용 (기존 로직)
             allies.filter(a => a.isAlive && a.id !== caster.id).forEach(ally => {
                 const lostHp = ally.maxHp - ally.currentHp;
                 if (lostHp > 0) {
-                    const healAmount = Math.round(lostHp * 0.7); 
-                    ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
-                    battleLog(`✦회복✦ ${ally.name}: 체력 ${healAmount} 회복. (HP: ${ally.currentHp.toFixed(0)})`);
+                    let healAmount = Math.round(lostHp * 0.7 * healMultiplier);
+                    applyHeal(ally, healAmount, battleLog, '침전');
                 }
                 ally.addBuff('immunity', '[면역]', 2, {
                     description: "다음 상태 이상 공격을 1회 무효화합니다.",
@@ -682,6 +706,9 @@ const SKILLS = {
                 spring.healingReceived += healAmount;
                 battleLog(`✦회복✦ [${spring.name}]에 생명력을 ${healAmount} 주입합니다. (현재: ${spring.healingReceived}/${spring.healingGoal})`);
             }
+            
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
             
             displayCharacters(); // UI 즉시 갱신
             return true;
@@ -705,9 +732,15 @@ const SKILLS = {
             
             if (!caster.isAlive) return true;
 
-            const selfHeal = Math.round(caster.maxHp * 0.3);
-            caster.currentHp = Math.min(caster.maxHp, caster.currentHp + selfHeal);
-            battleLog(`✦회복✦ ${caster.name}: 체력 ${selfHeal} 회복. (HP: ${caster.currentHp.toFixed(0)})`);
+            let selfHeal = Math.round(caster.maxHp * 0.3);
+            
+            // 힐러 직업 효과 체크
+            if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
+                selfHeal = Math.round(selfHeal * 1.10);
+                caster.healerBoostCount++;
+                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+            }
+            applyHeal(caster, selfHeal, battleLog, '차연');
 
             const allCharacters = [...allies, ...enemies];
             allCharacters.filter(c => c.isAlive).forEach(character => {
@@ -717,6 +750,9 @@ const SKILLS = {
                 });
                 battleLog(`✦버프✦ ${character.name}: [흔적] 상태가 되었습니다. (3턴)`);
             });
+            
+            // 서포터 직업 효과
+            caster.checkSupporterPassive(battleLog);
 
             return true;
         }
@@ -1147,24 +1183,35 @@ const allySelectionButtonsDiv = getElement('allySelectionButtons');
 
 // --- 2. 핵심 클래스 정의 ---
 class Character {
-    constructor(name, type, currentHpOverride = null) {
+    constructor(name, type, job, currentHpOverride = null) {
         this.id = Math.random().toString(36).substring(2, 11);
         this.name = name;
         this.type = type;
+        this.job = job;
 
+        // 기본 스탯
         this.atk = 15;
         this.matk = 15;
         this.def = 15;
         this.mdef = 15;
+        this.maxHp = 100;
 
+        // 영감(type)에 따른 스탯 보정
         switch (type) {
             case "천체": this.matk = 20; break;
             case "암석": this.def = 20; break;
             case "야수": this.atk = 20; break;
             case "나무": this.mdef = 20; break;
         }
-
-        this.maxHp = 100;
+        
+        // 직군(job)에 따른 스탯 보정
+        if (this.job === '딜러') {
+            this.atk += 5;
+            this.matk += 5;
+        } else if (this.job === '힐러') {
+            this.maxHp = 110;
+        }
+        
         this.currentHp = (currentHpOverride !== null && !isNaN(currentHpOverride) && currentHpOverride > 0)
                        ? Math.min(currentHpOverride, this.maxHp)
                        : this.maxHp;
@@ -1181,6 +1228,11 @@ class Character {
         this.currentTurnDamageTaken = 0; 
         this.totalDamageTakenThisBattle = 0; 
 
+        // 직군별 전투 카운터
+        this.dealerExtraDamageCount = 0;
+        this.healerBoostCount = 0;
+        this.supporterShieldCount = 0;
+
         this.gimmicks = []; // 몬스터가 가진 기믹 목록
         this.activeGimmick = null; // 현재 활성화된 기믹 ID
         this.isEnraged = false;
@@ -1189,26 +1241,22 @@ class Character {
         this.posY = -1; 
     }
 
-    addBuff(id, name, turns, effect, unremovable = false, isStacking = false) { // isStacking 파라미터 추가 (실존 스킬용)
+    addBuff(id, name, turns, effect, unremovable = false, isStacking = false) {
         let existingBuff = this.buffs.find(b => b.id === id);
     
-        // 이전 보호막 버프 제거 로직 (중첩 방지 및 정확한 값 관리를 위해)
-        if (existingBuff && existingBuff.effect.shieldAmount && !isStacking) { // 스택형 보호막이 아니라면 기존 보호막 효과 제거
+        if (existingBuff && existingBuff.effect.shieldAmount && !isStacking) {
             this.shield = Math.max(0, this.shield - existingBuff.effect.shieldAmount);
         }
     
         if (existingBuff) {
-            existingBuff.turnsLeft = Math.max(existingBuff.turnsLeft, turns); // 지속시간은 긴 쪽으로
-            
-            if (isStacking && effect.stacks && existingBuff.stacks !== undefined) { // 스택 누적
+            existingBuff.turnsLeft = Math.max(existingBuff.turnsLeft, turns);
+            if (isStacking && effect.stacks && existingBuff.stacks !== undefined) {
                 existingBuff.stacks += effect.stacks;
-            } else if (effect.stacks) { // 일반적인 스택 또는 스택형 버프의 첫 적용
+            } else if (effect.stacks) {
                  existingBuff.stacks = effect.stacks;
             }
-            // effect 객체 병합 시 주의: shieldAmount 같은 값은 덮어써야 할 수 있음
             existingBuff.effect = {...existingBuff.effect, ...effect}; 
-            if (effect.lastAppliedTurn) existingBuff.lastAppliedTurn = effect.lastAppliedTurn; // 연속 사용 체크용
-
+            if (effect.lastAppliedTurn) existingBuff.lastAppliedTurn = effect.lastAppliedTurn;
         } else {
             existingBuff = { id, name, turnsLeft: turns, effect, unremovable, stacks: effect.stacks || 1 };
             if (effect.lastAppliedTurn) existingBuff.lastAppliedTurn = effect.lastAppliedTurn;
@@ -1216,46 +1264,62 @@ class Character {
         }
     
         if (effect.shieldAmount && typeof effect.shieldAmount === 'number') {
-            if (isStacking && existingBuff.stacks > effect.stacks) { 
-                // 실존 스킬은 스택만 쌓고 보호막은 직접 부여하지 않으므로, 이 부분은 addBuff 일반론
-            } else { // 일반 버프 또는 스택형 버프의 첫 적용/갱신
-                 this.shield += effect.shieldAmount;
+            this.shield += effect.shieldAmount;
+            
+            // 탱커 직업 효과: 보호막 획득 시 최대 체력 증가
+            if (this.job === '탱커') {
+                const maxHpGain = effect.shieldAmount * 0.0002;
+                this.maxHp += maxHpGain;
+                this.currentHp += maxHpGain; // 최대 체력이 늘어난 만큼 현재 체력도 채워줌
+                logToBattleLog(`✦직업 효과(탱커)✦ [불굴의 맹세] 발동! 최대 체력이 ${maxHpGain.toFixed(2)} 증가합니다.`);
             }
         }
     }
 
     addDebuff(id, name, turns, effect) {
-        // [면역] 효과 체크
         const immunityBuff = this.buffs.find(b => b.id === 'immunity' && b.effect.singleUse);
         if (immunityBuff) {
             logToBattleLog(`✦효과✦ ${this.name}: [면역] 효과로 [${name}] 디버프를 무효화합니다.`);
-            this.removeBuffById('immunity'); // 1회용이므로 사용 후 제거
-            return; // 디버프를 추가하지 않고 함수 종료
+            this.removeBuffById('immunity');
+            return;
         }
 
         let existingDebuff = this.debuffs.find(d => d.id === id);
         if (existingDebuff) {
-            if (effect.overrideDuration) { // 흠집처럼 중첩 시 지속 시간 갱신
+            if (effect.overrideDuration) {
                 existingDebuff.turnsLeft = turns;
             } else {
                 existingDebuff.turnsLeft = Math.max(existingDebuff.turnsLeft, turns);
             }
 
-            if (effect.maxStacks && existingDebuff.stacks !== undefined) { // 스택 증가 (최대치까지)
+            if (effect.maxStacks && existingDebuff.stacks !== undefined) {
                 existingDebuff.stacks = Math.min(effect.maxStacks, (existingDebuff.stacks || 0) + 1);
-            } else if (effect.maxStacks) { // 첫 스택
+            } else if (effect.maxStacks) {
                 existingDebuff.stacks = 1;
             }
-            // effect 객체 병합
              existingDebuff.effect = {...existingDebuff.effect, ...effect};
         } else {
             this.debuffs.push({ id, name, turnsLeft: turns, effect, stacks: effect.maxStacks ? 1 : undefined });
         }
     }
+    
+    // 서포터 전용 패시브 체크 함수
+    checkSupporterPassive(logFn) {
+        if (this.job === '서포터' && this.currentHp <= this.maxHp * 0.4 && this.supporterShieldCount < 3) {
+            let statToUse = 'atk';
+            if (this.type === '천체' || this.type === '나무') {
+                statToUse = 'matk';
+            }
+            const shieldAmount = Math.round(this.getEffectiveStat(statToUse) * 0.05);
+            this.shield += shieldAmount;
+            this.supporterShieldCount++;
+            logFn(`✦직업 효과(서포터)✦ [절제된 응원] 발동! 보호막 ${shieldAmount}을 획득합니다. (남은 횟수: ${3 - this.supporterShieldCount})`);
+        }
+    }
 
     getDebuffStacks(id) {
         const debuff = this.debuffs.find(d => d.id === id);
-        return debuff && debuff.stacks !== undefined ? debuff.stacks : (debuff ? 1 : 0) ; // 스택 없으면 1개로 간주 (활성화 여부) or 0
+        return debuff && debuff.stacks !== undefined ? debuff.stacks : (debuff ? 1 : 0) ;
     }
 
     hasBuff(id) {
@@ -1283,11 +1347,10 @@ class Character {
             }
     
             if (removedBuff.id === 'will_buff' && removedBuff.effect.healOnRemove) {
-                if (this.shield > 0) { // [의지] 해제 시 현재 '모든' 보호막을 체력으로 흡수
+                if (this.shield > 0) {
                     const healAmount = this.shield; 
-                    this.currentHp = Math.min(this.maxHp, this.currentHp + healAmount);
-                    logToBattleLog(`✦효과✦ ${this.name} ([${removedBuff.name}] 해제): 보호막 ${healAmount.toFixed(0)}만큼 체력 흡수. (HP: ${this.currentHp.toFixed(0)})`);
-                    this.shield = 0; // 모든 보호막 소모
+                    applyHeal(this, healAmount, logToBattleLog, `[${removedBuff.name}] 해제`);
+                    this.shield = 0;
                 }
                 if (removedBuff.effect.resetsTotalDamageTaken) {
                     this.totalDamageTakenThisBattle = 0;
@@ -1301,12 +1364,11 @@ class Character {
     takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
         if (!this.isAlive) return;
 
-        if (this.isGimmickObject) { // 대상이 기믹 오브젝트(열매)일 경우
+        if (this.isGimmickObject) {
             this.hp -= rawDamage;
             if (this.hp <= 0) {
                 this.isAlive = false;
                 logFn(`✦파괴✦ 기믹 오브젝트 [${this.name}] 파괴`);
-                // 맵에서 제거
                 mapObjects = mapObjects.filter(obj => obj.id !== this.id);
                 const posKey = Object.keys(characterPositions).find(key => characterPositions[key] === this.id);
                 if(posKey) delete characterPositions[posKey];
@@ -1315,20 +1377,16 @@ class Character {
             return;
         }
         
-        // 상성 관련
         if (attacker && attacker.isAlive) {
-            // 상성 우위 체크
             if (TYPE_RELATIONSHIPS[attacker.type] === this.type) {
                 logFn(`✦상성 우위✦ ${attacker.name}의 공격(${attacker.type})이 ${this.name}(${this.type})에 적중합니다.`);
             } 
-            // 상성 열세 체크
             else if (TYPE_RELATIONSHIPS[this.type] === attacker.type) {
                 logFn(`✦상성 열세✦ ${this.name}(${this.type}), ${attacker.name}의 공격(${attacker.type})에 저항합니다.`);
             }
         }
         
-        // [철옹성] 피해 이전 로직
-        if (this.isAlive && attacker && allyCharacters.includes(this)) { // 자신이 아군일 때만 다른 아군에게 이전 시도
+        if (this.isAlive && attacker && allyCharacters.includes(this)) {
             const ironFortressAlly = allyCharacters.find(ally =>
                 ally.isAlive &&
                 ally.id !== this.id && 
@@ -1345,20 +1403,37 @@ class Character {
         let finalDamage = rawDamage;
         const initialHp = this.currentHp;
         const prevIsAlive = this.isAlive;
+        const shieldBeforeDamage = this.shield;
 
-        // 받는 피해 감소 효과 (도발 등)
         const provokeReductionBuff = this.buffs.find(b => b.id === 'provoke_damage_reduction' && b.turnsLeft > 0);
         if (provokeReductionBuff && provokeReductionBuff.effect.damageReduction) {
             finalDamage *= (1 - provokeReductionBuff.effect.damageReduction);
         }
     
-        // 보호막으로 피해 흡수
         if (this.shield > 0) {
             const damageToShield = Math.min(finalDamage, this.shield);
             if (damageToShield > 0) {
                 this.shield -= damageToShield;
                 finalDamage -= damageToShield;
                 logFn(`✦보호막✦ ${this.name}: 보호막으로 피해 ${damageToShield.toFixed(0)} 흡수. (남은 보호막: ${this.shield.toFixed(0)})`);
+            }
+        }
+        
+        // 서포터 직업 효과: 보호막 파괴 시
+        if (this.job === '서포터' && shieldBeforeDamage > 0 && this.shield <= 0) {
+            logFn(`✦직업 효과(서포터)✦ [절제된 응원]의 보호막이 사라져 주변 적의 방어력을 감소시킵니다!`);
+            const adjacentEnemies = findAdjacentEnemies(this);
+            if (adjacentEnemies.length > 0) {
+                adjacentEnemies.forEach(enemy => {
+                    enemy.addDebuff('supporter_def_shred', '방어력 감소', 1, { 
+                        type: 'def_boost_multiplier', 
+                        value: 0.95,
+                        category: '속성 감소'
+                    });
+                     logFn(`  ✦디버프✦ ${enemy.name}: 방어력이 1턴간 5% 감소합니다.`);
+                });
+            } else {
+                 logFn(`  ✦정보✦ 주변에 적이 없어 효과가 발동되지 않았습니다.`);
             }
         }
     
@@ -1369,7 +1444,7 @@ class Character {
         if (actualHpLoss > 0) {
             this.currentTurnDamageTaken += actualHpLoss;
             this.totalDamageTakenThisBattle += actualHpLoss;
-            if (this.hasBuff('provoke_active')) { // 도발 중 피해 저장(SKILL_REVERSAL용)
+            if (this.hasBuff('provoke_active')) {
                  this.aggroDamageStored += actualHpLoss;
             }
         }
@@ -1388,13 +1463,10 @@ class Character {
         }
     }
     
-        // 반격 로직 ([응수], [격노], [역습])
     if (attacker && attacker.isAlive && actualHpLoss > 0) {
         const alliesOfAttacked = allyCharacters.includes(this) ? allyCharacters : enemyCharacters;
-        const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters; // 공격자의 적 = 피격자 편
+        const enemiesOfAttacked = allyCharacters.includes(this) ? enemyCharacters : allyCharacters;
 
-    // 1. 피격자 본인 또는 아군이 [응수]/[격노] 버프를 가졌을 때
-    // 피격자 본인
     if (this.hasBuff('riposte_stance')) { 
         let highestHpEnemies = [];
         let maxHp = -1;
@@ -1416,7 +1488,6 @@ class Character {
         });
     }
 
-    // 피격자의 아군 (피격자 자신 제외)
     alliesOfAttacked.forEach(allyCaster => {
         if (allyCaster.isAlive && allyCaster.id !== this.id) {
             if (allyCaster.hasBuff('riposte_stance')) { 
@@ -1442,18 +1513,17 @@ class Character {
         }
     });
 
-    // [역습] 로직 (피격자 본인만 해당)
     if (this.hasBuff('reversal_active')) {
         const storedDamage = this.aggroDamageStored || 0; 
         let reversalDamage = 0;
         let reversalDamageType = '';
         let reversalDamageTypeKr = '';
 
-        if (currentTurn % 2 !== 0) { // 홀수 턴
+        if (currentTurn % 2 !== 0) {
             reversalDamage = (this.getEffectiveStat('atk') + storedDamage) * 1.5;
             reversalDamageType = 'physical';
             reversalDamageTypeKr = '물리';
-        } else { // 짝수 턴
+        } else {
             reversalDamage = (this.getEffectiveStat('matk') + storedDamage) * 1.5;
             reversalDamageType = 'magical';
             reversalDamageTypeKr = '마법';
@@ -1462,14 +1532,13 @@ class Character {
         reversalDamage = Math.round(reversalDamage);
         if (reversalDamage > 0) {
             logFn(`✦스킬✦ ${this.name} ([역습] 발동, [도발] 저장 피해: ${storedDamage.toFixed(0)}): ${attacker.name}에게 ${reversalDamage} ${reversalDamageTypeKr} 피해.`);
-            attacker.takeDamage(reversalDamage, logFn, this); // 공격한 적에게 피해
+            attacker.takeDamage(reversalDamage, logFn, this);
         }
         this.aggroDamageStored = 0;
         this.removeBuffById('reversal_active'); 
     }
 }
     
-        // 피해 반사 (일반적인 반사 버프)
         const reflectBuff = this.buffs.find(b => b.effect.type === 'damage_reflect' && b.turnsLeft > 0);
         if (reflectBuff && attacker && attacker.isAlive && actualHpLoss > 0) {
             const reflectedDamage = actualHpLoss * reflectBuff.effect.value;
@@ -1479,15 +1548,12 @@ class Character {
             }
         }
 
-        // [전이] 효과(피격자가 디버프를 가짐)
         const transferDebuff = this.debuffs.find(d => d.id === 'transfer' && d.turnsLeft > 0);
         if (transferDebuff && attacker && attacker.isAlive) {
-            const healToAttacker = this.getEffectiveStat('atk'); // 대상(피격자) 공격력 100%
-            attacker.currentHp = Math.min(attacker.maxHp, attacker.currentHp + healToAttacker);
-            logFn(`✦효과✦ ${this.name}의 [전이] 디버프로 인해, 공격자 ${attacker.name}의 체력이 ${healToAttacker.toFixed(0)} 회복합니다.`);
+            const healToAttacker = this.getEffectiveStat('atk');
+            applyHeal(attacker, healToAttacker, logFn, `[전이] 디버프`);
         }
 
-        // [흔적] 효과(피격자가 버프를 가짐)
         const traceBuff = this.buffs.find(b => b.id === 'trace' && b.turnsLeft > 0);
         if (traceBuff && this.isAlive && this.currentHp <= this.maxHp * 0.5) {
             const originalCaster = findCharacterById(traceBuff.effect.originalCasterId);
@@ -1502,9 +1568,8 @@ class Character {
                      originalCaster.isAlive = false;
                      logFn(`✦전투 불능✦ ${originalCaster.name}, [흔적]의 대가로 쓰러집니다.`);
                 }
-
-                this.currentHp = Math.min(this.maxHp, this.currentHp + healForTarget);
-                logFn(`✦효과✦ 그리고 ${this.name}의 체력을 ${healForTarget.toFixed(0)} 회복합니다.`);
+                
+                applyHeal(this, healForTarget, logFn, `[흔적] 버프`);
             }
         }
         
@@ -1519,11 +1584,15 @@ class Character {
     }
 
     getEffectiveStat(statName) {
-        let value = this[statName]; // 기본 스탯 (atk, matk, def, mdef)
+        let value = this[statName]; 
         this.buffs.forEach(buff => {
             if (buff.turnsLeft > 0 && buff.effect) {
-                if (buff.effect.type === `${statName}_boost_multiplier`) value *= buff.effect.value;
-                if (buff.effect.type === `${statName}_boost_flat`) value += buff.effect.value;
+                if (buff.effect.type === `${statName}_boost_multiplier`) {
+                    value *= buff.effect.value;
+                }
+                if (buff.effect.type === `${statName}_boost_flat`) {
+                    value += buff.effect.value;
+                }
                 
                 if (buff.id === 'reality_stacks' && buff.effect.stacks > 0) {
                     if (statName === 'atk' && buff.effect.atkBoostPerStack) {
@@ -1532,27 +1601,24 @@ class Character {
                     if (statName === 'matk' && buff.effect.matkBoostPerStack) {
                         value += (this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks);
                     }
-                    if (statName === 'def' && buff.effect.defBoostFromAllies) {
-                        const boostAmount = buff.effect.defBoostFromAllies * buff.effect.stacks;
-                        console.log(`[DEBUG] getEffectiveStat: ${this.name}의 [실재] 효과로 방어력 +${boostAmount.toFixed(2)}`);
-                        value += boostAmount;
-                    }
-                    if (statName === 'mdef' && buff.effect.mdefBoostFromAllies) {
-                        const boostAmount = buff.effect.mdefBoostFromAllies * buff.effect.stacks;
-                         console.log(`[DEBUG] getEffectiveStat: ${this.name}의 [실재] 효과로 마법방어력 +${boostAmount.toFixed(2)}`);
-                        value += boostAmount;
-                    }
                 }
             }
         });
         
         this.debuffs.forEach(debuff => {
             if (debuff.turnsLeft > 0 && debuff.effect) {
+                // 흠집으로 인한 방어력/마법방어력 감소
                 if (debuff.id === 'scratch' && debuff.effect.reductionType === statName && debuff.stacks > 0) {
-                    const reductionValue = debuff.effect.reductionValue || 0.10;
-                    value *= (1 - reductionValue); 
+                    const reductionPerStack = debuff.effect.reductionValue || 0.10;
+                    value *= (1 - (reductionPerStack * debuff.stacks)); 
                 }
-
+                
+                // 서포터로 인한 방어력 감소
+                if (debuff.id === 'supporter_def_shred' && statName === 'def' && debuff.effect.type === 'def_boost_multiplier') {
+                    value *= debuff.effect.value;
+                }
+                
+                // [붕괴] 디버프
                 if (debuff.id === 'rupture_debuff') {
                     if (statName === 'def' && debuff.effect.defReduction) {
                         value *= (1 - debuff.effect.defReduction);
@@ -1596,10 +1662,12 @@ function getRandomEmptyCell() {
 function addCharacter(team) {
     const nameInput = getElement('charName');
     const typeInput = getElement('charType');
+    const jobInput = getElement('charJob');
     const hpInput = getElement('charCurrentHp');
 
     const name = nameInput.value.trim() || (team === 'ally' ? `아군${allyCharacters.length+1}` : `적군${enemyCharacters.length+1}`);
     const type = typeInput.value;
+    const job = jobInput.value;
     let currentHp = hpInput.value.trim() === '' ? null : parseInt(hpInput.value);
 
     if (!name) { alert('캐릭터 이름을 입력해 주세요.'); nameInput.focus(); return; }
@@ -1607,7 +1675,7 @@ function addCharacter(team) {
         alert('유효한 현재 체력을 입력하거나 비워 두세요.'); hpInput.focus(); return;
     }
 
-    const newChar = new Character(name, type, currentHp);
+    const newChar = new Character(name, type, job, currentHp);
     const cell = getRandomEmptyCell();
     if (cell) {
         newChar.posX = cell.x;
@@ -1619,10 +1687,10 @@ function addCharacter(team) {
 
     if (team === 'ally') {
         allyCharacters.push(newChar);
-        logToBattleLog(`✦합류✦ 아군 [${name}, ${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
+        logToBattleLog(`✦합류✦ 아군 [${name}, ${type}, ${job}] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
     } else if (team === 'enemy') {
         enemyCharacters.push(newChar);
-        logToBattleLog(`✦합류✦ 적군 [${name}, ${type})] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
+        logToBattleLog(`✦합류✦ 적군 [${name}, ${type}] (HP: ${newChar.currentHp}/${newChar.maxHp}), [${newChar.posX},${newChar.posY}].`);
     }
     nameInput.value = '';
     hpInput.value = '';
@@ -1654,8 +1722,11 @@ function createCharacterCard(character, team) {
         card.classList.add('selected');
     }
 
+    // 아군일 경우에만 직군 표시
+    const jobDisplay = team === 'ally' ? ` (${character.job})` : '';
+
     card.innerHTML = `
-        <p><strong>${character.name} (${character.type})</strong> ${character.posX !== -1 ? `[${character.posX},${character.posY}]` : ''}</p>
+        <p><strong>${character.name} (${character.type})${jobDisplay}</strong> ${character.posX !== -1 ? `[${character.posX},${character.posY}]` : ''}</p>
         <p>HP: ${character.currentHp.toFixed(0)} / ${character.maxHp.toFixed(0)} ${character.shield > 0 ? `(+${character.shield.toFixed(0)}🛡️)` : ''}</p>
         <p>공격력: ${character.getEffectiveStat('atk').toFixed(0)} | 마법 공격력: ${character.getEffectiveStat('matk').toFixed(0)}</p>
         <p>방어력: ${character.getEffectiveStat('def').toFixed(0)} | 마법 방어력: ${character.getEffectiveStat('mdef').toFixed(0)}</p>
@@ -1770,7 +1841,7 @@ function summonMonster(monsterTemplateId) {
         monsterType = template.type;
     }
 
-    const newEnemy = new Character(template.name, monsterType);
+    const newEnemy = new Character(template.name, monsterType, null); // 몬스터는 직군이 없음
     
     newEnemy.maxHp = template.maxHp || 100;
     newEnemy.currentHp = newEnemy.maxHp;
@@ -1812,7 +1883,7 @@ function summonMonsterAt(monsterTemplateId, position) {
                     ? template.type[Math.floor(Math.random() * template.type.length)] 
                     : template.type;
 
-    const newEnemy = new Character(template.name, monsterType);
+    const newEnemy = new Character(template.name, monsterType, null); // 몬스터는 직군 없음
     
     newEnemy.maxHp = template.maxHp || 100;
     newEnemy.currentHp = newEnemy.maxHp;
@@ -1916,8 +1987,7 @@ function applyTurnStartEffects(character) {
         let keepBuff = true;
         if (buff.effect.type === 'turn_start_heal' && buff.turnsLeft > 0) {
             const healAmount = buff.effect.value;
-            character.currentHp = Math.min(character.maxHp, character.currentHp + healAmount);
-            logToBattleLog(`✦회복✦ ${character.name}, [${buff.name} 효과]: HP ${healAmount.toFixed(0)} 회복. (현재 HP: ${character.currentHp.toFixed(0)})`);
+            applyHeal(character, healAmount, logToBattleLog, `[${buff.name} 효과]`);
         }
 
         if (!buff.unremovable) {
@@ -1933,8 +2003,7 @@ function applyTurnStartEffects(character) {
             if (buff.id === 'will_buff' && buff.effect.healOnRemove) {
                 if (character.shield > 0) {
                     const healAmount = character.shield;
-                    character.currentHp = Math.min(character.maxHp, character.currentHp + healAmount);
-                    logToBattleLog(`✦효과✦ ${character.name} ([${buff.name}] 만료): 보호막 ${healAmount.toFixed(0)}만큼 체력 흡수. (HP: ${character.currentHp.toFixed(0)})`);
+                    applyHeal(character, healAmount, logToBattleLog, `[${buff.name}] 만료`);
                     character.shield = 0;
                 }
                 if (buff.effect.resetsTotalDamageTaken) {
@@ -1951,14 +2020,16 @@ function applyTurnStartEffects(character) {
     character.buffs = newBuffs;
 
     character.debuffs = character.debuffs.filter(debuff => {
-
-        // '진리' 스킬의 중독(poison_truth) 효과 처리 로직 수정
         if (debuff.id === 'poison_truth' && debuff.turnsLeft > 0 && debuff.effect.type === 'fixed') {
-            // [중독] 피해를 대상 최대 체력의 1.5%로 계산
             const poisonDamage = character.maxHp * 0.015;
             const roundedDamage = Math.round(poisonDamage);
             logToBattleLog(`✦상태 피해✦ ${character.name}, [${debuff.name} 효과]: ${roundedDamage} 고정 피해.`);
             character.takeDamage(roundedDamage, logToBattleLog, findCharacterById(debuff.effect.casterId) || null); 
+        }
+        
+        // 서포터로 인한 방어력 감소 디버프 턴 감소 처리 (이미 1턴짜리라 턴 시작 시 사라짐)
+        if (debuff.id === 'supporter_def_shred') {
+             debuff.turnsLeft = 0;
         }
 
         debuff.turnsLeft--;
@@ -2008,6 +2079,10 @@ function startBattle() {
     actedAlliesThisTurn = [];
     logToBattleLog('\n【전투 시작】\n');
     [...allyCharacters, ...enemyCharacters].forEach(char => {
+        // 직군에 따른 maxHp 재설정
+        char.maxHp = 100;
+        if (char.job === '힐러') char.maxHp = 110;
+
         char.currentHp = char.maxHp;
         char.isAlive = true;
         char.buffs = []; 
@@ -2018,6 +2093,11 @@ function startBattle() {
         char.lastAttackedBy = null; 
         char.currentTurnDamageTaken = 0;
         char.totalDamageTakenThisBattle = 0; 
+        
+        // 직군별 카운터 초기화
+        char.dealerExtraDamageCount = 0;
+        char.healerBoostCount = 0;
+        char.supporterShieldCount = 0;
     });
     displayCharacters();
 
@@ -2438,8 +2518,7 @@ async function executeSingleAction(action) {
                     }
                 }
                 const extraHeal = restorationBuff.effect.healPower;
-                lowestHpAlly.currentHp = Math.min(lowestHpAlly.maxHp, lowestHpAlly.currentHp + extraHeal);
-                logToBattleLog(`✦추가 회복✦ ${caster.name}의 [환원] 효과 발동. ${lowestHpAlly.name}, 체력을 ${extraHeal.toFixed(0)} 회복합니다.`);
+                applyHeal(lowestHpAlly, extraHeal, logToBattleLog, '[환원] 효과');
             }
         }
     }
@@ -2482,6 +2561,16 @@ async function executeSingleAction(action) {
                     break;
             }
         }
+        // 딜러 직업 효과
+        if (caster.job === '딜러' && skill.type.includes('공격') && action.mainTarget && action.mainTarget.isAlive) {
+            if (caster.currentHp <= caster.maxHp * 0.5 && caster.dealerExtraDamageCount < 2) {
+                const extraDmg = Math.round(caster.getEffectiveStat('atk') * 0.05);
+                caster.dealerExtraDamageCount++;
+                logToBattleLog(`✦직업 효과(딜러)✦ [결의의 일격] 발동! ${action.mainTarget.name}에게 ${extraDmg}의 추가 피해를 입힙니다. (남은 횟수: ${2 - caster.dealerExtraDamageCount})`);
+                action.mainTarget.takeDamage(extraDmg, logToBattleLog, caster);
+            }
+        }
+
     } else if (action.type === 'move') {
         const oldX = caster.posX; const oldY = caster.posY;
         let newX = caster.posX + action.moveDelta.dx;
@@ -2715,14 +2804,12 @@ function resolveGimmickEffects() {
             logToBattleLog(`  테르모르가 폭발로 ${damageToBoss}의 추가 피해를 입습니다!`);
             allyCharacters.filter(a => a.isAlive).forEach(ally => {
                 const healAmount = Math.round(ally.maxHp * 0.10);
-                ally.currentHp = Math.min(ally.maxHp, ally.currentHp + healAmount);
-                logToBattleLog(`  ${ally.name}의 체력이 ${healAmount} 회복됩니다.`);
+                applyHeal(ally, healAmount, logToBattleLog, '기믹 성공');
             });
         } else {
             logToBattleLog(`  파훼 실패: ${remainingFruits.length}개의 열매가 남았습니다.`);
             const bossHeal = Math.round(boss.maxHp * 0.10);
-            boss.currentHp = Math.min(boss.maxHp, boss.currentHp + bossHeal);
-            logToBattleLog(`  테르모르의 체력이 ${bossHeal} 회복됩니다.`);
+            applyHeal(boss, bossHeal, logToBattleLog, '기믹 실패');
             const debuffCount = remainingFruits.length * 3;
             const livingAllies = allyCharacters.filter(a => a.isAlive);
             for(let i = 0; i < debuffCount && livingAllies.length > 0; i++) {
@@ -2926,7 +3013,42 @@ function endBattle() {
 }
 
 function findCharacterById(id) {
-    return [...allyCharacters, ...enemyCharacters].find(char => char.id === id);
+    return [...allyCharacters, ...enemyCharacters, ...mapObjects].find(char => char.id === id);
+}
+
+// 힐링 전용 함수 (탱커 효과 적용 위함)
+function applyHeal(target, baseHealAmount, logFn, sourceName = '회복') {
+    let finalHeal = baseHealAmount;
+    if (target.job === '탱커' && target.isAlive && target.currentHp <= target.maxHp * 0.20) {
+        finalHeal = Math.round(baseHealAmount * 1.05);
+        logFn(`✦직업 효과(탱커)✦ [불굴의 맹세] 발동! 받는 치유량이 5% 증가합니다.`);
+    }
+
+    target.currentHp = Math.min(target.maxHp, target.currentHp + finalHeal);
+    logFn(`✦회복✦ ${target.name}, [${sourceName}] 효과: 체력 ${finalHeal.toFixed(0)} 회복. (HP: ${target.currentHp.toFixed(0)})`);
+}
+
+// 주변 적을 찾는 헬퍼 함수 (서포터 효과 적용 위함)
+function findAdjacentEnemies(character) {
+    const adjacentEnemies = [];
+    const offsets = [
+        { dx: -1, dy: -1 }, { dx: 0, dy: -1 }, { dx: 1, dy: -1 },
+        { dx: -1, dy: 0 },                    { dx: 1, dy: 0 },
+        { dx: -1, dy: 1 }, { dx: 0, dy: 1 },  { dx: 1, dy: 1 }
+    ];
+
+    offsets.forEach(offset => {
+        const adjX = character.posX + offset.dx;
+        const adjY = character.posY + offset.dy;
+        const targetId = characterPositions[`${adjX},${adjY}`];
+        if (targetId) {
+            const target = findCharacterById(targetId);
+            if (target && enemyCharacters.includes(target) && target.isAlive) {
+                adjacentEnemies.push(target);
+            }
+        }
+    });
+    return adjacentEnemies;
 }
 
 
