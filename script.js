@@ -2249,6 +2249,29 @@ function showSkillSelectionForCharacter(actingChar) {
         }
     });
 
+    const otherActionsDiv = document.createElement('div');
+    otherActionsDiv.style.marginTop = '15px';
+    otherActionsDiv.style.borderTop = '1px solid var(--color-border)';
+    otherActionsDiv.style.paddingTop = '15px';
+
+    const skipButton = document.createElement('button');
+    skipButton.textContent = '행동 포기';
+    skipButton.className = 'button'; // 다른 버튼과 스타일 통일
+    skipButton.style.background = 'linear-gradient(145deg, #6c757d, #5a6268)'; // 회색 계열로 변경
+    
+    skipButton.onclick = () => {
+        logToBattleLog(`✦준비✦ ${actingChar.name}, 행동을 포기합니다.`);
+        playerActionsQueue.push({ caster: actingChar, type: 'skip' });
+        actedAlliesThisTurn.push(actingChar.id);
+        
+        if (skillSelectionArea) skillSelectionArea.style.display = 'none';
+        if (skillDescriptionArea) skillDescriptionArea.innerHTML = '';
+        
+        promptAllySelection();
+    };
+    otherActionsDiv.appendChild(skipButton);
+    availableSkillsDiv.appendChild(otherActionsDiv);
+    
     movementControlsArea.innerHTML = '<h4><span class="material-icons-outlined">open_with</span>이동</h4>';
     const directions = [
         [-1, -1, '↖'], [0, -1, '↑'], [1, -1, '↗'],
@@ -2591,6 +2614,9 @@ async function executeSingleAction(action) {
             characterPositions[`${newX},${newY}`] = caster.id;
             logToBattleLog(`✦이동✦ ${caster.name}, (${oldX},${oldY})에서 (${newX},${newY})(으)로 이동 완료.`);
         }
+
+    } else if (action.type === 'skip') {
+        logToBattleLog(`✦정보✦ ${caster.name}은(는) 행동하지 않고 턴을 넘깁니다.`);
     }
 
     processEndOfTurnEffects(caster);
