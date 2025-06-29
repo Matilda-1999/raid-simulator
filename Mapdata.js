@@ -4,8 +4,8 @@ const MONSTER_TEMPLATES = {
         name: "테르모르",
         type: "암석",
         maxHp: 3000,
-        atk: 45,
-        matk: 20,
+        atk: 75,
+        matk: 50,
         def: 35,
         mdef: 20,
         skills: [
@@ -25,10 +25,10 @@ const MONSTER_TEMPLATES = {
         name: "테르모르",
         type: "나무",
         maxHp: 4000,
-        atk: 35,
-        matk: 20,
-        def: 45,
-        mdef: 20,
+        atk: 50,
+        matk: 75,
+        def: 20,
+        mdef: 35,
         skills: [
             "SKILL_Birth_of_Vines",
             "SKILL_Spores_of_Silence",
@@ -38,16 +38,52 @@ const MONSTER_TEMPLATES = {
             "GIMMICK_Seed_of_Devour"]
     },
 
-    "Carnabloom_1": { name: "카르나블룸", type: "야수", maxHp: 4000 },
-    "Carnabloom_2": { name: "카르나블룸", type: "천체", maxHp: 5000 },
+    "Carnabloom_1": { 
+        name: "카르나블룸", 
+        type: "야수", 
+        maxHp: 4000,
+        atk: 75,
+        matk: 50,
+        def: 35,
+        mdef: 20,
+        skills: [ 
+            "SKILL_Puppet_Parade",
+            "SKILL_Thread_of_Emotion",
+            "GIMMICK_Curtain_Call",
+            "GIMMICK_Encore",
+            "GIMMICK_Duet"
+        ]
+    },
+    
+    "Carnabloom_2": { 
+        name: "카르나블룸", 
+        type: "천체", 
+        maxHp: 5000,
+        atk: 50,
+        matk: 75,
+        def: 20,
+        mdef: 35,
+        skills: [ 
+            "SKILL_Play1",
+            "SKILL_Crimson",
+            "SKILL_Silence",
+            "GIMMICK_Script_Reversal",
+            "GIMMICK_The_Final_Curtain1",
+            "GIMMICK_The_Final_Curtain2",
+            "GIMMICK_Dress_Rehearsal1",
+            "GIMMICK_Dress_Rehearsal2",
+            "GIMMICK_Dress_Rehearsal3",
+            "GIMMICK_Dress_Rehearsal4"
+        ]
+    },
 
     // 2. 랜덤 타입을 갖는 몬스터
     "Pierrot": { 
         name: "피에로",
         type: ["암석", "나무"], 
         maxHp: 300,
-        atk: 20,
-        matk: 20,
+        atk: 30,
+        matk: 30,
         def: 20,
         mdef: 20,
         skills: [ "SKILL_Slapstick_Comdey_P", "SKILL_Get_a_Present_P", "GIMMICK_Tears_of" ],
@@ -58,8 +94,8 @@ const MONSTER_TEMPLATES = {
         name: "클라운",
         type: ["암석", "나무"], 
         maxHp: 300,
-        atk: 20,
-        matk: 20,
+        atk: 30,
+        matk: 30,
         def: 20,
         mdef: 20,
         skills: [ "SKILL_Slapstick_Comdey_C", "SKILL_Get_a_Present_C", "GIMMICK_Laugh_of" ],
@@ -93,16 +129,16 @@ const MAP_CONFIGS = {
     },
     
        "B-1": {
-        name: "B-1: 인형극장",
+        name: "B-1: 인형극장", 
         width: 9,
         height: 9,
         enemies: [
-            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } },
+            { templateId: "Carnabloom_1", pos: { x: 4, y: 4 } }, 
             { templateId: "Clown", pos: { x: 1, y: 1 } },
             { templateId: "Clown", pos: { x: 7, y: 7 } },
             { templateId: "Pierrot", pos: { x: 7, y: 1 } },
             { templateId: "Pierrot", pos: { x: 1, y: 7 } } ],
-        flavorText:
+        flavorText: 
             "텅 비어 있는 무대임에도 웃음소리와 울음소리로 소란스럽다.\n" +
             "붉은 천막이 열리고, 끈에 묶인 인형들이 삐걱이며 걸어나온다.\n" +
             "뒤틀린 미소, 휘청이는 몸짓, 반짝이는 리본.\n" +
@@ -128,9 +164,8 @@ const MAP_CONFIGS = {
             "\"끝까지 나를 실망시키는구나……. 그래도 마지막 장면에는 함께해야겠지.\"\n" +
             "어둠을 뚫고, 초승달의 형상을 지닌 공중 그네가 천천히 내려온다.\n" +
             "이곳에 발을 들이면 돌아갈 수 없으리라. \n",
-        deathScript: "초승달 그네가 맥 없이 흔들린다.\n느리게, 아주 느리게, 그리고 서서히 움직임을 멈춘다.\n붉은 조명 아래 천장이 무너져 내리자,\n리본 하나가 공중을 가르며 천천히 바닥에 내려앉는다.\n무대 위의 모든 것은 조명 밖으로 사라지고, 곧 조용한 음악마저 사그라든다.\n\"오늘 밤의 극은, 여기까지구나.\"",
+        deathScript: "초승달 그네가 맥 없이 흔들린다.\n느리게, 아주 느리게, 그리고 서서히 움직임을 멈춘다.\n붉은 조명 아래 천장이 무너져 내리자,\n리본 하나가 공중을 가르며 천천히 바닥에 내려앉는다.\n무대 위의 모든 것은 조명 밖으로 사라지고, 곧 조용한 음악마저 사그라든다.\n\"오늘 밤의 극은, 여기까지구나.\"", // 보스를 쓰러뜨렸을 때 나오는 멋진 스크립트!
     }
-};
 
 const GIMMICK_DATA = {
     "GIMMICK_Aegis_of_Earth1": { 
