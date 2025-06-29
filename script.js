@@ -217,7 +217,7 @@ const SKILLS = {
                 battleLog(`✦정보✦ ${caster.name} [허상]: 턴 종료 추가 공격 대상을 찾을 수 없습니다.`);
             }
 
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
             return true;
         }
@@ -266,7 +266,7 @@ const SKILLS = {
             target.addBuff(chosenBuffData.id, chosenBuffData.name, chosenBuffData.turns, chosenBuffData.effect);
             battleLog(`✦버프✦ ${target.name}: [허무] 효과로 [${chosenBuffData.name}] 획득(2턴).`);
             
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
             return true;
         }
@@ -319,7 +319,7 @@ const SKILLS = {
             
             caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] = currentTurnNum;
             
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
             return true;
         }
@@ -597,11 +597,11 @@ const SKILLS = {
             const lostHp = target.maxHp - target.currentHp;
             let healAmount = Math.round(lostHp * 0.5);
             
-            // 힐러 직업 효과 체크
+            // 힐러 직군 효과 체크
             if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
                 healAmount = Math.round(healAmount * 1.10);
                 caster.healerBoostCount++;
-                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+                battleLog(`✦직군 효과(힐러)✦ [은총의 방패] 발동. 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
             }
 
             battleLog(`✦스킬✦ ${caster.name}, ${target.name}에게 [공명] 사용.`);
@@ -619,7 +619,7 @@ const SKILLS = {
             });
             battleLog(`✦버프✦ ${caster.name}: [환원] 상태가 되어 3턴간 스킬 사용 시 아군을 추가 회복합니다.`);
             
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
             return true;
         }
@@ -676,12 +676,12 @@ const SKILLS = {
                 battleLog(`✦효과✦ ${caster.name}, 쓰러지기 직전이지만 효과는 발동됩니다.`);
             }
             
-            // 힐러 직업 효과 체크용 변수
+            // 힐러 직군 효과 체크용 변수
             let healMultiplier = 1.0;
             if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
                 healMultiplier = 1.10;
                 caster.healerBoostCount++;
-                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+                battleLog(`✦직군 효과(힐러)✦ [은총의 방패] 발동. 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
             }
 
             // 1. 아군에게 효과 적용 (기존 로직)
@@ -707,7 +707,7 @@ const SKILLS = {
                 battleLog(`✦회복✦ [${spring.name}]에 생명력을 ${healAmount} 주입합니다. (현재: ${spring.healingReceived}/${spring.healingGoal})`);
             }
             
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
             
             displayCharacters(); // UI 즉시 갱신
@@ -734,11 +734,11 @@ const SKILLS = {
 
             let selfHeal = Math.round(caster.maxHp * 0.3);
             
-            // 힐러 직업 효과 체크
+            // 힐러 직군 효과 체크
             if (caster.job === '힐러' && caster.currentHp <= caster.maxHp * 0.5 && caster.healerBoostCount < 2) {
                 selfHeal = Math.round(selfHeal * 1.10);
                 caster.healerBoostCount++;
-                battleLog(`✦직업 효과(힐러)✦ [은총의 방패] 발동! 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
+                battleLog(`✦직군 효과(힐러)✦ [은총의 방패] 발동. 회복량이 10% 증가합니다. (남은 횟수: ${2 - caster.healerBoostCount})`);
             }
             applyHeal(caster, selfHeal, battleLog, '차연');
 
@@ -751,7 +751,7 @@ const SKILLS = {
                 battleLog(`✦버프✦ ${character.name}: [흔적] 상태가 되었습니다. (3턴)`);
             });
             
-            // 서포터 직업 효과
+            // 서포터 직군 효과
             caster.checkSupporterPassive(battleLog);
 
             return true;
@@ -1266,12 +1266,12 @@ class Character {
         if (effect.shieldAmount && typeof effect.shieldAmount === 'number') {
             this.shield += effect.shieldAmount;
             
-            // 탱커 직업 효과: 보호막 획득 시 최대 체력 증가
+            // 탱커 직군 효과: 보호막 획득 시 최대 체력 증가
             if (this.job === '탱커') {
                 const maxHpGain = effect.shieldAmount * 0.0002;
                 this.maxHp += maxHpGain;
                 this.currentHp += maxHpGain; // 최대 체력이 늘어난 만큼 현재 체력도 채워줌
-                logToBattleLog(`✦직업 효과(탱커)✦ [불굴의 맹세] 발동! 최대 체력이 ${maxHpGain.toFixed(2)} 증가합니다.`);
+                logToBattleLog(`✦직군 효과(탱커)✦ [불굴의 맹세] 발동. 최대 체력이 ${maxHpGain.toFixed(2)} 증가합니다.`);
             }
         }
     }
@@ -1313,7 +1313,7 @@ class Character {
             const shieldAmount = Math.round(this.getEffectiveStat(statToUse) * 0.05);
             this.shield += shieldAmount;
             this.supporterShieldCount++;
-            logFn(`✦직업 효과(서포터)✦ [절제된 응원] 발동! 보호막 ${shieldAmount}을 획득합니다. (남은 횟수: ${3 - this.supporterShieldCount})`);
+            logFn(`✦직군 효과(서포터)✦ [절제된 응원] 발동. 보호막 ${shieldAmount}을 획득합니다. (남은 횟수: ${3 - this.supporterShieldCount})`);
         }
     }
 
@@ -1419,9 +1419,9 @@ class Character {
             }
         }
         
-        // 서포터 직업 효과: 보호막 파괴 시
+        // 서포터 직군 효과: 보호막 파괴 시
         if (this.job === '서포터' && shieldBeforeDamage > 0 && this.shield <= 0) {
-            logFn(`✦직업 효과(서포터)✦ [절제된 응원]의 보호막이 사라져 주변 적의 방어력을 감소시킵니다!`);
+            logFn(`✦직군 효과(서포터)✦ [절제된 응원]의 보호막이 사라져 주변 적의 방어력을 감소시킵니다!`);
             const adjacentEnemies = findAdjacentEnemies(this);
             if (adjacentEnemies.length > 0) {
                 adjacentEnemies.forEach(enemy => {
@@ -2561,12 +2561,12 @@ async function executeSingleAction(action) {
                     break;
             }
         }
-        // 딜러 직업 효과
+        // 딜러 직군 효과
         if (caster.job === '딜러' && skill.type.includes('공격') && action.mainTarget && action.mainTarget.isAlive) {
             if (caster.currentHp <= caster.maxHp * 0.5 && caster.dealerExtraDamageCount < 2) {
                 const extraDmg = Math.round(caster.getEffectiveStat('atk') * 0.05);
                 caster.dealerExtraDamageCount++;
-                logToBattleLog(`✦직업 효과(딜러)✦ [결의의 일격] 발동! ${action.mainTarget.name}에게 ${extraDmg}의 추가 피해를 입힙니다. (남은 횟수: ${2 - caster.dealerExtraDamageCount})`);
+                logToBattleLog(`✦직군 효과(딜러)✦ [결의의 일격] 발동. ${action.mainTarget.name}에게 ${extraDmg}의 추가 피해를 입힙니다. (남은 횟수: ${2 - caster.dealerExtraDamageCount})`);
                 action.mainTarget.takeDamage(extraDmg, logToBattleLog, caster);
             }
         }
@@ -3021,7 +3021,7 @@ function applyHeal(target, baseHealAmount, logFn, sourceName = '회복') {
     let finalHeal = baseHealAmount;
     if (target.job === '탱커' && target.isAlive && target.currentHp <= target.maxHp * 0.20) {
         finalHeal = Math.round(baseHealAmount * 1.05);
-        logFn(`✦직업 효과(탱커)✦ [불굴의 맹세] 발동! 받는 치유량이 5% 증가합니다.`);
+        logFn(`✦직군 효과(탱커)✦ [불굴의 맹세] 발동. 받는 치유량이 5% 증가합니다.`);
     }
 
     target.currentHp = Math.min(target.maxHp, target.currentHp + finalHeal);
