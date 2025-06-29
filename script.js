@@ -1208,6 +1208,7 @@ class Character {
         if (this.job === '딜러') {
             this.atk += 5;
             this.matk += 5;
+            this.maxHp = 90;
         } else if (this.job === '힐러') {
             this.maxHp = 110;
         }
@@ -2081,7 +2082,11 @@ function startBattle() {
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         // 직군에 따른 maxHp 재설정
         char.maxHp = 100;
-        if (char.job === '힐러') char.maxHp = 110;
+        if (char.job === '힐러') {
+            char.maxHp = 110;
+        } else if (char.job === '딜러') {
+            char.maxHp = 90;
+        }
 
         char.currentHp = char.maxHp;
         char.isAlive = true;
