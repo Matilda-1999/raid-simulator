@@ -836,7 +836,7 @@ const SKILLS = {
 
             enemies.forEach(target => {
                 if (hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                    battleLog(`✦광역 피해✦ ${caster.name}의 [무너지는 하늘]이 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [무너지는 하늘]이 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -860,7 +860,7 @@ const SKILLS = {
             
             enemies.forEach(target => {
                 if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                    battleLog(`✦광역 피해✦ ${caster.name}의 [덩굴 탄생]이 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [덩굴 탄생]이 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -885,7 +885,7 @@ const SKILLS = {
             const debuffDuration = targets.length;
 
             if (debuffDuration > 0) {
-                 battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 포자]가 ${targets.map(t=>t.name).join(', ')}에게 적중!`);
+                 battleLog(`✦광역 디버프✦ ${caster.name}의 [침묵의 포자]가 ${targets.map(t=>t.name).join(', ')}에게 적중.`);
                 targets.forEach(target => {
                     target.addDebuff('disarm', '[무장 해제]', debuffDuration, {
                         description: `공격 유형 스킬 사용 불가 (${debuffDuration}턴)`
@@ -916,17 +916,17 @@ const SKILLS = {
                     battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
 
-                    // 시전자가 폭주 상태라면, 랜덤 디버프 추가
-                if (caster.hasBuff('duet_enrage')) {
-                    const debuffs = [
-                        { id: 'melancholy_brand', name: '[우울 낙인]' },
-                        { id: 'ecstasy_brand', name: '[환희 낙인]' },
-                        { id: 'nightmare', name: '[악몽]' }
-                    ];
-                    const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
-                    target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
-                    logToBattleLog(`✦추가✦ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
-                }
+                // 시전자가 폭주 상태라면, 랜덤 디버프 추가
+                    if (caster.hasBuff('duet_enrage')) {
+                        const debuffs = [
+                            { id: 'melancholy_brand', name: '[우울 낙인]' },
+                            { id: 'ecstasy_brand', name: '[환희 낙인]' },
+                            { id: 'nightmare', name: '[악몽]' }
+                        ];
+                        const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                        target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
+                        logToBattleLog(` ↪︎ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
+                    }
                 }
             });
             return true;
@@ -1104,12 +1104,12 @@ const SKILLS = {
                 if (!target.isAlive) return;
                 // 초록 피격 범위: 데미지
                 if (greenHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                     battleLog(`✦피해✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 적중!`);
+                     battleLog(`✦피해✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 적중.`);
                      target.takeDamage(damage, battleLog, caster);
                 }
                 // 파란 피격 범위: 무장 해제
                 if (blueHitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                    battleLog(`✦디버프✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 [무장 해제] 부여!`);
+                    battleLog(`✦디버프✦ ${caster.name}의 [씨앗의 분노]가 ${target.name}에게 [무장 해제] 부여.`);
                     target.addDebuff('disarm', '[무장 해제]', 1, { description: `공격 유형 스킬 사용 불가 (1턴)` });
                 }
             });
@@ -1201,7 +1201,7 @@ const SKILLS = {
                 const hitArea = "0,0;1,0;1,1;2,0;2,1;2,2;3,0;3,1;3,2;3,3;4,0;4,1;4,2;4,3;5,0;5,1;5,2;5,3;6,0;6,1;6,2;7,0;7,1;8,0;0,8;1,7;1,8;2,6;2,7;2,8;3,5;3,6;3,7;3,8;4,5;4,6;4,7;4,8;5,5;5,6;5,7;5,8;6,6;6,7;6,8;7,7;7,8;8,8".split(';').map(s=>s.split(',').map(Number));
                 enemies.forEach(target => {
                     if (target.isAlive && hitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                        logToBattleLog(`...[감정의 실]이 ${target.name}을(를) 휘감습니다.`);
+                        logToBattleLog(` ↪︎ [감정의 실]이 ${target.name}을(를) 휘감습니다.`);
                         target.addDebuff('melancholy_brand', '[우울 낙인]', 99, {});
                         target.addDebuff('ecstasy_brand', '[환희 낙인]', 99, {});
                         target.addDebuff('nightmare', '[악몽]', 99, {});
@@ -1228,7 +1228,7 @@ const SKILLS = {
             enemies.forEach(target => { // 모든 '적(플레이어)'을 확인해서
                 // 좌표가 공격 범위 안에 있다면 데미지를 줍니다.
                 if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -1251,7 +1251,7 @@ const SKILLS = {
             
             enemies.forEach(target => {
                 if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
-                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중!`);
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -1281,7 +1281,7 @@ const SKILLS = {
                 }
                 // 데미지 범위에 있다면 피해를 줍니다.
                 if (damageArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
-                    logToBattleLog(`✦광역 피해✦ ${caster.name}의 [진홍]이 ${target.name}에게 적중!`);
+                    logToBattleLog(`✦광역 피해✦ ${caster.name}의 [진홍]이 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
                 }
             });
@@ -1296,8 +1296,8 @@ const SKILLS = {
         script: `\n<pre>불협화음은 예고 없이 중단된다.\n인형의 동작은 크게 흔들리고, 무대 위에서 비틀거린다.\n"이건 예정된 장면이 아니야……."</pre>\n`,
         description: "보스가 그로기 상태에 빠져 1 턴 공격 불가 및 플레이어들의 공격에 10% 추가 피해를 입습니다.",
         execute: (caster, allies, enemies, battleLog) => {
-            logToBattleLog(`✦특수 패턴✦ ${caster.name}이(가) 플레이어들의 맹공에 정신을 차리지 못하고 [침묵](그로기) 상태에 빠집니다!`);
-            // 보스 자신에게 'groggy'라는 디버프를 걸어서 2턴(이번턴, 다음턴)동안 행동불가 상태로 만들어요.
+            logToBattleLog(`✦특수 패턴✦ ${caster.name}이 맹공에 정신을 차리지 못하고 [침묵] 상태에 빠집니다.`);
+            // 보스 자신에게 'groggy'라는 디버프를 걸어서 2턴(이번 턴, 다음 턴)동안 행동불가 상태
             caster.addDebuff('groggy', '[침묵](그로기)', 2, { description: "행동 불가 및 받는 피해 증가" });
             return true;
         }
@@ -1599,7 +1599,7 @@ class Character {
 
         if (this.hasDebuff('nightmare')) {
         this.removeDebuffById('nightmare');
-        logToBattleLog(`✦효과✦ ${this.name}, 공격을 받아 [악몽]에서 깨어났습니다.`);
+        logToBattleLog(`✦효과✦ ${this.name}, 공격을 받아 [악몽]에서 깨어납니다.`);
         }
     
         if (this.shield > 0) {
@@ -1795,11 +1795,11 @@ class Character {
                         const hpSacrifice = Math.round(minion.maxHp * 0.10);
                         minion.takeDamage(hpSacrifice, logToBattleLog, null); // 쫄병 체력 10% 소모
                         totalHeal += hpSacrifice;
-                        logToBattleLog(`...${minion.name}이(가) 체력 ${hpSacrifice}을 바쳐 보스를 부활시킵니다.`);
+                        logToBattleLog(` ↪︎ ${minion.name}, 체력 ${hpSacrifice}을 바쳐 보스를 부활시킵니다.`);
                     });
 
                     this.currentHp = totalHeal; // 희생된 체력만큼 보스 부활
-                    logToBattleLog(`✦부활✦ 카르나블룸이 체력 ${totalHeal}을 회복하고 다시 일어섭니다!`);
+                    logToBattleLog(`✦부활✦ 카르나블룸이 체력 ${totalHeal}을 회복하고 다시 일어섭니다.`);
                     
                     // 여기서 return하여 아래의 사망 로직을 타지 않게 함
                     return; 
@@ -1920,9 +1920,9 @@ class Character {
     
     // 최종 결과 판정
     if (missionSuccess) {
-        logToBattleLog(`✦미션 성공✦ ${missionTarget.name}이(가) [최종 리허설]의 배역을 완벽하게 소화했습니다!`);
+        logToBattleLog(`✦미션 성공✦ ${missionTarget.name}이(가) [최종 리허설]의 배역을 완벽하게 소화했습니다.`);
     } else {
-        logToBattleLog(`✦미션 실패✦ ${missionTarget ? missionTarget.name : '대상'}이(가) 배역을 소화하지 못해 페널티를 받습니다!`);
+        logToBattleLog(`✦미션 실패✦ ${missionTarget ? missionTarget.name : '대상'}이(가) 배역을 소화하지 못해 페널티를 받습니다.`);
         // 페널티 부여
         switch (activeMission.type) {
             case 'attack':
@@ -2144,7 +2144,7 @@ function summonMonster(monsterTemplateId) {
     }
     
     if (spawnPos === null) {
-        logToBattleLog(`\n✦정보✦: [${template.name}]을(를) 소환할 비어있는 스폰 지점이 없습니다.`);
+        logToBattleLog(`\n✦정보✦: [${template.name}]을(를) 소환할 비어 있는 스폰 지점이 없습니다.`);
         return;
     }
 
@@ -2172,7 +2172,7 @@ function summonMonster(monsterTemplateId) {
     enemyCharacters.push(newEnemy);
     characterPositions[`${spawnPos.x},${spawnPos.y}`] = newEnemy.id;
 
-    logToBattleLog(`\n✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${spawnPos.x},${spawnPos.y}]에 나타났습니다.`);
+    logToBattleLog(`\n✦소환✦ 추가 적군 [${newEnemy.name}], [${spawnPos.x},${spawnPos.y}] 출현.`);
     displayCharacters();
 }
 
@@ -2214,7 +2214,7 @@ function summonMonsterAt(monsterTemplateId, position) {
     enemyCharacters.push(newEnemy);
     characterPositions[posKey] = newEnemy.id;
 
-    logToBattleLog(`✦소환✦ 추가 적군 [${newEnemy.name}]이(가) [${position.x},${position.y}]에 나타났습니다.`);
+    logToBattleLog(`✦소환✦ 추가 적군 [${newEnemy.name}], [${position.x},${position.y}]에 출현.`);
 }
 
 function displayCharacters() {
@@ -2245,13 +2245,6 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
 
     // [우울 낙인] 디버프가 없을 때만 상성 우위 적용
     if (!attacker.hasDebuff('melancholy_brand') && TYPE_RELATIONSHIPS[attacker.type] === defender.type) {
-        typeModifier = TYPE_ADVANTAGE_MODIFIER;
-    } 
-    else if (TYPE_RELATIONSHIPS[defender.type] === attacker.type) {
-        typeModifier = TYPE_DISADVANTAGE_MODIFIER;
-    }
-    
-    if (TYPE_RELATIONSHIPS[attacker.type] === defender.type) {
         typeModifier = TYPE_ADVANTAGE_MODIFIER;
     } 
     else if (TYPE_RELATIONSHIPS[defender.type] === attacker.type) {
@@ -2710,7 +2703,7 @@ function selectTarget(targetCharId) {
     }
 
     if (!targetChar || !targetChar.isAlive) { 
-        logToBattleLog('유효하지 않은 대상입니다 (이미 쓰러졌거나 없음).');
+        logToBattleLog('유효하지 않은 대상입니다(이미 쓰러졌거나 없음).');
         return; 
     }
 
@@ -2982,7 +2975,7 @@ async function executeSingleAction(action) {
         }
 
     } else if (action.type === 'skip') {
-        logToBattleLog(`✦정보✦ ${caster.name}은(는) 행동하지 않고 턴을 넘깁니다.`);
+        logToBattleLog(`✦정보✦ ${caster.name}, 행동하지 않고 턴을 넘깁니다.`);
     }
 
     processEndOfTurnEffects(caster);
@@ -3037,10 +3030,10 @@ async function executeBattleTurn() {
     
             if (targets.length > 0) {
                 console.log(`[DEBUG] executeBattleTurn: [균열의 길] 파훼 실패. 대상 플레이어 수: ${targets.length}`);
-                logToBattleLog(`  파훼 실패: ${targets.map(t=>t.name).join(', ')}, 균열의 길 위에 있습니다.`);
+                logToBattleLog(`  ✦파훼 실패✦: ${targets.map(t=>t.name).join(', ')}, 균열의 길 위에 있습니다.`);
             } else {
                 console.log("[DEBUG] executeBattleTurn: [균열의 길] 파훼 성공.");
-                logToBattleLog(`  파훼 성공: 균열의 길 위에 아무도 없습니다.`);
+                logToBattleLog(`  ✦파훼 성공✦: 균열의 길 위에 아무도 없습니다.`);
                     enemy.addDebuff('rupture_debuff', '[붕괴]', 2, {
                         defReduction: 0.3,
                         mdefReduction: 0.3
@@ -3098,7 +3091,7 @@ function previewEnemyAction(enemyChar) {
             if (gimmickData && gimmickData.script) {
                 logToBattleLog(gimmickData.script);
             }
-            logToBattleLog(`...무대 조명이 빛나며 안전지대가 예고됩니다.`);
+            logToBattleLog(` ↪︎ 무대 조명이 빛나며 안전지대가 예고됩니다.`);
 
             return {
                 casterId: enemyChar.id,
@@ -3108,23 +3101,6 @@ function previewEnemyAction(enemyChar) {
                 dynamicData: { safeRow, safeCol }
             };
         }
-        return null;
-    }
-            
-            const gimmickData = GIMMICK_DATA['GIMMICK_Script_Reversal'];
-            if (gimmickData && gimmickData.script) {
-                logToBattleLog(gimmickData.script);
-            }
-            logToBattleLog(`...무대 조명이 빛나며, 가로 ${safeRow + 1}번째 줄과 세로 ${safeCol + 1}번째 줄이 안전지대로 예고됩니다!`);
-
-            return {
-                casterId: enemyChar.id,
-                skillId: 'GIMMICK_Script_Reversal',
-                hitArea: hitArea, // 공격 범위를 저장
-                dynamicData: { safeRow, safeCol } // 안전지대 정보를 다음 턴에 사용하기 위해 저장
-            };
-        }
-        // '대본의 반역'을 사용하지 않으면, 아무것도 예고하지 않습니다 (기존 타수 패턴 사용)
         return null;
     }
     
@@ -3230,7 +3206,7 @@ function checkAndApplyEnrage(character, battleLog) {
             character.name = '분노한 테르모르';
         }
         
-        battleLog(`✦광폭화✦ ${triggerReason}, ${originalName}이(가) 분노에 휩싸입니다.`);
+        battleLog(`✦광폭화✦ ${triggerReason}: ${originalName}, 분노에 휩싸입니다.`);
 
         character.atk = Math.round(character.atk * 1.5);
         character.matk = Math.round(character.matk * 1.5);
@@ -3253,16 +3229,16 @@ function resolveGimmickEffects() {
     if (activeGimmickState.type === 'subGimmick1') {
         const remainingFruits = mapObjects.filter(obj => activeGimmickState.objectIds.includes(obj.id));
         if (remainingFruits.length === 0) {
-            logToBattleLog(`  파훼 성공: 모든 열매를 파괴했습니다.`);
+            logToBattleLog(`  ✦파훼 성공✦: 모든 열매를 파괴했습니다.`);
             const damageToBoss = Math.round(boss.maxHp * 0.05);
             boss.takeDamage(damageToBoss, logToBattleLog, null);
-            logToBattleLog(`  테르모르가 폭발로 ${damageToBoss}의 추가 피해를 입습니다!`);
+            logToBattleLog(`  테르모르가 폭발로 ${damageToBoss}의 추가 피해를 입습니다.`);
             allyCharacters.filter(a => a.isAlive).forEach(ally => {
                 const healAmount = Math.round(ally.maxHp * 0.10);
                 applyHeal(ally, healAmount, logToBattleLog, '기믹 성공');
             });
         } else {
-            logToBattleLog(`  파훼 실패: ${remainingFruits.length}개의 열매가 남았습니다.`);
+            logToBattleLog(`  ✦파훼 실패✦: ${remainingFruits.length}개의 열매가 남았습니다.`);
             const bossHeal = Math.round(boss.maxHp * 0.10);
             applyHeal(boss, bossHeal, logToBattleLog, '기믹 실패');
             const debuffCount = remainingFruits.length * 3;
@@ -3290,7 +3266,7 @@ function resolveGimmickEffects() {
         });
 
         if (emptyFissures.length > 0) {
-             logToBattleLog(`  파훼 실패: ${emptyFissures.length}개의 균열이 폭발하여 광역 피해를 입힙니다.`);
+             logToBattleLog(`  ✦파훼 실패✦: ${emptyFissures.length}개의 균열이 폭발하여 광역 피해를 입힙니다.`);
              const damage = Math.round(boss.getEffectiveStat('matk') * emptyFissures.length);
              allyCharacters.filter(a => a.isAlive).forEach(ally => {
                 ally.takeDamage(damage, logToBattleLog, boss);
@@ -3300,14 +3276,14 @@ function resolveGimmickEffects() {
         const spring = mapObjects.find(obj => activeGimmickState.objectIds.includes(obj.id));
         if(spring) {
             if(spring.healingReceived >= spring.healingGoal) {
-                logToBattleLog(`  파훼 성공: 메마른 샘이 정화되었으나, 넘치는 생명력에 모두가 피해를 입습니다.`);
+                logToBattleLog(`  ✦파훼 성공✦: 메마른 샘이 정화되었으나, 넘치는 생명력에 모두가 피해를 입습니다.`);
                 const damage = 0.05;
                  allyCharacters.filter(a => a.isAlive).forEach(ally => {
                     const dmgAmount = Math.round(ally.maxHp * damage);
                     ally.takeDamage(dmgAmount, logToBattleLog, null);
                  });
             } else {
-                logToBattleLog(`  파훼 실패: 메마른 샘이 분노하여 모두에게 강력한 피해를 입힙니다.`);
+                logToBattleLog(`  ✦파훼 실패✦: 메마른 샘이 분노하여 모두에게 강력한 피해를 입힙니다.`);
                 const damage = 0.30;
                  allyCharacters.filter(a => a.isAlive).forEach(ally => {
                     const dmgAmount = Math.round(ally.maxHp * damage);
@@ -3373,7 +3349,7 @@ async function performEnemyAction(enemyChar) {
 
     // 'groggy' 디버프에 걸렸으면 행동하지 않고 턴을 넘깁니다.
     if (enemyChar.hasDebuff('groggy')) {
-        logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) [침묵](그로기) 상태라 행동할 수 없습니다.`);
+        logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) [침묵] 상태라 행동할 수 없습니다.`);
         applyTurnStartEffects(enemyChar); // 버프/디버프 턴은 흘러가도록
         return checkBattleEnd();
     }
@@ -3432,11 +3408,11 @@ async function performEnemyAction(enemyChar) {
             
             // --- 1. '최종 리허설' 미션이 진행 중인지 먼저 확인 ---
             if (activeMission && activeMission.casterId === enemyChar.id) {
-                 logToBattleLog(`...${enemyChar.name}이(가) 배우의 연기를 조용히 지켜봅니다.`);
+                 logToBattleLog(` ↪︎ ${enemyChar.name}이 배우의 연기를 조용히 지켜봅니다.`);
             } 
             // --- 2. 예고된 '대본의 반역' 공격이 있는지 확인 ---
             else if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
-                logToBattleLog(`✦공격 실행✦ 예고되었던 [대본의 반역] 공격이 시작됩니다!`);
+                logToBattleLog(`✦공격 실행✦ 예고되었던 공격이 시작됩니다.`);
 
                 const { safeRow, safeCol } = enemyPreviewAction.dynamicData;
                 const hitTargets = [];
@@ -3454,7 +3430,7 @@ async function performEnemyAction(enemyChar) {
                         target.takeDamage(damage, logToBattleLog, enemyChar);
                         if (Math.random() < nightmareChance) {
                             target.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
-                            logToBattleLog(`...${target.name}이(가) 충격으로 [악몽]에 빠집니다!`);
+                            logToBattleLog(` ↪︎ ${target.name}이(가) 충격으로 [악몽]에 빠집니다!`);
                         }
                     });
                 }
@@ -3480,7 +3456,7 @@ async function performEnemyAction(enemyChar) {
                 } else if (actionChoice < 0.80) { // 20% 확률로 다음 턴을 준비 (아무것도 안 함)
                     // '대본의 반역'은 previewEnemyAction에서 예고되므로, 
                     // 보스 턴에는 특별한 행동 없이 넘어가는 경우가 필요합니다.
-                    logToBattleLog(`...${enemyChar.name}이(가) 다음 막을 준비합니다.`);
+                    logToBattleLog(` ↪︎ ${enemyChar.name}이(가) 다음 막을 준비합니다.`);
                 } else { // 20% 확률로 '최종 리허설' 기믹 발동
                     const missions = [
                         { type: 'attack', name: '웃는 자', gimmickId: 'GIMMICK_Dress_Rehearsal1', filter: (c) => c.job === '딜러' },
@@ -3606,7 +3582,7 @@ function resolveMinionGimmicks() {
     if (livingClowns.length === 0 && livingPierrots.length === 0) {
         if (minionsWipedOutTurn === 0) { // 쫄병이 바로 이번 턴에 전멸했다면
             minionsWipedOutTurn = currentTurn;
-            logToBattleLog("✦정보✦ 모든 인형이 쓰러졌습니다. 인형사가 동요하기 시작합니다...");
+            logToBattleLog("✦정보✦ 모든 인형이 쓰러졌습니다. 인형사가 동요하기 시작합니다.");
         }
     }
 
@@ -3630,7 +3606,7 @@ function resolveMinionGimmicks() {
             const randomAllyIndex = Math.floor(Math.random() * livingAllies.length);
             const targetAlly = livingAllies.splice(randomAllyIndex, 1)[0];
             targetAlly.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
-            logToBattleLog(`...${targetAlly.name}이(가) [앵콜]의 저주로 [악몽]에 빠집니다.`);
+            logToBattleLog(` ↪︎ ${targetAlly.name}이(가) [앵콜]의 저주로 [악몽]에 빠집니다.`);
         }
         
         minionsWipedOutTurn = 0; // 기믹 발동 후 초기화
@@ -3652,7 +3628,7 @@ function resolveMinionGimmicks() {
 
     // 이중창 조건이 만족된 상태로 다음 턴이 시작되었다면
     if (duetState.isConditionMet && currentTurn > duetState.turnConditionFirstMet) {
-        logToBattleLog("✦기믹 발동✦ 남겨진 인형들이 외로움에 폭주합니다!");
+        logToBattleLog("✦기믹 발동✦ 남겨진 인형들이 외로움에 폭주합니다.");
         const remainingMinions = [...livingClowns, ...livingPierrots];
         remainingMinions.forEach(minion => {
             if (!minion.hasBuff('duet_enrage')) { // 아직 폭주 상태가 아니라면
