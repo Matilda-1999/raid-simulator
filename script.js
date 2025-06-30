@@ -2495,6 +2495,7 @@ function showSkillSelectionForCharacter(actingChar) {
         }
     });
 
+    // '행동 포기' 같은 기타 액션을 담을 컨테이너
     const otherActionsDiv = document.createElement('div');
     otherActionsDiv.style.marginTop = '15px';
     otherActionsDiv.style.borderTop = '1px solid var(--color-border)';
@@ -2502,17 +2503,20 @@ function showSkillSelectionForCharacter(actingChar) {
 
     const skipButton = document.createElement('button');
     skipButton.textContent = '행동 포기';
-    skipButton.className = 'button'; // 다른 버튼과 스타일 통일
-    skipButton.style.background = 'linear-gradient(145deg, #6c757d, #5a6268)'; // 회색 계열로 변경
+    skipButton.className = 'button';
+    // 행동 포기 버튼은 다른 색으로 보이게
+    skipButton.style.background = 'linear-gradient(145deg, #6c757d, #5a6268)'; 
     
     skipButton.onclick = () => {
         logToBattleLog(`✦준비✦ ${actingChar.name}, 행동을 포기합니다.`);
+        // 행동 목록에 'skip' 액션을 추가합니다.
         playerActionsQueue.push({ caster: actingChar, type: 'skip' });
         actedAlliesThisTurn.push(actingChar.id);
         
-        if (skillSelectionArea) skillSelectionArea.style.display = 'none';
+        skillSelectionArea.style.display = 'none';
         if (skillDescriptionArea) skillDescriptionArea.innerHTML = '';
         
+        // 다음 아군이 행동을 선택하도록 합니다.
         promptAllySelection();
     };
     otherActionsDiv.appendChild(skipButton);
