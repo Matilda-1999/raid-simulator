@@ -966,6 +966,7 @@ const SKILLS = {
             return true;
         }
     },
+        
     SKILL_Get_a_Present_P: {
         id: "SKILL_Get_a_Present_P",
         name: "선물 받아!(피에로)",
@@ -1003,6 +1004,7 @@ const SKILLS = {
             return true;
         }
     },
+        
     SKILL_Get_a_Present_C: {
         id: "SKILL_Get_a_Present_C",
         name: "선물 받아!(클라운)",
@@ -1062,7 +1064,7 @@ const SKILLS = {
             return true;
         }
     },
-        
+
     GIMMICK_Tears_of: {
         id: "GIMMICK_Tears_of",
         name: "광대의 눈물",
@@ -1190,6 +1192,25 @@ const SKILLS = {
         }
     },
 
+        SKILL_Thread_of_Emotion: {
+            id: "SKILL_Thread_of_Emotion",
+            name: "감정의 실",
+            type: "광역 디버프",
+            script: `\n<pre>색색의 리본이 솟구쳐 가느다란 손가락을 감싼다.\n그것은 누군가의 의지를, 자아를, 이성을, 손쉽게 조롱한다.\n"기쁨도, 공포도. 모두 내려놓고 나에게 몸을 맡기는 게 어떻겠니."</pre>\n`,
+            execute: (caster, allies, enemies, battleLog) => {
+                const hitArea = "0,0;1,0;1,1;2,0;2,1;2,2;3,0;3,1;3,2;3,3;4,0;4,1;4,2;4,3;5,0;5,1;5,2;5,3;6,0;6,1;6,2;7,0;7,1;8,0;0,8;1,7;1,8;2,6;2,7;2,8;3,5;3,6;3,7;3,8;4,5;4,6;4,7;4,8;5,5;5,6;5,7;5,8;6,6;6,7;6,8;7,7;7,8;8,8".split(';').map(s=>s.split(',').map(Number));
+                enemies.forEach(target => {
+                    if (target.isAlive && hitArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                        logToBattleLog(`...[감정의 실]이 ${target.name}을(를) 휘감습니다.`);
+                        target.addDebuff('melancholy_brand', '[우울 낙인]', 99, {});
+                        target.addDebuff('ecstasy_brand', '[환희 낙인]', 99, {});
+                        target.addDebuff('nightmare', '[악몽]', 99, {});
+                    }
+                });
+                return true;
+            }
+        },
+        
         SKILL_Play1: {
         id: "SKILL_Play1",
         name: "유희(1,3,5타)",
@@ -1618,12 +1639,12 @@ class Character {
             // HP 50% 이하, 맵 축소가 아직 0단계일 때
             if (currentHpPercent <= 50 && mapShrinkState === 0) {
                 mapShrinkState = 1; // 1단계로 변경 (7x7)
-                logToBattleLog("✦기믹✦ [마지막 막_50]: 무대가 좁아집니다. (7x7)");
+                logToBattleLog(`✦기믹 발동✦ ${GIMMICK_DATA['GIMMICK_The_Final_Curtain1'].script}`);
             }
             // HP 20% 이하, 맵 축소가 아직 1단계일 때
             if (currentHpPercent <= 20 && mapShrinkState === 1) {
                 mapShrinkState = 2; // 2단계로 변경 (5x5)
-                logToBattleLog("✦기믹✦ [마지막 막_20]: 무대가 더욱 좁아집니다. (5x5)");
+                logToBattleLog(`✦기믹 발동✦ ${GIMMICK_DATA['GIMMICK_The_Final_Curtain2'].script}`);
             }
         }
         
@@ -3479,18 +3500,26 @@ async function performEnemyAction(enemyChar) {
                 }
             }
         } else { // B-2 보스가 아니면 기존의 기본 공격 로직 수행
-            const aliveAllies = allyCharacters.filter(a => a.isAlive);
-            if (aliveAllies.length > 0) {
-                const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
-                    (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
+            if (enemyChar.name === '카르나블룸' && enemyChar.type === '야수') { // B-1 보스 AI
+                if (currentTurn > 0 && currentTurn % 3 === 0) { // 3턴마다 '감정의 실' 사용
+                    const skill = MONSTER_SKILLS['SKILL_Thread_of_Emotion'];
+                    logToBattleLog(skill.script);
+                    skill.execute(enemyChar, enemyCharacters, allyCharacters, battleLog);
+                } else { // 그 외에는 기본 공격
                 
-                logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
-                const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
-                targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
-            } else {
-                logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
-            }
-        }
+                    const aliveAllies = allyCharacters.filter(a => a.isAlive);
+                    if (aliveAllies.length > 0) {
+                        const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
+                            (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
+                        
+                        logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+                        const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
+                        targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+                        
+                    } else {
+                        logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
+                    }
+                }
 
 
     processEndOfTurnEffects(enemyChar);
