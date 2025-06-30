@@ -2977,6 +2977,61 @@ async function executeBattleTurn() {
 function previewEnemyAction(enemyChar) {
     console.log(`[DEBUG] Turn ${currentTurn}: previewEnemyAction 시작. 대상: ${enemyChar.name}`);
 
+    // B-2 보스 '카르나블룸'의 예고 로직
+    if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
+        const actionChoice = Math.random();
+        // 25% 확률로 '대본의 반역'을 예고
+        if (actionChoice < 0.25) {
+            const safeRow = Math.floor(Math.random() * MAP_HEIGHT);
+            const safeCol = Math.floor(Math.random() * MAP_WIDTH);
+            
+            const safeArea = [];
+            // 안전한 세로줄 추가
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                safeArea.push({ x: safeCol, y: y });
+            }
+            // 안전한 가로줄 추가
+            for (let x = 0; x < MAP_WIDTH; x++) {
+                // 겹치는 부분은 제외하고 추가
+                if (x !== safeCol) {
+                    safeArea.push({ x: x, y: safeRow });
+                }
+            }
+            
+            const gimmickData = GIMMICK_DATA['GIMMICK_Script_Reversal'];
+            if (gimmickData && gimmickData.script) {
+                logToBattleLog(gimmickData.script);
+            }
+            logToBattleLog(`...무대 조명이 빛나며 안전지대가 예고됩니다.`);
+
+            return {
+                casterId: enemyChar.id,
+                skillId: 'GIMMICK_Script_Reversal',
+                // 'hitArea' 라는 이름으로 '안전지대' 정보를 넘김
+                hitArea: safeArea, 
+                dynamicData: { safeRow, safeCol }
+            };
+        }
+        return null;
+    }
+            
+            const gimmickData = GIMMICK_DATA['GIMMICK_Script_Reversal'];
+            if (gimmickData && gimmickData.script) {
+                logToBattleLog(gimmickData.script);
+            }
+            logToBattleLog(`...무대 조명이 빛나며, 가로 ${safeRow + 1}번째 줄과 세로 ${safeCol + 1}번째 줄이 안전지대로 예고됩니다!`);
+
+            return {
+                casterId: enemyChar.id,
+                skillId: 'GIMMICK_Script_Reversal',
+                hitArea: hitArea, // 공격 범위를 저장
+                dynamicData: { safeRow, safeCol } // 안전지대 정보를 다음 턴에 사용하기 위해 저장
+            };
+        }
+        // '대본의 반역'을 사용하지 않으면, 아무것도 예고하지 않습니다 (기존 타수 패턴 사용)
+        return null;
+    }
+    
     const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
     let skillToUseId = null;
     let hitArea = [];
@@ -3277,28 +3332,66 @@ async function performEnemyAction(enemyChar) {
     } else {
         // 현재 행동하는 몬스터가 B-2 보스 '카르나블룸'인지 확인
         if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
-            let skillToUseId = null;
-            // 타수(playerAttackCountThisTurn)에 따라 사용할 스킬 결정
-            if (playerAttackCountThisTurn >= 14) {
-                skillToUseId = 'SKILL_Silence';
-            } else if (playerAttackCountThisTurn >= 6) {
-                skillToUseId = 'SKILL_Crimson';
-            } else if (playerAttackCountThisTurn >= 0) { // 0도 짝수로 판단
-                // 0을 포함한 짝수 타수면 Play2, 홀수 타수면 Play1
-                skillToUseId = (playerAttackCountThisTurn % 2 === 1) ? 'SKILL_Play1' : 'SKILL_Play2';
-            }
+            
+            // 1. 예고된 '대본의 반역'이 있는지 먼저 확인
+            if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
+                logToBattleLog(`✦공격 실행✦ 예고되었던 [대본의 반역] 공격이 시작됩니다!`);
 
-            if (skillToUseId) { // 사용할 스킬이 정해졌다면
-                const skill = MONSTER_SKILLS[skillToUseId];
-                logToBattleLog(`✦타수 패턴✦ (플레이어 타수: ${playerAttackCountThisTurn}) ${enemyChar.name}, [${skill.name}] 시전.`);
-                skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
-            } else {
-                // 이 부분은 이제 거의 실행될 일이 없지만, 오류 방지를 위해 남김
-                const targetAlly = allyCharacters.filter(a => a.isAlive)[0];
-                if (targetAlly) {
-                    logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
-                    const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
-                    targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+                const { safeRow, safeCol } = enemyPreviewAction.dynamicData;
+                const hitTargets = [];
+                const damage = enemyChar.getEffectiveStat('matk');
+
+                allyCharacters.forEach(target => {
+                    if (target.isAlive && target.posX !== safeCol && target.posY !== safeRow) {
+                        hitTargets.push(target);
+                    }
+                });
+
+                if (hitTargets.length > 0) {
+                    const nightmareChance = hitTargets.length * 0.10;
+                    hitTargets.forEach(target => {
+                        target.takeDamage(damage, logToBattleLog, enemyChar);
+                        if (Math.random() < nightmareChance) {
+                            target.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
+                            logToBattleLog(`...${target.name}이(가) 충격으로 [악몽]에 빠집니다!`);
+                        }
+                    });
+                }
+            } 
+            // 2. 예고된 공격이 없다면, 기존 타수 패턴 또는 최종 리허설 기믹 사용
+            else {
+                const actionChoice = Math.random();
+                if (activeMission && activeMission.casterId === enemyChar.id) {
+                    logToBattleLog(`...${enemyChar.name}이(가) 배우의 연기를 조용히 지켜봅니다.`);
+                } else if (actionChoice < 0.80) { // 80% 확률로 타수 패턴
+                    let skillToUseId = null;
+                    if (playerAttackCountThisTurn >= 14) {
+                        skillToUseId = 'SKILL_Silence';
+                    } else if (playerAttackCountThisTurn >= 6) {
+                        skillToUseId = 'SKILL_Crimson';
+                    } else if (playerAttackCountThisTurn >= 0) {
+                        skillToUseId = (playerAttackCountThisTurn % 2 === 1) ? 'SKILL_Play1' : 'SKILL_Play2';
+                    }
+                    if (skillToUseId) {
+                        const skill = MONSTER_SKILLS[skillToUseId];
+                        logToBattleLog(`✦타수 패턴✦ (플레이어 타수: ${playerAttackCountThisTurn}) ${enemyChar.name}, [${skill.name}] 시전.`);
+                        skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
+                    }
+                } else { // 20% 확률로 최종 리허설
+                    const missions = [
+                        { type: 'attack', name: '웃는 자', gimmickId: 'GIMMICK_Dress_Rehearsal1', filter: (c) => c.job === '딜러' },
+                        { type: 'support', name: '우는 자', gimmickId: 'GIMMICK_Dress_Rehearsal2', filter: (c) => c.job !== '딜러' },
+                        { type: 'move', name: '흥분한 자', gimmickId: 'GIMMICK_Dress_Rehearsal3', filter: (c) => true },
+                        { type: 'skip', name: '무표정한 자', gimmickId: 'GIMMICK_Dress_Rehearsal4', filter: (c) => true }
+                    ];
+                    const mission = missions[Math.floor(Math.random() * missions.length)];
+                    const validTargets = allyCharacters.filter(c => c.isAlive && mission.filter(c));
+
+                    if (validTargets.length > 0) {
+                        const target = validTargets[Math.floor(Math.random() * validTargets.length)];
+                        logToBattleLog(`✦기믹 발동✦ [최종 리허설(${mission.name})]: ${GIMMICK_DATA[mission.gimmickId].script.replace('(대상 인원의 이름)', target.name)}`);
+                        activeMission = { type: mission.type, targetCharId: target.id, casterId: enemyChar.id };
+                    }
                 }
             }
         } else { // B-2 보스가 아니면 기존의 기본 공격 로직 수행
