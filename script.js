@@ -913,8 +913,20 @@ const SKILLS = {
                     (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
                 );
                 if (isHit) {
-                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중!`);
+                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
+
+                    // 시전자가 폭주 상태라면, 랜덤 디버프 추가
+                if (caster.hasBuff('duet_enrage')) {
+                    const debuffs = [
+                        { id: 'melancholy_brand', name: '[우울 낙인]' },
+                        { id: 'ecstasy_brand', name: '[환희 낙인]' },
+                        { id: 'nightmare', name: '[악몽]' }
+                    ];
+                    const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                    target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
+                    logToBattleLog(`✦추가✦ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
+                }
                 }
             });
             return true;
@@ -935,8 +947,20 @@ const SKILLS = {
                     (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
                 );
                 if (isHit) {
-                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중!`);
+                    battleLog(`✦피해✦ ${caster.name}의 [슬랩스틱 코미디]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
+
+                    // 시전자가 폭주 상태라면, 랜덤 디버프 추가
+                if (caster.hasBuff('duet_enrage')) {
+                    const debuffs = [
+                        { id: 'melancholy_brand', name: '[우울 낙인]' },
+                        { id: 'ecstasy_brand', name: '[환희 낙인]' },
+                        { id: 'nightmare', name: '[악몽]' }
+                    ];
+                    const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                    target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
+                    logToBattleLog(`✦추가✦ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
+                }
                 }
             });
             return true;
@@ -960,8 +984,20 @@ const SKILLS = {
                     (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
                 );
                 if (isHit) {
-                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중!`);
+                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
+
+                    // 시전자가 폭주 상태라면, 랜덤 디버프 추가
+                if (caster.hasBuff('duet_enrage')) {
+                    const debuffs = [
+                        { id: 'melancholy_brand', name: '[우울 낙인]' },
+                        { id: 'ecstasy_brand', name: '[환희 낙인]' },
+                        { id: 'nightmare', name: '[악몽]' }
+                    ];
+                    const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                    target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
+                    logToBattleLog(`✦추가✦ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
+                }
                 }
             });
             return true;
@@ -984,8 +1020,20 @@ const SKILLS = {
                     (caster.posX + offset.dx === target.posX) && (caster.posY + offset.dy === target.posY)
                 );
                 if (isHit) {
-                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중!`);
+                    battleLog(`✦피해✦ ${caster.name}의 [선물 받아!]가 ${target.name}에게 적중.`);
                     target.takeDamage(damage, battleLog, caster);
+
+                    // 시전자가 폭주 상태라면, 랜덤 디버프 추가
+                if (caster.hasBuff('duet_enrage')) {
+                    const debuffs = [
+                        { id: 'melancholy_brand', name: '[우울 낙인]' },
+                        { id: 'ecstasy_brand', name: '[환희 낙인]' },
+                        { id: 'nightmare', name: '[악몽]' }
+                    ];
+                    const randomDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                    target.addDebuff(randomDebuff.id, randomDebuff.name, 99, { unremovable: false });
+                    logToBattleLog(`✦추가✦ 폭주한 공격이 ${target.name}에게 ${randomDebuff.name}을 남깁니다.`);
+                }
                 }
             });
             return true;
@@ -1255,6 +1303,12 @@ let playerAttackCountThisTurn = 0;
 
 // 0: 기본 9x9, 1: 7x7로 축소(HP 50%), 2: 5x5로 축소(HP 20%)
 let mapShrinkState = 0; 
+
+let minionsWipedOutTurn = 0; // 앵콜 기믹용: 쫄병이 전멸한 턴을 기록
+let duetState = { // 이중창 기믹용 상태
+    isConditionMet: false, // 한 종류만 남은 상태인가?
+    turnConditionFirstMet: 0 // 언제 그 상태가 되었는가?
+};
 
 let selectedAction = {
     type: null, 
@@ -2871,6 +2925,8 @@ async function executeBattleTurn() {
     if (checkBattleEnd()) return;
 
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
+
+    resolveMinionGimmicks(); // 쫄병 기믹 확인 함수
     
     resolveGimmickEffects();
     resolveClownGimmick();
@@ -3331,6 +3387,75 @@ function findAdjacentEnemies(character) {
         }
     });
     return adjacentEnemies;
+}
+
+function resolveMinionGimmicks() {
+    const livingClowns = enemyCharacters.filter(e => e.isAlive && e.name === '클라운');
+    const livingPierrots = enemyCharacters.filter(e => e.isAlive && e.name === '피에로');
+    const boss = enemyCharacters.find(e => e.name === '카르나블룸' && e.isAlive);
+
+    if (!boss) return; // 보스가 없으면 기믹도 없음
+
+    // --- 앵콜(Encore) 기믹 로직 ---
+    if (livingClowns.length === 0 && livingPierrots.length === 0) {
+        if (minionsWipedOutTurn === 0) { // 쫄병이 바로 이번 턴에 전멸했다면
+            minionsWipedOutTurn = currentTurn;
+            logToBattleLog("✦정보✦ 모든 인형이 쓰러졌습니다. 인형사가 동요하기 시작합니다...");
+        }
+    }
+
+    // 쫄병이 전멸한 지 2턴이 지났고, 아직 앵콜 기믹이 발동 안했다면
+    if (minionsWipedOutTurn > 0 && currentTurn >= minionsWipedOutTurn + 2) {
+        logToBattleLog("✦기믹 발동✦ [앵콜]: \"나의 아이들은 아직 무대를 떠날 준비가 되지 않은 모양이야.\"");
+        
+        // 보스 체력 20% 회복
+        const healAmount = Math.round(boss.maxHp * 0.20);
+        applyHeal(boss, healAmount, logToBattleLog, '앵콜');
+
+        // 클라운, 삐에로 1마리씩 소환 (빈 자리를 찾아 소환)
+        const clownCell = getRandomEmptyCell();
+        if (clownCell) summonMonsterAt("Clown", clownCell);
+        const pierrotCell = getRandomEmptyCell();
+        if (pierrotCell) summonMonsterAt("Pierrot", pierrotCell);
+
+        // 아군 3명에게 [악몽] 부여
+        const livingAllies = allyCharacters.filter(a => a.isAlive);
+        for (let i = 0; i < 3 && livingAllies.length > 0; i++) {
+            const randomAllyIndex = Math.floor(Math.random() * livingAllies.length);
+            const targetAlly = livingAllies.splice(randomAllyIndex, 1)[0];
+            targetAlly.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
+            logToBattleLog(`...${targetAlly.name}이(가) [앵콜]의 저주로 [악몽]에 빠집니다.`);
+        }
+        
+        minionsWipedOutTurn = 0; // 기믹 발동 후 초기화
+    }
+
+
+    // --- 이중창(Duet) 기믹 로직 ---
+    const isDuetCondition = (livingClowns.length === 0 && livingPierrots.length > 0) || (livingClowns.length > 0 && livingPierrots.length === 0);
+
+    if (isDuetCondition) {
+        if (!duetState.isConditionMet) { // 이중창 조건이 이번 턴에 처음 만족되었다면
+            duetState.isConditionMet = true;
+            duetState.turnConditionFirstMet = currentTurn;
+            logToBattleLog("✦정보✦ 무대에 한 종류의 인형만 남아 외로운 분위기가 감돕니다.");
+        }
+    } else {
+        duetState.isConditionMet = false; // 조건이 깨지면 초기화
+    }
+
+    // 이중창 조건이 만족된 상태로 다음 턴이 시작되었다면
+    if (duetState.isConditionMet && currentTurn > duetState.turnConditionFirstMet) {
+        logToBattleLog("✦기믹 발동✦ 남겨진 인형들이 외로움에 폭주합니다!");
+        const remainingMinions = [...livingClowns, ...livingPierrots];
+        remainingMinions.forEach(minion => {
+            if (!minion.hasBuff('duet_enrage')) { // 아직 폭주 상태가 아니라면
+                minion.name = `외로운 ${minion.name}`;
+                minion.addBuff('duet_enrage', '[폭주]', 99, {}); // 폭주 버프 부여
+            }
+        });
+        duetState.isConditionMet = false; // 기믹 발동 후 초기화
+    }
 }
 
 
