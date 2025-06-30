@@ -1250,8 +1250,11 @@ let isBattleStarted = false;
 let currentMapId = null;
 let playerActionsQueue = [];
 let characterPositions = {}; 
-let actedAlliesThisTurn = []; // 이번 턴에 행동을 마친 아군 ID 목록 (행동 순서 직접 지정용)
+let actedAlliesThisTurn = []; // 이번 턴에 행동을 마친 아군 ID 목록
 let playerAttackCountThisTurn = 0;
+
+// 0: 기본 9x9, 1: 7x7로 축소(HP 50%), 2: 5x5로 축소(HP 20%)
+let mapShrinkState = 0; 
 
 let selectedAction = {
     type: null, 
@@ -1551,7 +1554,22 @@ class Character {
         const hpLossBeforeDeath = this.currentHp;
         this.currentHp -= finalDamage;
         const actualHpLoss = hpLossBeforeDeath - Math.max(0, this.currentHp); 
-    
+
+        // B-2 보스 '카르나블룸'에게만 적용되는 로직
+        if (this.name === '카르나블룸' && this.type === '천체') {
+            const currentHpPercent = (this.currentHp / this.maxHp) * 100;
+            // HP 50% 이하, 맵 축소가 아직 0단계일 때
+            if (currentHpPercent <= 50 && mapShrinkState === 0) {
+                mapShrinkState = 1; // 1단계로 변경 (7x7)
+                logToBattleLog("✦기믹✦ [마지막 막_50]: 무대가 좁아집니다. (7x7)");
+            }
+            // HP 20% 이하, 맵 축소가 아직 1단계일 때
+            if (currentHpPercent <= 20 && mapShrinkState === 1) {
+                mapShrinkState = 2; // 2단계로 변경 (5x5)
+                logToBattleLog("✦기믹✦ [마지막 막_20]: 무대가 더욱 좁아집니다. (5x5)");
+            }
+        }
+        
         if (actualHpLoss > 0) {
             this.currentTurnDamageTaken += actualHpLoss;
             this.totalDamageTakenThisBattle += actualHpLoss;
@@ -1686,6 +1704,30 @@ class Character {
         
         if (this.currentHp <= 0) {
             this.currentHp = 0;
+
+            // B-1 보스 '카르나블룸'이고, '커튼콜' 기믹이 발동될 수 있다면
+            if (this.name === '카르나블룸' && this.type === '야수') {
+                const livingMinions = enemyCharacters.filter(e => e.isAlive && (e.name === '클라운' || e.name === '피에로'));
+                
+                if (livingMinions.length > 0) {
+                    logToBattleLog("✦기믹✦ [커튼콜]: \"나의 아이들은 아직 무대를 떠날 준비가 되지 않은 모양이야.\"");
+                    
+                    let totalHeal = 0;
+                    livingMinions.forEach(minion => {
+                        const hpSacrifice = Math.round(minion.maxHp * 0.10);
+                        minion.takeDamage(hpSacrifice, logToBattleLog, null); // 쫄병 체력 10% 소모
+                        totalHeal += hpSacrifice;
+                        logToBattleLog(`...${minion.name}이(가) 체력 ${hpSacrifice}을 바쳐 보스를 부활시킵니다.`);
+                    });
+
+                    this.currentHp = totalHeal; // 희생된 체력만큼 보스 부활
+                    logToBattleLog(`✦부활✦ 카르나블룸이 체력 ${totalHeal}을 회복하고 다시 일어섭니다!`);
+                    
+                    // 여기서 return하여 아래의 사망 로직을 타지 않게 함
+                    return; 
+                }
+            }
+            
             if (prevIsAlive) {
                 logFn(`✦전투 불능✦ ${this.name}, 쓰러집니다.`);
             }
@@ -2431,6 +2473,7 @@ function showSkillSelectionForCharacter(actingChar) {
         button.textContent = dir[2];
         const targetX = actingChar.posX + dir[0];
         const targetY = actingChar.posY + dir[1];
+        
         if (targetX < 0 || targetX >= MAP_WIDTH || targetY < 0 || targetY >= MAP_HEIGHT || 
             (characterPositions[`${targetX},${targetY}`] && characterPositions[`${targetX},${targetY}`] !== actingChar.id)) {
             button.disabled = true;
@@ -2767,6 +2810,26 @@ async function executeSingleAction(action) {
             caster.posX = newX; caster.posY = newY;
             characterPositions[`${newX},${newY}`] = caster.id;
             logToBattleLog(`✦이동✦ ${caster.name}, (${oldX},${oldY})에서 (${newX},${newY})(으)로 이동 완료.`);
+
+        // 이동이 끝난 직후, 현재 위치가 금지 구역인지 확인합니다.
+            let damagePercent = 0;
+            const newPos = { x: caster.posX, y: caster.posY };
+
+            // 5x5 금지 구역
+            if (mapShrinkState === 2 && (newPos.x <= 1 || newPos.x >= 7 || newPos.y <= 1 || newPos.y >= 7)) {
+                damagePercent = 0.90; // 현재 체력의 90% 피해
+            } 
+            // 7x7 금지 구역
+            else if (mapShrinkState === 1 && (newPos.x === 0 || newPos.x === 8 || newPos.y === 0 || newPos.y === 8)) {
+                damagePercent = 0.80; // 현재 체력의 80% 피해
+            }
+
+            if (damagePercent > 0) {
+                logToBattleLog(`✦기믹 피해✦ 폐쇄된 구역을 밟아 ${caster.name}에게 피해가 발생합니다.`);
+                const gimmickDamage = Math.round(caster.currentHp * damagePercent);
+                // 기믹 피해이므로 공격자는 null로 처리합니다.
+                caster.takeDamage(gimmickDamage, logToBattleLog, null); 
+            }
         }
 
     } else if (action.type === 'skip') {
