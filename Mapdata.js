@@ -47,8 +47,8 @@ const MONSTER_TEMPLATES = {
         def: 35,
         mdef: 20,
         skills: [ 
-            "SKILL_Puppet_Parade",
-            "SKILL_Thread_of_Emotion",
+            "SKILL_Thread_of_Emotion"],
+        gimmicks: [
             "GIMMICK_Curtain_Call",
             "GIMMICK_Encore",
             "GIMMICK_Duet"
@@ -66,7 +66,8 @@ const MONSTER_TEMPLATES = {
         skills: [ 
             "SKILL_Play1",
             "SKILL_Crimson",
-            "SKILL_Silence",
+            "SKILL_Silence"],
+        gimmicks: [
             "GIMMICK_Script_Reversal",
             "GIMMICK_The_Final_Curtain1",
             "GIMMICK_The_Final_Curtain2",
