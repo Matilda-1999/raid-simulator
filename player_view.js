@@ -50,7 +50,8 @@ function displayPlayerViewCharacters(allyChars, enemyChars) {
 function renderGameState(state) {
     if (!state) return;
     
-    const { allies, enemies, mapObjects, mapWidth, mapHeight, battleLog, enemyPreviewAction } = state;
+    // battleLog는 더 이상 사용하지 않으므로 state에서 받지 않음
+    const { allies, enemies, mapObjects, mapWidth, mapHeight, enemyPreviewAction } = state;
     
     MAP_WIDTH = mapWidth;
     MAP_HEIGHT = mapHeight;
@@ -65,11 +66,6 @@ function renderGameState(state) {
     
     // `renderMapGrid` 함수는 Mapdata.js에 정의되어 있으므로 호출 가능
     renderMapGrid(mapGridContainer, allies, enemies, mapObjects, [], previewedHitArea, previewedSkillId);
-
-    // 전투 로그 업데이트
-    const battleLogDiv = document.getElementById('battleLog');
-    battleLogDiv.innerHTML = battleLog;
-    battleLogDiv.scrollTop = battleLogDiv.scrollHeight;
 }
 
 // --- 이벤트 리스너 설정 ---
