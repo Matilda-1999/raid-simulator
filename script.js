@@ -1310,6 +1310,9 @@ let duetState = { // 이중창 기믹용 상태
     turnConditionFirstMet: 0 // 언제 그 상태가 되었는가?
 };
 
+// null이면 미션 없음, 객체가 할당되면 미션 진행 중
+let activeMission = null; 
+
 let selectedAction = {
     type: null, 
     casterId: null,
@@ -1856,6 +1859,71 @@ class Character {
         });
         return Math.max(0, value);
     }
+
+    function resolveDressRehearsalMission() {
+    if (!activeMission) return; // 이번 턴에 부여된 미션이 없으면 종료
+
+    let missionSuccess = false;
+    const missionTarget = findCharacterById(activeMission.targetCharId);
+    
+    // 미션 대상이 살아있는지 확인
+    if (!missionTarget || !missionTarget.isAlive) {
+        missionSuccess = false; // 대상이 죽었으면 미션은 자동 실패
+    } else {
+        // 플레이어들이 이번 턴에 '확정한' 행동 목록(playerActionsQueue)을 확인
+        const targetAction = playerActionsQueue.find(a => a.caster.id === activeMission.targetCharId);
+
+        switch (activeMission.type) {
+            case 'attack': // 공격 미션
+                if (targetAction && targetAction.type === 'skill' && targetAction.skill.type.includes('공격')) {
+                    missionSuccess = true;
+                }
+                break;
+            case 'support': // 공격 외 스킬 미션
+                if (targetAction && targetAction.type === 'skill' && !targetAction.skill.type.includes('공격')) {
+                    missionSuccess = true;
+                }
+                break;
+            case 'move': // 이동 미션
+                if (targetAction && targetAction.type === 'move') {
+                    missionSuccess = true;
+                }
+                break;
+            case 'skip': // 행동 포기 미션 (아무 행동도 확정하지 않았거나, '행동 포기'를 선택)
+                if (!targetAction || targetAction.type === 'skip') {
+                    missionSuccess = true;
+                }
+                break;
+        }
+    }
+    
+    // 최종 결과 판정
+    if (missionSuccess) {
+        logToBattleLog(`✦미션 성공✦ ${missionTarget.name}이(가) [최종 리허설]의 배역을 완벽하게 소화했습니다!`);
+    } else {
+        logToBattleLog(`✦미션 실패✦ ${missionTarget ? missionTarget.name : '대상'}이(가) 배역을 소화하지 못해 페널티를 받습니다!`);
+        // 페널티 부여
+        switch (activeMission.type) {
+            case 'attack':
+                if(missionTarget) missionTarget.addDebuff('stun', '[이동 불가]', 3, { category: '제어' });
+                break;
+            case 'support':
+                if(missionTarget) missionTarget.addDebuff('melancholy_brand', '[우울 낙인]', 99, { unremovable: false });
+                break;
+            case 'move':
+                if(missionTarget) missionTarget.addDebuff('ecstasy_brand', '[환희 낙인]', 99, { unremovable: false });
+                break;
+            case 'skip':
+                allyCharacters.filter(a => a.isAlive).forEach(ally => {
+                    const damage = Math.round(ally.maxHp * 0.10);
+                    ally.takeDamage(damage, logToBattleLog, null);
+                });
+                break;
+        }
+    }
+
+    activeMission = null; // 다음 턴을 위해 미션 초기화
+}
 }
 
 
@@ -2932,6 +3000,7 @@ async function executeBattleTurn() {
 
     logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
 
+    resolveDressRehearsalMission(); // 플레이어 턴 종료 후 미션 성공 여부 판정
     resolveMinionGimmicks(); // 쫄병 기믹 확인 함수
     
     resolveGimmickEffects();
@@ -3336,11 +3405,16 @@ async function performEnemyAction(enemyChar) {
             }
         }
     } else {
+        
         // 현재 행동하는 몬스터가 B-2 보스 '카르나블룸'인지 확인
         if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
             
-            // 1. 예고된 '대본의 반역'이 있는지 먼저 확인
-            if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
+            // --- 1. '최종 리허설' 미션이 진행 중인지 먼저 확인 ---
+            if (activeMission && activeMission.casterId === enemyChar.id) {
+                 logToBattleLog(`...${enemyChar.name}이(가) 배우의 연기를 조용히 지켜봅니다.`);
+            } 
+            // --- 2. 예고된 '대본의 반역' 공격이 있는지 확인 ---
+            else if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
                 logToBattleLog(`✦공격 실행✦ 예고되었던 [대본의 반역] 공격이 시작됩니다!`);
 
                 const { safeRow, safeCol } = enemyPreviewAction.dynamicData;
@@ -3364,12 +3438,11 @@ async function performEnemyAction(enemyChar) {
                     });
                 }
             } 
-            // 2. 예고된 공격이 없다면, 기존 타수 패턴 또는 최종 리허설 기믹 사용
+            // --- 3. 위 두 조건에 해당 없으면, 이번 턴 행동을 랜덤으로 결정 ---
             else {
                 const actionChoice = Math.random();
-                if (activeMission && activeMission.casterId === enemyChar.id) {
-                    logToBattleLog(`...${enemyChar.name}이(가) 배우의 연기를 조용히 지켜봅니다.`);
-                } else if (actionChoice < 0.80) { // 80% 확률로 타수 패턴
+
+                if (actionChoice < 0.60) { // 60% 확률로 타수 패턴 사용
                     let skillToUseId = null;
                     if (playerAttackCountThisTurn >= 14) {
                         skillToUseId = 'SKILL_Silence';
@@ -3383,7 +3456,11 @@ async function performEnemyAction(enemyChar) {
                         logToBattleLog(`✦타수 패턴✦ (플레이어 타수: ${playerAttackCountThisTurn}) ${enemyChar.name}, [${skill.name}] 시전.`);
                         skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
                     }
-                } else { // 20% 확률로 최종 리허설
+                } else if (actionChoice < 0.80) { // 20% 확률로 다음 턴을 준비 (아무것도 안 함)
+                    // '대본의 반역'은 previewEnemyAction에서 예고되므로, 
+                    // 보스 턴에는 특별한 행동 없이 넘어가는 경우가 필요합니다.
+                    logToBattleLog(`...${enemyChar.name}이(가) 다음 막을 준비합니다.`);
+                } else { // 20% 확률로 '최종 리허설' 기믹 발동
                     const missions = [
                         { type: 'attack', name: '웃는 자', gimmickId: 'GIMMICK_Dress_Rehearsal1', filter: (c) => c.job === '딜러' },
                         { type: 'support', name: '우는 자', gimmickId: 'GIMMICK_Dress_Rehearsal2', filter: (c) => c.job !== '딜러' },
@@ -3395,7 +3472,8 @@ async function performEnemyAction(enemyChar) {
 
                     if (validTargets.length > 0) {
                         const target = validTargets[Math.floor(Math.random() * validTargets.length)];
-                        logToBattleLog(`✦기믹 발동✦ [최종 리허설(${mission.name})]: ${GIMMICK_DATA[mission.gimmickId].script.replace('(대상 인원의 이름)', target.name)}`);
+                        const gimmickScript = GIMMICK_DATA[mission.gimmickId]?.script || "대사가 없습니다.";
+                        logToBattleLog(`✦기믹 발동✦ [최종 리허설(${mission.name})]: ${gimmickScript.replace('(대상 인원의 이름)', target.name)}`);
                         activeMission = { type: mission.type, targetCharId: target.id, casterId: enemyChar.id };
                     }
                 }
