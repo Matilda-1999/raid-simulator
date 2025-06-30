@@ -2142,7 +2142,9 @@ function displayCharacters() {
             .map(e => e.areaEffect);
         
         const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
-        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea);
+        // 예고된 스킬의 ID 정보도 가져옵니다. 예고된 스킬이 없으면 null이 됩니다.
+        const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
+        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea, previewedSkillId);
     }
 }
 
