@@ -1946,7 +1946,6 @@ class Character {
 
     activeMission = null; // 다음 턴을 위해 미션 초기화
 }
-}
 
 
 // --- 3. 유틸리티 및 UI 관리 함수 ---
