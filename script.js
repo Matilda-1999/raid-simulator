@@ -3354,7 +3354,7 @@ async function performEnemyAction(enemyChar) {
 
     // 'groggy' 디버프에 걸렸으면 행동하지 않고 턴을 넘깁니다.
     if (enemyChar.hasDebuff('groggy')) {
-        logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) [침묵] 상태라 행동할 수 없습니다.`);
+        logToBattleLog(`✦정보✦ ${enemyChar.name}는 [침묵] 상태이므로 행동할 수 없습니다.`);
         applyTurnStartEffects(enemyChar); // 버프/디버프 턴은 흘러가도록
         return checkBattleEnd();
     }
@@ -3407,44 +3407,35 @@ async function performEnemyAction(enemyChar) {
             }
         }
     } else {
+        // ▼▼▼ 여기가 수정된 로직의 시작입니다 ▼▼▼
         
-        // 현재 행동하는 몬스터가 B-2 보스 '카르나블룸'인지 확인
+        // B-2 보스 '카르나블룸'의 행동 로직
         if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
-            
-            // --- 1. '최종 리허설' 미션이 진행 중인지 먼저 확인 ---
             if (activeMission && activeMission.casterId === enemyChar.id) {
                  logToBattleLog(` ↪︎ ${enemyChar.name}이 배우의 연기를 조용히 지켜봅니다.`);
-            } 
-            // --- 2. 예고된 '대본의 반역' 공격이 있는지 확인 ---
-            else if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
+            } else if (enemyPreviewAction && enemyPreviewAction.skillId === 'GIMMICK_Script_Reversal') {
                 logToBattleLog(`✦공격 실행✦ 예고되었던 공격이 시작됩니다.`);
-
                 const { safeRow, safeCol } = enemyPreviewAction.dynamicData;
                 const hitTargets = [];
                 const damage = enemyChar.getEffectiveStat('matk');
-
                 allyCharacters.forEach(target => {
                     if (target.isAlive && target.posX !== safeCol && target.posY !== safeRow) {
                         hitTargets.push(target);
                     }
                 });
-
                 if (hitTargets.length > 0) {
                     const nightmareChance = hitTargets.length * 0.10;
                     hitTargets.forEach(target => {
                         target.takeDamage(damage, logToBattleLog, enemyChar);
                         if (Math.random() < nightmareChance) {
                             target.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
-                            logToBattleLog(` ↪︎ ${target.name}이(가) 충격으로 [악몽]에 빠집니다!`);
+                            logToBattleLog(` ↪︎ ${target.name}, 충격으로 [악몽]에 빠집니다.`);
                         }
                     });
                 }
-            } 
-            // --- 3. 위 두 조건에 해당 없으면, 이번 턴 행동을 랜덤으로 결정 ---
-            else {
+            } else {
                 const actionChoice = Math.random();
-
-                if (actionChoice < 0.60) { // 60% 확률로 타수 패턴 사용
+                if (actionChoice < 0.60) {
                     let skillToUseId = null;
                     if (playerAttackCountThisTurn >= 14) {
                         skillToUseId = 'SKILL_Silence';
@@ -3458,11 +3449,9 @@ async function performEnemyAction(enemyChar) {
                         logToBattleLog(`✦타수 패턴✦ (플레이어 타수: ${playerAttackCountThisTurn}) ${enemyChar.name}, [${skill.name}] 시전.`);
                         skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
                     }
-                } else if (actionChoice < 0.80) { // 20% 확률로 다음 턴을 준비 (아무것도 안 함)
-                    // '대본의 반역'은 previewEnemyAction에서 예고되므로, 
-                    // 보스 턴에는 특별한 행동 없이 넘어가는 경우가 필요합니다.
-                    logToBattleLog(` ↪︎ ${enemyChar.name}이(가) 다음 막을 준비합니다.`);
-                } else { // 20% 확률로 '최종 리허설' 기믹 발동
+                } else if (actionChoice < 0.80) {
+                    logToBattleLog(` ↪︎ ${enemyChar.name}이 다음 막을 준비합니다.`);
+                } else {
                     const missions = [
                         { type: 'attack', name: '웃는 자', gimmickId: 'GIMMICK_Dress_Rehearsal1', filter: (c) => c.job === '딜러' },
                         { type: 'support', name: '우는 자', gimmickId: 'GIMMICK_Dress_Rehearsal2', filter: (c) => c.job !== '딜러' },
@@ -3471,7 +3460,6 @@ async function performEnemyAction(enemyChar) {
                     ];
                     const mission = missions[Math.floor(Math.random() * missions.length)];
                     const validTargets = allyCharacters.filter(c => c.isAlive && mission.filter(c));
-
                     if (validTargets.length > 0) {
                         const target = validTargets[Math.floor(Math.random() * validTargets.length)];
                         const gimmickScript = GIMMICK_DATA[mission.gimmickId]?.script || "대사가 없습니다.";
@@ -3480,29 +3468,38 @@ async function performEnemyAction(enemyChar) {
                     }
                 }
             }
-        } else { // B-2 보스가 아니면 기존의 기본 공격 로직 수행
-            if (enemyChar.name === '카르나블룸' && enemyChar.type === '야수') { // B-1 보스 AI
-                if (currentTurn > 0 && currentTurn % 3 === 0) { // 3턴마다 '감정의 실' 사용
-                    const skill = MONSTER_SKILLS['SKILL_Thread_of_Emotion'];
-                    logToBattleLog(skill.script);
-                    skill.execute(enemyChar, enemyCharacters, allyCharacters, battleLog);
-                } else { // 그 외에는 기본 공격
-                
-                    const aliveAllies = allyCharacters.filter(a => a.isAlive);
-                    if (aliveAllies.length > 0) {
-                        const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
-                            (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
-                        
-                        logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
-                        const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
-                        targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
-                        
-                    } else {
-                        logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
-                    }
+        // B-1 보스 '카르나블룸'의 행동 로직
+        } else if (enemyChar.name === '카르나블룸' && enemyChar.type === '야수') {
+            if (currentTurn > 0 && currentTurn % 3 === 0) {
+                const skill = MONSTER_SKILLS['SKILL_Thread_of_Emotion'];
+                logToBattleLog(skill.script);
+                skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
+            } else {
+                const aliveAllies = allyCharacters.filter(a => a.isAlive);
+                if (aliveAllies.length > 0) {
+                    const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
+                        (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
+                    logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+                    const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
+                    targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+                } else {
+                    logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
                 }
-
-
+            }
+        // 그 외 모든 몬스터의 기본 공격 로직
+        } else {
+            const aliveAllies = allyCharacters.filter(a => a.isAlive);
+            if (aliveAllies.length > 0) {
+                const targetAlly = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+                logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+                const damage = calculateDamage(enemyChar, targetAlly, 1.0, enemyChar.atk >= enemyChar.matk ? 'physical' : 'magical');
+                targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+            } else {
+                 logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
+            }
+        }
+    }
+    
     processEndOfTurnEffects(enemyChar);
     return checkBattleEnd();
 }
