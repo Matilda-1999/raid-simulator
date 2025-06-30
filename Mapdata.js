@@ -272,7 +272,16 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [],
 
             if (clownSpawns.has(key)) cellDiv.classList.add('clown-spawn');
             if (pierrotSpawns.has(key)) cellDiv.classList.add('pierrot-spawn');
-            if (previewCoordSet.has(key)) cellDiv.classList.add('skill-preview-zone');
+            
+            if (previewCoordSet.has(key)) {
+                // 만약 예고된 스킬 ID가 '대본의 반역'이라면
+                if (previewedSkillId === 'GIMMICK_Script_Reversal') {
+                    cellDiv.classList.add('safe-zone'); // 'safe-zone' 스타일(파란색)을 적용
+                } else {
+                    // 그 외 다른 모든 예고 스킬은 기존 'skill-preview-zone' 스타일(주황색)을 적용
+                    cellDiv.classList.add('skill-preview-zone');
+                }
+            }
             
             if (gridContentMap[key]) {
                 const gimmickContent = gridContentMap[key].find(c => c.type === 'gimmick' && c.obj);
