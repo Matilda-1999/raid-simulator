@@ -1410,6 +1410,11 @@ class Character {
         if (provokeReductionBuff && provokeReductionBuff.effect.damageReduction) {
             finalDamage *= (1 - provokeReductionBuff.effect.damageReduction);
         }
+
+        if (this.hasDebuff('nightmare')) {
+        this.removeDebuffById('nightmare');
+        logToBattleLog(`✦효과✦ ${this.name}, 공격을 받아 [악몽]에서 깨어났습니다.`);
+        }
     
         if (this.shield > 0) {
             const damageToShield = Math.min(finalDamage, this.shield);
@@ -1586,6 +1591,24 @@ class Character {
 
     getEffectiveStat(statName) {
         let value = this[statName]; 
+
+        const melancholyDebuff = this.debuffs.find(d => d.id === 'melancholy_brand');
+        const ecstasyDebuff = this.debuffs.find(d => d.id === 'ecstasy_brand');
+    
+        if (ecstasyDebuff) { // [환희 낙인] 효과
+            if (statName === 'atk' || statName === 'matk') {
+                value *= 1.10; // 공격력/마법 공격력 10% 증폭
+            }
+            if (statName === 'def' || statName === 'mdef') {
+                value *= 0.80; // 방어력/마법 방어력 20% 감소
+            }
+        }
+        if (melancholyDebuff) { // [우울 낙인] 효과
+            if (statName === 'atk' || statName === 'matk') {
+                value *= 0.90; // 공격력/마법 공격력 10% 감소
+            }
+        }
+        
         this.buffs.forEach(buff => {
             if (buff.turnsLeft > 0 && buff.effect) {
                 if (buff.effect.type === `${statName}_boost_multiplier`) {
@@ -1927,6 +1950,15 @@ function displayCharacters() {
 function calculateDamage(attacker, defender, skillPower, damageType, statTypeToUse = null) {
     
     let typeModifier = 1.0;
+
+    // [우울 낙인] 디버프가 없을 때만 상성 우위 적용
+    if (!attacker.hasDebuff('melancholy_brand') && TYPE_RELATIONSHIPS[attacker.type] === defender.type) {
+        typeModifier = TYPE_ADVANTAGE_MODIFIER;
+    } 
+    else if (TYPE_RELATIONSHIPS[defender.type] === attacker.type) {
+        typeModifier = TYPE_DISADVANTAGE_MODIFIER;
+    }
+    
     if (TYPE_RELATIONSHIPS[attacker.type] === defender.type) {
         typeModifier = TYPE_ADVANTAGE_MODIFIER;
     } 
@@ -2529,6 +2561,12 @@ function confirmAction() {
 
 async function executeSingleAction(action) {
     const caster = action.caster;
+
+    if (caster.hasDebuff('nightmare')) { 
+        logToBattleLog(`✦정보✦ ${caster.name}, [악몽]에 빠져 행동할 수 없습니다.`);
+        return false;
+    }
+    
     if (!caster || !caster.isAlive) {
         console.log(`[DEBUG] executeSingleAction: Caster ${caster ? caster.name : 'N/A'} is not alive or not found. Returning false.`);
         return false; 
