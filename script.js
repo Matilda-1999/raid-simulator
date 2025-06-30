@@ -1879,6 +1879,7 @@ class Character {
             }
         });
         return Math.max(0, value);
+        }
     }
 
     function resolveDressRehearsalMission() {
