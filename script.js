@@ -458,6 +458,7 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [간파]
     SKILL_DISCERNMENT: {
         id: "SKILL_DISCERNMENT",
@@ -496,6 +497,7 @@ const SKILLS = {
             return true;
         }
     },
+    
     // [파열]
     SKILL_RUPTURE: {
         id: "SKILL_RUPTURE",
@@ -989,6 +991,7 @@ const SKILLS = {
             return true;
         }
     },
+        
     GIMMICK_Laugh_of: {
         id: "GIMMICK_Laugh_of",
         name: "광대의 웃음",
@@ -1135,6 +1138,98 @@ const SKILLS = {
             });
 
             displayCharacters();
+            return true;
+        }
+    },
+
+        SKILL_Play1: {
+        id: "SKILL_Play1",
+        name: "유희(1,3,5타)",
+        type: "광역 공격",
+        script: `\n<pre>불꽃의 고리가 무대 위를 전부 태울 듯 회전한다.\n박자를 놓치는 순간, 불길이 당신을 스쳐 간다.\n"집중이 깨지는 순간을 조심해야 해. 다칠지도 모르니."</pre>\n`,
+        description: "지정된 범위의 대상에게 마법 공격력만큼 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            // README에 명시된 좌표를 그대로 사용해요.
+            const hitArea = "0,4;1,4;2,4;3,4;5,4;6,4;7,4;8,4;4,0;4,1;4,2;4,3;4,5;4,6;4,7;4,8".split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+            const damage = caster.getEffectiveStat('matk');
+            
+            enemies.forEach(target => { // 모든 '적(플레이어)'을 확인해서
+                // 좌표가 공격 범위 안에 있다면 데미지를 줍니다.
+                if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+
+    SKILL_Play2: {
+        id: "SKILL_Play2",
+        name: "유희(2,4타)",
+        type: "광역 공격",
+        script: `\n<pre>불꽃의 고리가 무대 위를 전부 태울 듯 회전한다.\n박자를 놓치는 순간, 불길이 당신을 스쳐 간다.\n"집중이 깨지는 순간을 조심해야 해. 다칠지도 모르니."</pre>\n`,
+        description: "지정된 범위의 대상에게 마법 공격력만큼 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const hitArea = "0,0;1,1;2,2;3,3;5,5;6,6;7,7;8,8;0,8;1,7;2,6;3,5;5,3;6,2;7,1;8,0".split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+            const damage = caster.getEffectiveStat('matk');
+            
+            enemies.forEach(target => {
+                if (target.isAlive && hitArea.some(pos => pos.x === target.posX && pos.y === target.posY)) {
+                    battleLog(`✦광역 피해✦ ${caster.name}의 [유희]가 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+
+    SKILL_Crimson: {
+        id: "SKILL_Crimson",
+        name: "진홍",
+        type: "광역 복합",
+        script: `\n<pre>장난감들이 공중에서 빙글빙글 돌며 떨어진다.\n그것들이 바닥에 닿을 때, 무대는 숨을 멈춘다.\n"그 표정, 무대 위에서 더 보고 싶어. 이리 올라오렴."</pre>\n`,
+        description: "두 종류의 범위에 각각 다른 효과를 부여합니다. 한쪽은 디버프, 다른 한쪽은 피해를 줍니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            const debuffArea = "0,0;0,1;0,2;0,3;0,4;0,5;0,6;0,7;0,8;1,0;1,8;2,0;2,8;3,0;3,8;4,0;4,8;5,0;5,8;6,0;6,8;7,0;7,8;8,0;8,1;8,2;8,3;8,4;8,5;8,6;8,7;8,8;3,3;3,5;5,3;5,5".split(';').map(s => s.split(',').map(Number));
+            const damageArea = "1,1;1,7;2,2;2,3;2,5;2,6;3,2;3,4;3,6;4,3;4,5;5,2;5,4;5,6;6,2;6,3;6,5;6,6;7,1;7,7".split(';').map(s => s.split(',').map(Number));
+            const damage = caster.getEffectiveStat('matk');
+
+            enemies.forEach(target => {
+                if (!target.isAlive) return;
+                // 디버프 범위에 있다면 3종 디버프를 모두 걸어요.
+                if (debuffArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                    logToBattleLog(`✦광역 디버프✦ ${caster.name}의 [진홍] 효과가 ${target.name}에게 적용됩니다.`);
+                    target.addDebuff('melancholy_brand', '[우울 낙인]', 99, { unremovable: false }); // 영구 디버프지만, 해제는 가능하게
+                    target.addDebuff('ecstasy_brand', '[환희 낙인]', 99, { unremovable: false });
+                    target.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
+                }
+                // 데미지 범위에 있다면 피해를 줍니다.
+                if (damageArea.some(pos => pos[0] === target.posX && pos[1] === target.posY)) {
+                    logToBattleLog(`✦광역 피해✦ ${caster.name}의 [진홍]이 ${target.name}에게 적중!`);
+                    target.takeDamage(damage, battleLog, caster);
+                }
+            });
+            return true;
+        }
+    },
+
+    SKILL_Silence: {
+        id: "SKILL_Silence",
+        name: "침묵",
+        type: "특수",
+        script: `\n<pre>불협화음은 예고 없이 중단된다.\n인형의 동작은 크게 흔들리고, 무대 위에서 비틀거린다.\n"이건 예정된 장면이 아니야……."</pre>\n`,
+        description: "보스가 그로기 상태에 빠져 1 턴 공격 불가 및 플레이어들의 공격에 10% 추가 피해를 입습니다.",
+        execute: (caster, allies, enemies, battleLog) => {
+            logToBattleLog(`✦특수 패턴✦ ${caster.name}이(가) 플레이어들의 맹공에 정신을 차리지 못하고 [침묵](그로기) 상태에 빠집니다!`);
+            // 보스 자신에게 'groggy'라는 디버프를 걸어서 2턴(이번턴, 다음턴)동안 행동불가 상태로 만들어요.
+            caster.addDebuff('groggy', '[침묵](그로기)', 2, { description: "행동 불가 및 받는 피해 증가" });
             return true;
         }
     }
@@ -2017,6 +2112,15 @@ function calculateDamage(attacker, defender, skillPower, damageType, statTypeToU
         return 0;
     }
 
+    // 방어하는 쪽(defender)이 'groggy' 상태라면, 최종 데미지를 10% 증가시킴
+    if (defender.hasDebuff('groggy')) {
+        let finalDamage = (baseAttackStat * actualSkillPower * typeModifier) - defenseStat;
+        finalDamage = Math.max(0, finalDamage);
+        // 여기에 추가 피해를 더함
+        const bonusDamage = finalDamage * 0.10;
+        return Math.round(finalDamage + bonusDamage);
+    }
+    
     let damage = (baseAttackStat * actualSkillPower * typeModifier) - defenseStat;
     
     return Math.round(Math.max(0, damage));
@@ -2997,6 +3101,13 @@ function resolveClownGimmick() {
 async function performEnemyAction(enemyChar) {
     if (!enemyChar.isAlive) return false;
 
+    // 'groggy' 디버프에 걸렸으면 행동하지 않고 턴을 넘깁니다.
+    if (enemyChar.hasDebuff('groggy')) {
+        logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) [침묵](그로기) 상태라 행동할 수 없습니다.`);
+        applyTurnStartEffects(enemyChar); // 버프/디버프 턴은 흘러가도록
+        return checkBattleEnd();
+    }
+    
     applyTurnStartEffects(enemyChar);
     if (!enemyChar.isAlive) return checkBattleEnd();
 
@@ -3045,18 +3156,45 @@ async function performEnemyAction(enemyChar) {
             }
         }
     } else {
-        const aliveAllies = allyCharacters.filter(a => a.isAlive);
-        if (aliveAllies.length > 0) {
-            const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
-                (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
-            
-            logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
-            const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
-            targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
-        } else {
-            logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
+        // 현재 행동하는 몬스터가 B-2 보스 '카르나블룸'인지 확인
+        if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
+            let skillToUseId = null;
+            // 타수(playerAttackCountThisTurn)에 따라 사용할 스킬 결정
+            if (playerAttackCountThisTurn >= 14) {
+                skillToUseId = 'SKILL_Silence';
+            } else if (playerAttackCountThisTurn >= 6) {
+                skillToUseId = 'SKILL_Crimson';
+            } else if (playerAttackCountThisTurn >= 0) { // 0도 짝수로 판단
+                // 0을 포함한 짝수 타수면 Play2, 홀수 타수면 Play1
+                skillToUseId = (playerAttackCountThisTurn % 2 === 1) ? 'SKILL_Play1' : 'SKILL_Play2';
+            }
+
+            if (skillToUseId) { // 사용할 스킬이 정해졌다면
+                const skill = MONSTER_SKILLS[skillToUseId];
+                logToBattleLog(`✦타수 패턴✦ (플레이어 타수: ${playerAttackCountThisTurn}) ${enemyChar.name}, [${skill.name}] 시전.`);
+                skill.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog);
+            } else {
+                // 이 부분은 이제 거의 실행될 일이 없지만, 오류 방지를 위해 남김
+                const targetAlly = allyCharacters.filter(a => a.isAlive)[0];
+                if (targetAlly) {
+                    logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+                    const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
+                    targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+                }
+            }
+        } else { // B-2 보스가 아니면 기존의 기본 공격 로직 수행
+            const aliveAllies = allyCharacters.filter(a => a.isAlive);
+            if (aliveAllies.length > 0) {
+                const targetAlly = aliveAllies.reduce((minChar, currentChar) =>
+                    (currentChar.currentHp < minChar.currentHp ? currentChar : minChar), aliveAllies[0]);
+                
+                logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
+                const damage = calculateDamage(enemyChar, targetAlly, 1.0, 'physical');
+                targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+            } else {
+                logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
+            }
         }
-    }
 
 
     processEndOfTurnEffects(enemyChar);
