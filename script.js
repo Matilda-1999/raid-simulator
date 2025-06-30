@@ -1921,9 +1921,9 @@ class Character {
     
     // 최종 결과 판정
     if (missionSuccess) {
-        logToBattleLog(`✦미션 성공✦ ${missionTarget.name}이(가) [최종 리허설]의 배역을 완벽하게 소화했습니다.`);
+        logToBattleLog(`✦미션 성공✦ ${missionTarget.name}, [최종 리허설]의 배역을 완벽하게 소화했습니다.`);
     } else {
-        logToBattleLog(`✦미션 실패✦ ${missionTarget ? missionTarget.name : '대상'}이(가) 배역을 소화하지 못해 페널티를 받습니다.`);
+        logToBattleLog(`✦미션 실패✦ ${missionTarget ? missionTarget.name : '대상'}, 배역을 소화하지 못해 페널티를 받습니다.`);
         // 페널티 부여
         switch (activeMission.type) {
             case 'attack':
@@ -3338,7 +3338,7 @@ function resolveClownGimmick() {
             enemyCharacters.forEach(e => {
                 if (e.isAlive && (e.name === '클라운' || e.name === '피에로')) {
                     e.addBuff('enraged_range', '[폭주: 범위 증가]', 4, { rangeIncrease: 1 });
-                    logToBattleLog(`✦버프✦ ${e.name}이(가) [폭주]하여 공격 범위가 증가합니다(3턴).`);
+                    logToBattleLog(`✦버프✦ ${e.name}, [폭주]하여 공격 범위가 증가합니다(3턴).`);
                 }
             });
         }
@@ -3607,7 +3607,7 @@ function resolveMinionGimmicks() {
             const randomAllyIndex = Math.floor(Math.random() * livingAllies.length);
             const targetAlly = livingAllies.splice(randomAllyIndex, 1)[0];
             targetAlly.addDebuff('nightmare', '[악몽]', 99, { unremovable: false });
-            logToBattleLog(` ↪︎ ${targetAlly.name}이(가) [앵콜]의 저주로 [악몽]에 빠집니다.`);
+            logToBattleLog(` ↪︎ ${targetAlly.name}, [앵콜]의 저주로 [악몽]에 빠집니다.`);
         }
         
         minionsWipedOutTurn = 0; // 기믹 발동 후 초기화
