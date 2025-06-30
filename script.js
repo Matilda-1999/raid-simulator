@@ -1957,6 +1957,8 @@ function logToBattleLog(message) {
     } else {
         console.error("battleLogDiv is not defined.");
     }
+
+    updatePlayerView();
 }
 
 function getRandomEmptyCell() {
@@ -2235,6 +2237,8 @@ function displayCharacters() {
         const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
         renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea, previewedSkillId);
     }
+
+    updatePlayerView();
 }
 
 
@@ -3650,3 +3654,45 @@ document.addEventListener('DOMContentLoaded', () => {
     if (skillSelectionArea) skillSelectionArea.style.display = 'none';
     if (allySelectionButtonsDiv) allySelectionButtonsDiv.style.display = 'none';
 });
+
+// =================================================================
+// ===== 플레이어 관전 페이지 연동을 위한 코드 =====
+// =================================================================
+
+/**
+ * 현재 게임 상태를 localStorage에 저장하여 플레이어 뷰와 공유
+ */
+function updatePlayerView() {
+    // 적군 정보에서 스탯과 체력 정보를 제거한 안전한 목록 생성
+    const sanitizedEnemies = enemyCharacters.map(enemy => {
+        return {
+            id: enemy.id,
+            name: enemy.name,
+            type: enemy.type,
+            isAlive: enemy.isAlive,
+            buffs: enemy.buffs,
+            debuffs: enemy.debuffs,
+            posX: enemy.posX,
+            posY: enemy.posY,
+            // maxHp, currentHp, atk, matk, def, mdef 등 민감 정보는 제외
+        };
+    });
+
+    // 공유할 게임 상태 객체
+    const gameState = {
+        allies: allyCharacters,
+        enemies: sanitizedEnemies,
+        mapObjects: mapObjects,
+        mapWidth: MAP_WIDTH,
+        mapHeight: MAP_HEIGHT,
+        battleLog: getElement('battleLog').innerHTML,
+        enemyPreviewAction: enemyPreviewAction // 적의 다음 행동 예고 정보
+    };
+
+    try {
+        // 객체를 JSON 문자열로 변환하여 localStorage에 저장
+        localStorage.setItem('raidSimulatorState', JSON.stringify(gameState));
+    } catch (e) {
+        console.error("localStorage 저장 실패:", e);
+    }
+}    
