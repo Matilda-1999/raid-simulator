@@ -1156,6 +1156,7 @@ let currentMapId = null;
 let playerActionsQueue = [];
 let characterPositions = {}; 
 let actedAlliesThisTurn = []; // 이번 턴에 행동을 마친 아군 ID 목록 (행동 순서 직접 지정용)
+let playerAttackCountThisTurn = 0;
 
 let selectedAction = {
     type: null, 
@@ -1365,6 +1366,15 @@ class Character {
     takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
         if (!this.isAlive) return;
 
+        // 공격자(attacker)가 있고, 그 공격자가 '아군' 캐릭터 목록에 포함되어 있다면
+        if (attacker && allyCharacters.includes(attacker)) {
+            // 그리고 실제 피해량이 0보다 크다면 (빗나감이나 무효가 아니라면)
+            if (rawDamage > 0) {
+                 playerAttackCountThisTurn++; // 타수 카운터를 1 올림
+                 console.log(`[DEBUG] Player attack count updated: ${playerAttackCountThisTurn}`);
+            }
+        }
+        
         if (this.isGimmickObject) {
             this.hp -= rawDamage;
             if (this.hp <= 0) {
@@ -2148,6 +2158,8 @@ function prepareNewTurnCycle() {
          alert('전투를 시작해 주세요.');
          return;
     }
+
+    playerAttackCountThisTurn = 0;
     currentTurn++;
     enemyPreviewAction = null;
 
