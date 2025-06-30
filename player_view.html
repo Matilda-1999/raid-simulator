@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레치타티보의 순간</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Diphylleia&family=Gowun+Batang&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-body: 'Gowun Batang', serif;
+            --font-title: 'Diphylleia', serif;
+            --color-primary-gold: #d4af37;
+            --color-primary-gold-darker: #b8860b;
+            --color-primary-gold-lighter: #e6a82d;
+            --color-background: #121212;
+            --color-surface: #1e1e1e;
+            --color-surface-alt: #2a2a2a;
+            --color-text-primary: #e0e0e0;
+            --color-text-secondary: #b0b0b0;
+            --color-border: #555;
+            --color-border-accent: #7b6020;
+            --color-accent-green: #28a745;
+            --color-accent-red: #e74c3c;
+            --color-accent-blue: #3498db;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: var(--color-surface);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(200, 150, 40, 0.15);
+            width: 95%;
+            max-width: 1000px;
+            margin-bottom: 25px;
+            border: 1px solid var(--color-primary-gold-darker);
+        }
+        
+        .material-icons-outlined, .material-icons {
+            font-family: 'Material Icons Outlined';
+            vertical-align: middle; 
+            margin-right: 6px;      
+        }
+
+        h1, h2 {
+            font-family: var(--font-title);
+            color: var(--color-primary-gold);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            display: flex; 
+            align-items: center; 
+        }
+        h1 {
+            justify-content: center; 
+            font-size: 2.5em;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--color-primary-gold-darker);
+        }
+        h2 {
+            margin-top: 20px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 10px;
+            font-size: 1.8em;
+        }
+        
+        .character-cards-wrapper {
+            display: flex;
+            justify-content: space-between;
+            gap: 25px; 
+            margin-top: 25px; 
+        }
+        .ally-card-area, .enemy-card-area {
+            flex-basis: 48%; 
+            background-color: var(--color-surface-alt); 
+            border: 1px solid var(--color-border-accent);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .ally-card-area h2, .enemy-card-area h2 { 
+            margin-top: 0; 
+            padding-bottom: 8px;
+            font-size: 1.5em; 
+        }
+        
+        .character-stats {
+            background-color: rgba(30, 30, 30, 0.85);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border-accent);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .character-stats p { margin: 7px 0; font-size: 0.95em; line-height: 1.5; }
+        .character-stats strong { color: var(--color-primary-gold-lighter); font-weight: 700; }
+
+        .map-display-area {
+            width: 100%;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .map-grid-container {
+            margin-top: 15px;
+            border: 1px solid var(--color-border);
+            background-color: #1a1a1a;
+            padding: 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .map-row { display: flex; }
+        .map-cell {
+            width: 65px;
+            height: 65px;
+            border: 1px solid #383838;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #252525;
+        }
+        .map-cell .char-marker {
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 5px;
+            min-width: 50px;
+            text-align: center;
+        }
+        .map-cell .char-marker.ally { background-color: var(--color-accent-blue); color: white; }
+        .map-cell .char-marker.enemy { background-color: var(--color-accent-red); color: white; }
+        .map-cell.skill-preview-zone { background-color: rgba(255, 165, 0, 0.4); border: 1px solid #FFA500; }
+        .map-cell .gimmick-object { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5em; }
+        .gimmick-fruit { background-color: #8B0000; }
+        .gimmick-fissure { background: radial-gradient(circle, rgba(75,0,130,0.8) 0%, rgba(0,0,0,0) 70%); }
+        .gimmick-spring { background-color: #00BFFF; }
+        .map-cell.safe-zone { background-color: rgba(52, 152, 219, 0.5); border: 1px solid #3498db; }
+        .battle-log { background-color: #171717; color: var(--color-text-secondary); padding: 20px; height: 300px; overflow-y: auto; border-radius: 8px; margin-top: 20px; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; border: 1px solid var(--color-border); }
+        
+        @media (max-width: 768px) {
+            .character-cards-wrapper { flex-direction: column; align-items: stretch; }
+            .map-cell { width: calc((100vw - 20px - 16px - 10px) / 5); height: calc((100vw - 20px - 16px - 10px) / 5); max-width: 55px; max-height: 55px; }
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #222526; }
+        ::-webkit-scrollbar-thumb { background: #555; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-gold-darker); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✦ 마스레이드 전투 상황 ✦</h1>
+        <div class="character-cards-wrapper">
+            <div class="ally-card-area">
+                <h2><span class="material-icons-outlined">groups</span>아군</h2>
+                <div id="allyCharacters" class="character-display">
+                    <p>대기 중...</p>
+                </div>
+            </div>
+
+            <div class="enemy-card-area">
+                <h2><span class="material-icons-outlined">sentiment_very_dissatisfied</span>적군</h2> 
+                <div id="enemyCharacters" class="character-display">
+                    <p>대기 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="map-display-area">
+            <h2><span class="material-icons-outlined">map</span>맵 상황</h2>
+            <div id="mapGridContainer" class="map-grid-container"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2><span class="material-icons-outlined">receipt_long</span>전투 로그</h2>
+        <div class="battle-log" id="battleLog"></div>
+    </div>
+
+    <script src="Mapdata.js"></script>
+    <script src="player_view.js"></script>
+</body>
+</html>
