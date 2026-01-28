@@ -175,27 +175,30 @@ const GIMMICK_DATA = {
         coords: "3,1;3,2;3,3;4,0;4,1;4,2;4,3;4,4",
         flavorText: "<pre>우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 동쪽 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\"</pre>\n",
         execute: (caster, allies, enemies, battleLog) => {
-        caster.activeGimmick = "GIMMICK_Aegis_of_Earth1"; // 기믹 활성화
-        battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(동)] 태세를 갖춥니다. 동쪽 구역(파란색)이 안전지대가 됩니다.`);
-        return true;
+            caster.activeGimmick = "GIMMICK_Aegis_of_Earth1"; // 기믹 활성화
+            battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(동)] 태세를 갖춥니다. 동쪽 구역(파란색)이 안전지대가 됩니다.`);
+            return true;
+        }
     },
     "GIMMICK_Aegis_of_Earth2": { 
         name: "대지의 수호(서)",
         coords: "0,0;0,1;0,2;0,3;0,4;1,1;1,2;1,3",
         flavorText: "<pre>우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 서쪽 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\"</pre>\n",
         execute: (caster, allies, enemies, battleLog) => {
-        caster.activeGimmick = "GIMMICK_Aegis_of_Earth2"; // 기믹 활성화
-        battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(서)] 태세를 갖춥니다. 서쪽 구역(파란색)이 안전지대가 됩니다.`);
-        return true;
+            caster.activeGimmick = "GIMMICK_Aegis_of_Earth2"; // 기믹 활성화
+            battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(서)] 태세를 갖춥니다. 서쪽 구역(파란색)이 안전지대가 됩니다.`);
+            return true;
+        }
     },
     "GIMMICK_Aegis_of_Earth3": { 
         name: "대지의 수호(남)",
         coords: "1,3;2,3;3,3;0,4;1,4;2,4;3,4;4,4",
         flavorText: "<pre>우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 남쪽 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\"</pre>\n",
         execute: (caster, allies, enemies, battleLog) => {
-        caster.activeGimmick = "GIMMICK_Aegis_of_Earth3"; // 기믹 활성화
-        battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(남)] 태세를 갖춥니다. 남쪽 구역(파란색)이 안전지대가 됩니다.`);
-        return true;
+            caster.activeGimmick = "GIMMICK_Aegis_of_Earth3"; // 기믹 활성화
+            battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(남)] 태세를 갖춥니다. 남쪽 구역(파란색)이 안전지대가 됩니다.`);
+            return true;
+        }
     },
     
     "GIMMICK_Aegis_of_Earth4": { 
@@ -203,9 +206,10 @@ const GIMMICK_DATA = {
         coords: "0,0;1,0;2,0;3,0;4,0;1,1;2,1;3,1",
         flavorText: "<pre>우리가 상대할 것은 대지, 그 자체였을까.\n절벽이 앞을 가로막는다.\n허나 무너뜨릴 수 없을 듯하던 북쪽 성벽 또한 작은 균열 하나에 허물어지는 법.\n\"무딘 칼날로 대지를 가를 수 있겠는가?\"</pre>\n",
         execute: (caster, allies, enemies, battleLog) => {
-        caster.activeGimmick = "GIMMICK_Aegis_of_Earth4"; // 기믹 활성화
-        battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(북)] 태세를 갖춥니다. 북쪽 구역(파란색)이 안전지대가 됩니다.`);
-        return true;
+            caster.activeGimmick = "GIMMICK_Aegis_of_Earth4"; // 기믹 활성화
+            battleLog(`✦기믹 발동✦ ${caster.name}이 [대지의 수호(북)] 태세를 갖춥니다. 북쪽 구역(파란색)이 안전지대가 됩니다.`);
+            return true;
+        }
     },
 
     "GIMMICK_Path_of_Ruin": {
