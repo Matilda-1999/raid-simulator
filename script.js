@@ -3163,7 +3163,7 @@ function previewEnemyAction(enemyChar) {
             return { x, y };
         }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
     } else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
-        // [추가] 대지의 수호 좌표를 hitArea에 담아 맵에 색상을 표시하게 합니다.
+        // [추가] 대지의 수호 예고 시 파란색 영역 표시용 좌표 추출
         const coordsStr = skillDefinition.coords;
         if (coordsStr) {
             hitArea = coordsStr.split(';').map(s => {
