@@ -932,6 +932,7 @@ const SKILLS = {
             return true;
         }
     },
+        
     SKILL_Slapstick_Comdey_C: {
         id: "SKILL_Slapstick_Comdey_C",
         name: "슬랩스틱 코미디(클라운)",
@@ -3161,6 +3162,16 @@ function previewEnemyAction(enemyChar) {
             const [x, y] = s.split(',').map(Number);
             return { x, y };
         }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
+    } else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
+        // [추가] 대지의 수호 좌표를 hitArea에 담아 맵에 색상을 표시하게 합니다.
+        const coordsStr = skillDefinition.coords;
+        if (coordsStr) {
+            hitArea = coordsStr.split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+        }
+    }
 
         let objectsToSpawnInfo = [];
         if (subGimmickChoice === 1) {
