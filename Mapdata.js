@@ -256,7 +256,7 @@ const SPAWN_POINTS = {
     ]
 };
 
-function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [], activeAreaEffects = [], previewedHitArea = []) {
+function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [], activeAreaEffects = [], previewedHitArea = [], previewedSkillId = null) {
     if (!mapContainerElement) return;
     mapContainerElement.innerHTML = '';
 
@@ -301,7 +301,7 @@ function renderMapGrid(mapContainerElement, allyChars, enemyChars, mapObjs = [],
 
             // 안전지대 판정
             if (previewCoordSet.has(key)) {
-                if (previewedSkillId === 'GIMMICK_Script_Reversal' || previewedSkillId.startsWith('GIMMICK_Aegis_of_Earth')) {
+                if (previewedSkillId && (previewedSkillId === 'GIMMICK_Script_Reversal' || previewedSkillId.startsWith('GIMMICK_Aegis_of_Earth'))) {
                     cellDiv.classList.add('safe-zone'); // 파란색 표시
                 } else {
                     cellDiv.classList.add('skill-preview-zone'); // 주황색 표시
