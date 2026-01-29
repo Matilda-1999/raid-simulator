@@ -3155,6 +3155,7 @@ function previewEnemyAction(enemyChar) {
             if (y !== predictedRow) hitArea.push({ x: predictedCol, y });
         }
         skillDefinition.previewData = { predictedCol, predictedRow };
+        
     } else if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
         const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
         const gimmickCoordsStr = skillDefinition.coords;
@@ -3162,16 +3163,6 @@ function previewEnemyAction(enemyChar) {
             const [x, y] = s.split(',').map(Number);
             return { x, y };
         }).filter(pos => !characterPositions[`${pos.x},${pos.y}`]);
-    } else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
-        // [추가] 대지의 수호 예고 시 파란색 영역 표시용 좌표 추출
-        const coordsStr = skillDefinition.coords;
-        if (coordsStr) {
-            hitArea = coordsStr.split(';').map(s => {
-                const [x, y] = s.split(',').map(Number);
-                return { x, y };
-            });
-        }
-    }
 
         let objectsToSpawnInfo = [];
         if (subGimmickChoice === 1) {
@@ -3182,6 +3173,15 @@ function previewEnemyAction(enemyChar) {
             if (availableCoords.length > 0) objectsToSpawnInfo.push({ type: 'spring', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
         }
         skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo };
+
+    } else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
+        const coordsStr = skillDefinition.coords;
+        if (coordsStr) {
+            hitArea = coordsStr.split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+        }
     }
 
     return {
