@@ -3078,7 +3078,7 @@ async function executeBattleTurn() {
 function previewEnemyAction(enemyChar) {
     console.log(`[DEBUG] Turn ${currentTurn}: previewEnemyAction 시작. 대상: ${enemyChar.name}`);
 
-    // B-2 보스 '카르나블룸'의 예고 로직
+    // 1. B-2 보스 '카르나블룸' 전용: [대본의 반역] 예고 로직 (제시해주신 원본 코드 유지)
     if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
         const actionChoice = Math.random();
         // 25% 확률로 '대본의 반역'을 예고
@@ -3108,23 +3108,23 @@ function previewEnemyAction(enemyChar) {
             return {
                 casterId: enemyChar.id,
                 skillId: 'GIMMICK_Script_Reversal',
-                // 'hitArea' 라는 이름으로 '안전지대' 정보를 넘김
+                // 'hitArea' 라는 이름으로 '안전지대' 정보를 넘김 (파란색 표시)
                 hitArea: safeArea, 
                 dynamicData: { safeRow, safeCol }
             };
         }
-        return null;
+        // 확률에 걸리지 않은 경우, 여기서 null을 반환하지 않고 아래의 일반 스킬 선택 로직으로
     }
     
+    // 2. 일반 스킬 및 기믹 선택 로직
     const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
     let skillToUseId = null;
-    let hitArea = [];
+    let hitArea = []; 
 
     const isBoss = enemyChar.skills.includes("SKILL_Birth_of_Vines") || enemyChar.skills.includes("SKILL_Seismic_Fissure");
     const isClownOrPierrot = enemyChar.name === '클라운' || enemyChar.name === '피에로';
 
     if (isBoss) {
-        // 보스는 기믹과 스킬 중 하나를 무작위로 선택
         const allActions = [...(enemyChar.gimmicks || []), ...(enemyChar.skills || [])];
         if (allActions.length > 0) {
             skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
@@ -3144,26 +3144,36 @@ function previewEnemyAction(enemyChar) {
 
     const skillDefinition = allSkills[skillToUseId] || GIMMICK_DATA[skillToUseId];
     if (!skillDefinition) {
-         console.log(`[DEBUG] previewEnemyAction: 스킬 ID [${skillToUseId}]에 대한 정의를 찾을 수 없음.`);
-         return null;
+        console.log(`[DEBUG] previewEnemyAction: 스킬 ID [${skillToUseId}]에 대한 정의를 찾을 수 없음.`);
+        return null;
     }
 
-    const scriptToShow = skillDefinition.script || skillDefinition.flavorText;
-    if (scriptToShow) {
-        logToBattleLog(scriptToShow);
-    } 
-
+    // 3. 지정한 2가지 기믹에 대한 장판 좌표 생성
     if (skillToUseId === 'GIMMICK_Path_of_Ruin') {
         const predictedCol = Math.floor(Math.random() * MAP_WIDTH);
         const predictedRow = Math.floor(Math.random() * MAP_HEIGHT);
         
+        // 피격 구역 계산 (주황색 표시)
         for (let x = 0; x < MAP_WIDTH; x++) hitArea.push({ x, y: predictedRow });
         for (let y = 0; y < MAP_HEIGHT; y++) {
             if (y !== predictedRow) hitArea.push({ x: predictedCol, y });
         }
         skillDefinition.previewData = { predictedCol, predictedRow };
-        
-    } else if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
+    } 
+    else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
+        const coordsStr = skillDefinition.coords;
+        if (coordsStr) {
+            // 안전 구역 좌표 파싱 (파란색 표시)
+            hitArea = coordsStr.split(';').map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+        }
+    }
+    // [흡수의 술식] 등 다른 기믹이나 일반 스킬은 hitArea를 빈 배열로 유지
+
+    // 4. [흡수의 술식] 관련 데이터 생성
+    if (skillToUseId === 'GIMMICK_Seed_of_Devour') {
         const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
         const gimmickCoordsStr = skillDefinition.coords;
         const availableCoords = gimmickCoordsStr.split(';').map(s => {
@@ -3180,15 +3190,14 @@ function previewEnemyAction(enemyChar) {
             if (availableCoords.length > 0) objectsToSpawnInfo.push({ type: 'spring', pos: availableCoords.splice(Math.floor(Math.random() * availableCoords.length), 1)[0] });
         }
         skillDefinition.previewData = { subGimmickChoice, objectsToSpawnInfo };
-
-    } else if (skillToUseId.startsWith('GIMMICK_Aegis_of_Earth')) {
-        const coordsStr = skillDefinition.coords;
-        if (coordsStr) {
-            hitArea = coordsStr.split(';').map(s => {
-                const [x, y] = s.split(',').map(Number);
-                return { x, y };
-            });
-        }
+        
+        const scriptToShow = GIMMICK_DATA[skillToUseId][`subGimmick${subGimmickChoice}`]?.script;
+        if (scriptToShow) logToBattleLog(scriptToShow);
+    } 
+    else {
+        // 일반 스킬의 스크립트 출력
+        const scriptToShow = skillDefinition.script || skillDefinition.flavorText;
+        if (scriptToShow) logToBattleLog(scriptToShow);
     }
 
     return {
@@ -3198,6 +3207,7 @@ function previewEnemyAction(enemyChar) {
         dynamicData: skillDefinition.previewData || {}
     };
 }
+
 
 const ENRAGE_TURN_THRESHOLD = 20;
 const ENRAGE_HP_THRESHOLD = 0.20;
