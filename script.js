@@ -2412,11 +2412,18 @@ function startBattle() {
     logToBattleLog('\n【전투 시작】\n');
     [...allyCharacters, ...enemyCharacters].forEach(char => {
         // 직군에 따른 maxHp 재설정
-        char.maxHp = 100;
-        if (char.job === '힐러') {
-            char.maxHp = 110;
-        } else if (char.job === '딜러') {
-            char.maxHp = 90;
+        if (char.job) {
+            char.maxHp = 100;
+            if (char.job === '힐러') {
+                char.maxHp = 110;
+            } else if (char.job === '딜러') {
+                char.maxHp = 90;
+            }
+            // 전투 재시작 시 현재 체력을 최대 체력으로 회복
+            char.currentHp = char.maxHp; 
+        } else if (enemyCharacters.includes(char)) {
+            // 적군의 경우 이미 설정된 maxHp를 보존하고 현재 체력만 회복
+            char.currentHp = char.maxHp;
         }
 
         char.currentHp = char.maxHp;
