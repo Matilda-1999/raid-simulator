@@ -1,3 +1,13 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9/firebase-database.js";
+
+const firebaseConfig = {
+    databaseURL: "https://raid-simulator-1999-default-rtdb.firebaseio.com/"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // 전역 변수
 let MAP_WIDTH = 5;
 let MAP_HEIGHT = 5;
@@ -70,25 +80,18 @@ function renderGameState(state) {
 
 // --- 이벤트 리스너 설정 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 페이지가 처음 로드될 때 현재 상태를 한 번 불러옴
-    const initialStateJSON = localStorage.getItem('raidSimulatorState');
-    if (initialStateJSON) {
-        try {
-            const initialState = JSON.parse(initialStateJSON);
-            renderGameState(initialState);
-        } catch (e) {
-            console.error("저장된 상태를 불러오는 데 실패했습니다:", e);
-        }
-    }
+    // Firebase 데이터베이스의 'raid/state' 경로를 감시
+    const stateRef = ref(db, 'raid/state');
     
-    // 'storage' 이벤트 리스너 추가. 다른 탭에서 localStorage가 변경되면 실행됨.
-    window.addEventListener('storage', (event) => {
-        if (event.key === 'raidSimulatorState') {
+    // 데이터가 변경될 때마다 실행되는 리스너
+    onValue(stateRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
             try {
-                const newState = JSON.parse(event.newValue);
-                renderGameState(newState);
+                // 수신된 데이터를 기반으로 화면을 갱신합니다.
+                renderGameState(data);
             } catch (e) {
-                console.error("상태 업데이트에 실패했습니다:", e);
+                console.error("화면 갱신 중 오류 발생:", e);
             }
         }
     });
