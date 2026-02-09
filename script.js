@@ -1,3 +1,13 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9/firebase-database.js";
+
+const firebaseConfig = {
+    databaseURL: "https://raid-simulator-1999-default-rtdb.firebaseio.com/"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // --- 0. 상수 정의 ---
 let MAP_WIDTH = 5;
 let MAP_HEIGHT = 5;
