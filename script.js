@@ -3738,3 +3738,10 @@ function updatePlayerView() {
         console.error("localStorage 저장 실패:", e);
     }
 }    
+
+window.loadSelectedMap = loadSelectedMap;
+window.updatePlayerView = updatePlayerView;
+window.addCharacter = addCharacter;
+window.deleteCharacter = deleteCharacter;
+window.startBattle = startBattle;
+window.executeBattleTurn = executeBattleTurn;
