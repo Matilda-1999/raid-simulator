@@ -3679,7 +3679,7 @@ function resolveMinionGimmicks() {
         });
         duetState.isConditionMet = false; // 기믹 발동 후 초기화
     }
-
+}
 
 
 // --- 6. 페이지 로드 시 초기화 ---
