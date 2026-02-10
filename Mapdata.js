@@ -336,7 +336,7 @@ function renderMapGrid(
     });
   });
 
-  for (let y = 0; y < height; y++)
+  for (let y = 0; y < height; y++){
   const rowDiv = document.createElement("div");
   rowDiv.className = "map-row";
   for (let x = 0; x < width; x++) {
