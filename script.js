@@ -2,7 +2,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9/firebase-app
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9/firebase-database.js";
 
 const firebaseConfig = {
-    databaseURL: "https://raid-simulator-1999-default-rtdb.firebaseio.com/"
+  apiKey: "AIzaSyAOd24AzDmA609KAaa_4frTMnAeY8mJrXM",
+  authDomain: "raid-simulator-1999.firebaseapp.com",
+  databaseURL: "https://raid-simulator-1999-default-rtdb.firebaseio.com",
+  projectId: "raid-simulator-1999",
+  storageBucket: "raid-simulator-1999.firebasestorage.app",
+  messagingSenderId: "112905026016",
+  appId: "1:112905026016:web:419f84388bae3e6291d385",
+  measurementId: "G-P176XFZWH2"
 };
 
 const app = initializeApp(firebaseConfig);
