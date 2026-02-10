@@ -3696,9 +3696,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ===== 플레이어 관전 페이지 연동을 위한 코드 =====
 // =================================================================
 
-/**
- * 현재 게임 상태를 localStorage에 저장하여 플레이어 뷰와 공유
- */
+/*현재 게임 상태를 localStorage에 저장하여 플레이어 뷰와 공유*/
 function updatePlayerView() {
     // 적군 정보에서 스탯과 체력 정보를 제거한 안전한 목록 생성
     const sanitizedEnemies = enemyCharacters.map(enemy => {
