@@ -3077,15 +3077,21 @@ async function executeBattleTurn() {
     for (const enemyChar of enemyCharacters) {
         if (enemyChar.isAlive) {
             if (await performEnemyAction(enemyChar)) {
-                return;
+                return; // 여기서 전투 종료 시 함수 종료
             }
         }
     }
     
-    if (!checkBattleEnd() && isBattleStarted) { 
+    // 1. 먼저 전투 종료 여부를 변수에 담아 중복 실행을 막습니다.
+    const battleEnded = checkBattleEnd();
+
+    // 2. 전투가 종료되지 않았고, 전투 상태가 유지 중일 때만 다음 턴을 준비합니다.
+    if (!battleEnded && isBattleStarted) { 
         prepareNewTurnCycle(); 
     } else {
-        if (!isBattleStarted && startButton) startButton.style.display = 'block';
+        // 3. 전투가 종료되었다면 로그를 출력하고 다시 시작 버튼을 노출합니다.
+        if (startButton) startButton.style.display = 'block';
+        console.log("전투가 종료되어 다음 턴을 준비하지 않습니다.");
     }
 }
 
@@ -3571,6 +3577,8 @@ function endBattle() {
     currentTurn = 0; 
     playerActionsQueue = [];
     actedAlliesThisTurn = [];
+
+    enemyPreviewAction = null;
 }
 
 function findCharacterById(id) {
