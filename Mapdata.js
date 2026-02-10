@@ -110,8 +110,8 @@ const MAP_CONFIGS = {
     height: 5,
     enemies: [{ templateId: "Terrmor_1", pos: { x: 2, y: 2 } }],
     flavorText:
-      "거대한 바위가 자연의 중심처럼 눌러앉아 있다. 그것은 그저 풍경처럼 존재하나,\n" +
-      "땅이 울리고, 균열이 일어나면, 바위의 틈 사이로 희미한 숨결이 들려온다. 대지는 이미 깨어나고 있다.\n" +
+      "거대한 바위가 자연의 중심처럼 눌러앉아 있다.\n" +
+      "그것은 그저 풍경처럼 존재하나, 땅이 울리고, 균열이 일어나면, 바위의 틈 사이로 희미한 숨결이 들려온다. 대지는 이미 깨어나고 있다.\n" +
       '"그 누가 잠든 대지를 일깨우느냐."',
   },
 
@@ -120,7 +120,7 @@ const MAP_CONFIGS = {
     width: 5,
     height: 5,
     flavorText:
-      '대지에 박혀 있던 바위에 서서히 금이 가기 시작한다.\n갈라진 틈에서 가느다란 뿌리들이 자라나고,\n단단한 표면 위로 덩굴이 뒤엉키듯 솟아오른다.\n억눌러 왔던 생명이, 대지의 껍질을 완전히 벗겨낸 생명의 형상이,\n바위 위에서 기어코 개화한다.\n"대지 위에서 피어나는 것들은 모두 고통스러울 것이니."',
+      '대지에 박혀 있던 바위에 서서히 금이 가기 시작한다.\n갈라진 틈에서 가느다란 뿌리들이 자라나고, 단단한 표면 위로 덩굴이 뒤엉키듯 솟아오른다.\n억눌러 왔던 생명이, 대지의 껍질을 완전히 벗겨낸 생명의 형상이,\n바위 위에서 기어코 개화한다.\n"대지 위에서 피어나는 것들은 모두 고통스러울 것이니."',
     deathScript:
       '테르모르의 팔이 천천히 꺾이며 내려앉는다.\n몸을 덮고 있던 꽃잎이 시들며 무너지고, 마지막 하나가 바람 없이 떨어진다.\n대지에는 더 이상 살아 있는 기척조차 남지 않았으며,\n조용히 무너진 몸 아래, 메마른 뿌리만이 그 자리에 남는다.\n"봄은, 다시 움트지 않으리라."',
     enemies: [{ templateId: "Terrmor_2", pos: { x: 2, y: 2 } }],
@@ -296,7 +296,9 @@ function renderMapGrid(
   mapObjs = [],
   activeAreaEffects = [],
   previewedHitArea = [],
-  previewedSkillId = null
+  previewedSkillId = null,
+  width = 5,
+  height = 5
 ) {
   if (!mapContainerElement) return;
   mapContainerElement.innerHTML = "";
@@ -334,10 +336,10 @@ function renderMapGrid(
     });
   });
 
-  for (let y = 0; y < MAP_HEIGHT; y++) {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "map-row";
-    for (let x = 0; x < MAP_WIDTH; x++) {
+  for (let y = 0; y < height; y++)
+  const rowDiv = document.createElement("div");
+  rowDiv.className = "map-row";
+  for (let x = 0; x < width; x++) {
       const cellDiv = document.createElement("div");
       cellDiv.className = "map-cell";
       const key = `${x},${y}`;
