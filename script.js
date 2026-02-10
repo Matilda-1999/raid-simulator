@@ -2251,7 +2251,7 @@ function displayCharacters() {
         
         const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
         const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
-        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea, previewedSkillId);
+        renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea, previewedSkillId, MAP_WIDTH, MAP_HEIGHT);
     }
 
     updatePlayerView();
