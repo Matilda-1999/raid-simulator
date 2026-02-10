@@ -430,79 +430,79 @@ const SKILLS = {
     },
   },
 
-  // [실존]
-  SKILL_REALITY: {
-    id: "SKILL_REALITY",
-    name: "실존",
-    type: "광역 버프",
-    description:
-      "보아라, 눈앞에 놓여진 것을. 그리고 말하라, 당신이 깨달은 것을.<br><br>모든 아군 방어력 x0.3 증가 (2턴). <br>자신은 [실재] 4스택 추가 획득 (2턴, 해제 불가). <br>연속 사용 시 추가 2스택 획득. (쿨타임 2턴)",
-    targetType: "all_allies",
-    targetSelection: "all_allies",
-    cooldown: 3,
-    execute: (caster, allies, enemies, battleLog) => {
-      const currentTurnNum = currentTurn;
-      const lastUsedTurn = caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] || 0;
+// [실존]
+    SKILL_REALITY: {
+        id: "SKILL_REALITY",
+        name: "실존",
+        type: "광역 버프",
+        description: "보아라, 눈앞에 놓여진 것을. 그리고 말하라, 당신이 깨달은 것을.<br><br>모든 아군 방어력 x0.3 증가 (2턴). <br>자신은 [실재] 4스택 추가 획득 (2턴, 해제 불가). <br>연속 사용 시 추가 2스택 획득. 3회 연속 사용 불가. <br>[실재]: 모든 아군의 (방어력/마방 중 높은 수치)x20% 증가.",
+        targetType: "all_allies",
+        targetSelection: "all_allies",
+        cooldown: 0, // 연속 사용을 허용하기 위해 기본 쿨타임은 0으로 설정 (내부 로직으로 제한)
+        execute: (caster, allies, enemies, battleLog) => {
+            const currentTurnNum = currentTurn;
+            const realityBuff = caster.buffs.find((b) => b.id === "reality_stacks");
+            
+            // 1. 연속 사용 카운트 체크 (3턴 연속 사용 방지)
+            const consecutiveCount = realityBuff ? (realityBuff.consecutiveCount || 0) : 0;
+            if (consecutiveCount >= 2 && realityBuff.lastAppliedTurn === currentTurnNum - 1) {
+                battleLog(`✦정보✦ ${caster.name}: [실존]을 3턴 연속 사용할 수 없습니다.`);
+                return false;
+            }
 
-      if (
-        lastUsedTurn !== 0 &&
-        currentTurnNum - lastUsedTurn < SKILLS.SKILL_REALITY.cooldown
-      ) {
-        battleLog(
-          `✦정보✦ ${caster.name}, [실존] 사용 불가: 쿨타임 ${
-            SKILLS.SKILL_REALITY.cooldown - (currentTurnNum - lastUsedTurn)
-          }턴 남음.`
-        );
-        return false;
-      }
-      battleLog(
-        `✦스킬✦ ${caster.name}, [실존] 사용: 모든 아군 방어력 증가 및 자신에게 [실재] 스택 부여.`
-      );
+            battleLog(`✦스킬✦ ${caster.name}, [실존] 사용: 모든 아군 방어력 증가 및 자신에게 [실재] 부여.`);
 
-      allies
-        .filter((a) => a.isAlive)
-        .forEach((ally) => {
-          ally.addBuff("reality_def_boost", "방어력 증가 (실존)", 2, {
-            type: "def_boost_multiplier",
-            value: 1.3,
-          });
-        });
-      battleLog(`✦버프✦ 모든 아군: 방어력 30% 증가(2턴).`);
+            // 2. 모든 아군 방어력 30% 증가
+            allies.filter((a) => a.isAlive).forEach((ally) => {
+                ally.addBuff("reality_def_boost", "방어력 증가 (실존)", 2, {
+                    type: "def_boost_multiplier",
+                    value: 1.3,
+                });
+            });
+            battleLog(`✦버프✦ 모든 아군: 방어력 30% 증가(2턴).`);
 
-      let realityStacksToAdd = 4;
-      const realityBuff = caster.buffs.find((b) => b.id === "reality_stacks");
-      if (realityBuff && realityBuff.lastAppliedTurn === currentTurnNum - 1) {
-        realityStacksToAdd += 2;
-        battleLog(`✦효과✦ ${caster.name} [실존] 연속 사용: [실재] 추가 2스택.`);
-      }
+            // 3. [실재] 스택 및 수치 계산
+            let realityStacksToAdd = 4;
+            let newConsecutiveCount = 1;
 
-      caster.addBuff(
-        "reality_stacks",
-        "[실재]",
-        2,
-        {
-          atkBoostPerStack: 0.4,
-          matkBoostPerStack: 0.4,
-          stacks: realityStacksToAdd,
-          unremovable: true,
-          lastAppliedTurn: currentTurnNum,
+            if (realityBuff && realityBuff.lastAppliedTurn === currentTurnNum - 1) {
+                realityStacksToAdd = 6; // 연속 사용 시 6스택으로 갱신
+                newConsecutiveCount = consecutiveCount + 1;
+                battleLog(`✦효과✦ ${caster.name} [실존] 연속 사용: [실재] 6스택 획득.`);
+            }
+
+            // [기획 반영] 모든 아군의 (방어력 vs 마방 중 높은 수치) 합산의 20% 계산
+            let totalAllyStatValue = 0;
+            allies.filter(a => a.isAlive).forEach(ally => {
+                const highStat = Math.max(ally.getEffectiveStat('def'), ally.getEffectiveStat('mdef'));
+                totalAllyStatValue += highStat;
+            });
+            const boostValuePerStack = totalAllyStatValue * 0.2; // 스택당 증가량 (합산의 20%)
+
+            // 4. 시전자 자신에게 [실재] 버프 부여 (갱신 방식)
+            caster.addBuff(
+                "reality_stacks",
+                "[실재]",
+                2,
+                {
+                    // getEffectiveStat에서 참조할 값들
+                    type: "reality_boost", 
+                    stacks: realityStacksToAdd,
+                    boostValuePerStack: boostValuePerStack, // 계산된 20% 수치 저장
+                    unremovable: true,
+                    lastAppliedTurn: currentTurnNum,
+                    consecutiveCount: newConsecutiveCount // 연속 사용 횟수 저장
+                },
+                true // 기존 버프 제거 후 새로 추가 (갱신)
+            );
+
+            battleLog(`✦버프✦ ${caster.name}: [실재] ${realityStacksToAdd}스택 적용 (스택당 +${boostValuePerStack.toFixed(0)}, 2턴, 해제 불가).`);
+
+            caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] = currentTurnNum;
+            caster.checkSupporterPassive(battleLog);
+            return true;
         },
-        true
-      );
-
-      const currentRealityStacks =
-        caster.buffs.find((b) => b.id === "reality_stacks")?.stacks || 0;
-      battleLog(
-        `✦버프✦ ${caster.name}: [실재] ${realityStacksToAdd}스택 추가 획득 (현재 ${currentRealityStacks}스택, 2턴, 해제 불가).`
-      );
-
-      caster.lastSkillTurn[SKILLS.SKILL_REALITY.id] = currentTurnNum;
-
-      // 서포터 직군 효과
-      caster.checkSupporterPassive(battleLog);
-      return true;
     },
-  },
 
   // [진리]
   SKILL_TRUTH: {
@@ -2587,15 +2587,13 @@ class Character {
           value += buff.effect.value;
         }
 
-        if (buff.id === "reality_stacks" && buff.effect.stacks > 0) {
-          if (statName === "atk" && buff.effect.atkBoostPerStack) {
-            value +=
-              this.atk * buff.effect.atkBoostPerStack * buff.effect.stacks;
-          }
-          if (statName === "matk" && buff.effect.matkBoostPerStack) {
-            value +=
-              this.matk * buff.effect.matkBoostPerStack * buff.effect.stacks;
-          }
+        if (buff.id === 'reality_stacks' && buff.effect.stacks > 0) {
+            // 기획: 모든 아군 스탯 합산의 20% * 스택 수만큼 증가
+            const totalBoost = buff.effect.boostValuePerStack * buff.effect.stacks;
+            
+            if (statName === 'atk' || statName === 'matk') {
+                value += totalBoost;
+            }
         }
       }
     });
