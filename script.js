@@ -2113,11 +2113,10 @@ function loadMap(mapId) {
     enemyCharacters = []; 
     console.log("[DEBUG] loadMap: 적군 목록 초기화 완료.");
     
-    // --- 수정된 부분 시작 ---
-    // 모든 몬스터를 mapConfig 기반으로 소환합니다.
+    // 모든 몬스터를 mapConfig 기반으로 소환
     mapConfig.enemies.forEach(mapEnemy => summonMonsterAt(mapEnemy.templateId, mapEnemy.pos));
 
-    // 중복 소환 로직을 제거했습니다.
+    // 중복 소환 로직 제거
     /*
     // B-1, B-2 맵 전용 초기 배치 (광대 2, 피에로 2)
     if (mapId === 'B-1' || mapId === 'B-2') {
@@ -2251,7 +2250,6 @@ function displayCharacters() {
             .map(e => e.areaEffect);
         
         const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
-        // 예고된 스킬의 ID 정보도 가져옵니다. 예고된 스킬이 없으면 null이 됩니다.
         const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
         renderMapGrid(mapGridContainer, allyCharacters, enemyCharacters, mapObjects, activeAreaEffects, previewedHitArea, previewedSkillId);
     }
@@ -2620,7 +2618,6 @@ function showSkillSelectionForCharacter(actingChar) {
     
     skipButton.onclick = () => {
         logToBattleLog(`✦준비✦ ${actingChar.name}, 행동을 포기합니다.`);
-        // 행동 목록에 'skip' 액션을 추가합니다.
         playerActionsQueue.push({ caster: actingChar, type: 'skip' });
         actedAlliesThisTurn.push(actingChar.id);
         
@@ -3451,8 +3448,6 @@ async function performEnemyAction(enemyChar) {
             }
         }
     } else {
-        // ▼▼▼ 여기가 수정된 로직의 시작입니다 ▼▼▼
-        
         // B-2 보스 '카르나블룸'의 행동 로직
         if (enemyChar.name === '카르나블룸' && enemyChar.type === '천체') {
             if (activeMission && activeMission.casterId === enemyChar.id) {
@@ -3745,3 +3740,4 @@ window.addCharacter = addCharacter;
 window.deleteCharacter = deleteCharacter;
 window.startBattle = startBattle;
 window.executeBattleTurn = executeBattleTurn;
+window.confirmAction = confirmAction;
