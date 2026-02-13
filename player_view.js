@@ -82,7 +82,7 @@ function renderGameState(state) {
     const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
     
     // `renderMapGrid` 함수는 Mapdata.js에 정의되어 있으므로 호출 가능
-    renderMapGrid(mapGridContainer, allies, enemies, mapObjects, [], previewedHitArea, previewedSkillId);
+    renderMapGrid(mapGridContainer, allies, enemies, mapObjects, [], previewedHitArea, previewedSkillId, MAP_WIDTH, MAP_HEIGHT);
 }
 
 // --- 이벤트 리스너 설정 ---
