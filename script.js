@@ -4105,7 +4105,8 @@ async function executeSingleAction(action) {
       logToBattleLog(
         `✦이동✦ ${caster.name}, (${oldX},${oldY})에서 (${newX},${newY})(으)로 이동 완료.`
       );
-
+      updatePlayerView();
+      
       // 이동이 끝난 직후, 현재 위치가 금지 구역인지 확인합니다.
       let damagePercent = 0;
       const newPos = { x: caster.posX, y: caster.posY };
@@ -5011,33 +5012,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /*현재 게임 상태를 localStorage에 저장하여 플레이어 뷰와 공유*/
 function updatePlayerView() {
-  // 적군 정보에서 스탯과 체력 정보를 제거한 안전한 목록 생성
+  // 1. 뷰어용 적군 정보 생성 (HP 등 민감 정보 제외)
   const sanitizedEnemies = enemyCharacters.map((enemy) => {
     return {
       id: enemy.id,
       name: enemy.name,
       type: enemy.type,
       isAlive: enemy.isAlive,
-      buffs: enemy.buffs,
-      debuffs: enemy.debuffs,
+      buffs: enemy.buffs,      
+      debuffs: enemy.debuffs,  
       posX: enemy.posX,
       posY: enemy.posY,
-      // maxHp, currentHp 등 민감 정보는 제외하여 플레이어에게 숨김
     };
   });
 
+  // 2. 뷰어용 예고 행동 필터링
+  let viewerPreviewAction = null;
+  if (enemyPreviewAction) {
+    // [조건] '대지의 수호' 기믹인 경우 뷰어에는 정보를 보내지 않음 (null 처리)
+    if (!enemyPreviewAction.skillId.startsWith("GIMMICK_Aegis_of_Earth")) {
+      viewerPreviewAction = {
+        ...enemyPreviewAction,
+        // hitArea가 배열인지 확인하여 안전하게 전달
+        hitArea: Array.isArray(enemyPreviewAction.hitArea) ? enemyPreviewAction.hitArea : []
+      };
+    }
+  }
+  
   // 공유할 게임 상태 객체
   const gameState = {
     allies: allyCharacters,
-    enemies: sanitizedEnemies, // (생략된 기존 로직)
+    enemies: sanitizedEnemies,
     mapObjects: mapObjects,
     mapWidth: MAP_WIDTH,
     mapHeight: MAP_HEIGHT,
-    // [보강] hitArea가 유효한 좌표 객체 배열인지 확인하여 전달
-    enemyPreviewAction: enemyPreviewAction ? {
-      ...enemyPreviewAction,
-      hitArea: Array.isArray(enemyPreviewAction.hitArea) ? enemyPreviewAction.hitArea : []
-    } : null,
+    enemyPreviewAction: viewerPreviewAction, // 필터링된 정보 전달
   };
 
   try {
