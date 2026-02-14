@@ -3,8 +3,8 @@ const MONSTER_TEMPLATES = {
   Terrmor_1: {
     name: "테르모르",
     type: "암석",
-    maxHp: 3000,
-    atk: 75,
+    maxHp: 1500,
+    atk: 50,
     matk: 50,
     def: 35,
     mdef: 20,
@@ -24,9 +24,9 @@ const MONSTER_TEMPLATES = {
   Terrmor_2: {
     name: "테르모르",
     type: "나무",
-    maxHp: 4000,
+    maxHp: 2000,
     atk: 50,
-    matk: 75,
+    matk: 50,
     def: 20,
     mdef: 35,
     skills: [
@@ -40,8 +40,8 @@ const MONSTER_TEMPLATES = {
   Carnabloom_1: {
     name: "카르나블룸",
     type: "야수",
-    maxHp: 4000,
-    atk: 75,
+    maxHp: 2000,
+    atk: 50,
     matk: 50,
     def: 35,
     mdef: 20,
@@ -52,9 +52,9 @@ const MONSTER_TEMPLATES = {
   Carnabloom_2: {
     name: "카르나블룸",
     type: "천체",
-    maxHp: 5000,
+    maxHp: 2500,
     atk: 50,
-    matk: 75,
+    matk: 50,
     def: 20,
     mdef: 35,
     skills: ["SKILL_Play1", "SKILL_Crimson", "SKILL_Silence"],
