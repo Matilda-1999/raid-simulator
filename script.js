@@ -4383,15 +4383,11 @@ function previewEnemyAction(enemyChar) {
     }
     skillDefinition.previewData = { predictedCol, predictedRow };
   } else if (skillToUseId.startsWith("GIMMICK_Aegis_of_Earth")) {
-    const coordsStr = skillDefinition.coords;
-    if (coordsStr) {
-      // 안전 구역 좌표 파싱 (파란색 표시)
-      hitArea = coordsStr.split(";").map((s) => {
-        const [x, y] = s.split(",").map(Number);
-        return { x, y };
-      });
+  const coordsStr = skillDefinition.coords;
+      if (coordsStr) {
+        hitArea = parseSafeCoords(coordsStr); 
+      }
     }
-  }
   // [흡수의 술식] 등 다른 기믹이나 일반 스킬은 hitArea를 빈 배열로 유지
 
   // 4. [흡수의 술식] 관련 데이터 생성
@@ -5033,11 +5029,15 @@ function updatePlayerView() {
   // 공유할 게임 상태 객체
   const gameState = {
     allies: allyCharacters,
-    enemies: sanitizedEnemies,
+    enemies: sanitizedEnemies, // (생략된 기존 로직)
     mapObjects: mapObjects,
     mapWidth: MAP_WIDTH,
     mapHeight: MAP_HEIGHT,
-    enemyPreviewAction: enemyPreviewAction, // 적의 다음 행동 예고 정보
+    // [보강] hitArea가 유효한 좌표 객체 배열인지 확인하여 전달
+    enemyPreviewAction: enemyPreviewAction ? {
+      ...enemyPreviewAction,
+      hitArea: Array.isArray(enemyPreviewAction.hitArea) ? enemyPreviewAction.hitArea : []
+    } : null,
   };
 
   try {
