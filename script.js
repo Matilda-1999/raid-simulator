@@ -2569,14 +2569,15 @@ class Character {
   // 2. 버프 처리 (수치 누락 시 기본값 1 또는 0 설정)
   this.buffs.forEach((buff) => {
     if (buff.turnsLeft > 0 && buff.effect) {
-      if (buff.effect.type === `${statName}_boost_multiplier`) {
-        // value가 없을 경우를 대비해 기본값 1을 곱함
-        value *= (buff.effect.value !== undefined ? buff.effect.value : 1);
-      }
-      if (buff.effect.type === `${statName}_boost_flat`) {
-        // value가 없을 경우를 대비해 0을 더함
-        value += (buff.effect.value || 0);
-      }
+      // 1. 배수 버프 수정 (기본값 1 설정)
+        if (buff.effect.type === `${statName}_boost_multiplier`) {
+            value *= (buff.effect.value !== undefined ? buff.effect.value : 1);
+        }
+        
+        // 2. 고정 수치 버프 및 실재 버프 수정 (기본값 0 설정)
+        if (buff.effect.type === `${statName}_boost_flat` || buff.effect.type === 'reality_boost') {
+            value += (buff.effect.value || 0);
+        }
       if (buff.effect.type === 'reality_boost' && (statName === 'def' || statName === 'mdef')) {
         value += (buff.effect.value || 0);
       }
