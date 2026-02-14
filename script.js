@@ -4310,21 +4310,29 @@ function previewEnemyAction(enemyChar) {
     enemyChar.name === "클라운" || enemyChar.name === "피에로";
 
   if (isBoss) {
-    const allActions = [
-      ...(enemyChar.gimmicks || []),
-      ...(enemyChar.skills || []),
-    ];
-    if (allActions.length > 0) {
-      skillToUseId = allActions[Math.floor(Math.random() * allActions.length)];
+    let availableActions = [];
+    
+    // [추가된 로직] 현재 글로벌 기믹이나 시전자 본인의 기믹 버프가 활성화되어 있는지 확인
+    const isGimmickActive = activeGimmickState !== null || 
+                            enemyChar.activeGimmick != null || 
+                            enemyChar.hasBuff("path_of_ruin_telegraph");
+
+    if (isGimmickActive) {
+        // 기믹이 진행 중이라면 스킬만 후보로 제한하여 기믹 중복 방지
+        availableActions = [...(enemyChar.skills || [])];
+    } else {
+        // 진행 중인 기믹이 없다면 기믹과 스킬 모두 포함
+        availableActions = [
+            ...(enemyChar.gimmicks || []),
+            ...(enemyChar.skills || []),
+        ];
+    }
+    
+    if (availableActions.length > 0) {
+      skillToUseId = availableActions[Math.floor(Math.random() * availableActions.length)];
       console.log(`[DEBUG] 보스 행동 결정: ${skillToUseId}`);
     }
   } else if (isClownOrPierrot) {
-    if (enemyChar.skills && enemyChar.skills.length > 0) {
-      skillToUseId =
-        enemyChar.skills[Math.floor(Math.random() * enemyChar.skills.length)];
-      console.log(`[DEBUG] 광대 행동 결정: ${skillToUseId}`);
-    }
-  }
 
   if (!skillToUseId) {
     console.log(
