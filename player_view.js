@@ -106,13 +106,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // 데이터가 변경될 때마다 실행되는 리스너
     onValue(stateRef, (snapshot) => {
         const data = snapshot.val();
+        
+        console.log("Firebase 수신 데이터:", data);
+
         if (data) {
             try {
-                // 수신된 데이터를 기반으로 화면을 갱신
-                renderGameState(data);
+                const stateForRender = {
+                    allies: data.allies || [],
+                    enemies: data.enemies || [],
+                    mapObjects: data.mapObjects || [],
+                    mapWidth: data.mapWidth || 5,
+                    mapHeight: data.mapHeight || 5,
+                    enemyPreviewAction: data.enemyPreviewAction || null
+                };
+                
+                renderGameState(stateForRender);
             } catch (e) {
                 console.error("화면 갱신 중 오류 발생:", e);
             }
+        } else {
+            console.warn("Firebase 경로('raid/state')에 데이터가 없습니다. 시뮬레이터에서 데이터를 먼저 전송하세요.");
         }
     });
 });
