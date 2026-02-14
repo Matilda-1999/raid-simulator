@@ -438,12 +438,10 @@ const SKILLS = {
         description: "보아라, 눈앞에 놓여진 것을. 그리고 말하라, 당신이 깨달은 것을.<br><br>모든 아군 각각의 [방어력]과 [마법 방어력] 중 높은 수치의 20%를 각 아군에게 부여(2턴). <br>자신은 [실재] 4스택을 획득. 연속 사용 시 6스택으로 갱신. 3턴 연속 사용 불가능.",
         targetType: "all_allies",
         targetSelection: "all_allies",
-        cooldown: 0, 
         execute: (caster, allies, enemies, battleLog) => {
             const currentTurnNum = currentTurn;
             const realityBuff = caster.buffs.find((b) => b.id === "reality_stacks");
             
-            // 1. 연속 사용 카운트 체크 (3턴 연속 사용 방지)
             const prevConsecutiveCount = (realityBuff && realityBuff.lastAppliedTurn === currentTurnNum - 1) ? (realityBuff.consecutiveCount || 1) : 0;
             if (prevConsecutiveCount >= 2) {
                 battleLog(`✦정보✦ ${caster.name}: [실존]을 3턴 연속 사용할 수 없습니다.`);
@@ -452,7 +450,6 @@ const SKILLS = {
 
             battleLog(`✦스킬✦ ${caster.name}, [실존] 사용: 모든 아군에게 [실재] 효과를 부여합니다.`);
 
-            // 2. 스택 결정 및 연속 횟수 계산
             let realityStacks = 4;
             let newConsecutiveCount = 1;
             if (prevConsecutiveCount > 0) {
@@ -461,22 +458,29 @@ const SKILLS = {
                 battleLog(`✦효과✦ ${caster.name} [실존] 연속 사용: [실재] 6스택 효과 적용.`);
             }
 
-            // 3. 모든 아군에게 [실재] 버프 부여 (각자 다른 수치)
             allies.filter(a => a.isAlive).forEach(ally => {
-                // [기획 반영] 각 아군의 방어력 vs 마방 중 높은 수치 참조
+                // --- [추가] 기본 방어력/마법 방어력 30% 증가 선행 적용 ---
+                ally.addBuff("reality_base_def_boost", "[실존] 기본 강화(물리)", 2, {
+                    type: "def_boost_multiplier",
+                    value: 1.3
+                });
+                ally.addBuff("reality_base_mdef_boost", "[실존] 기본 강화(마법)", 2, {
+                    type: "mdef_boost_multiplier",
+                    value: 1.3
+                });
+
+                // --- [수정] 30% 강화된 수치를 기준으로 [실재] 보너스 수치 계산 ---
                 const baseStat = Math.max(ally.getEffectiveStat('def'), ally.getEffectiveStat('mdef'));
-                // [기획 반영] 해당 수치의 20% * 스택 수만큼 증가
                 const boostValue = baseStat * 0.2 * realityStacks;
                 
                 ally.addBuff("reality_ally_boost", "[실재]", 2, {
-                    type: "reality_boost", // getEffectiveStat에서 참조
+                    type: "reality_boost",
                     value: boostValue
                 }, false); 
                 
-                battleLog(`✦버프✦ ${ally.name}: [실재] 효과로 방어 능력 +${Math.round(boostValue)} 증가 (2턴).`);
+                battleLog(`✦버프✦ ${ally.name}: [실존] 효과로 방어 능력 강화 및 [실재] 보너스 +${Math.round(boostValue)} 증가 (2턴).`);
             });
 
-            // 4. 시전자 자신은 스택(마커)만 보유 (본인 능력치 증가는 없음)
             caster.addBuff("reality_stacks", "[실재 스택]", 2, {
                 stacks: realityStacks,
                 unremovable: true,
@@ -771,7 +775,7 @@ const SKILLS = {
       "균열은 가장 고요한 순간에 일어난다.<br><br> 시전자 타입 기반 주 목표에게 공/마공 210% 피해, 주 목표 제외 모든 적에게 공/마공 140% 피해. [쇠약] 상태 적에게 적중 시 추가로 공/마공 30% 고정 피해. (쿨타임 2턴)",
     targetType: "single_enemy",
     targetSelection: "enemy",
-    cooldown: 3,
+    cooldown: 2,
     execute: (caster, mainTarget, allies, enemies, battleLog) => {
       if (!mainTarget) {
         battleLog(`✦정보✦ ${caster.name} [파열]: 주 대상을 찾을 수 없습니다.`);
@@ -1096,15 +1100,15 @@ const SKILLS = {
   
       if (!caster.isAlive) return true;
 
-      // --- [추가] 모든 적군에게 시전자의 전체 체력 15%만큼 고정 피해 ---
-      const fixedDamageToEnemy = Math.round(caster.maxHp * 0.15);
+      // --- 모든 적군에게 시전자의 '현재 체력' 10%만큼 고정 피해 ---
+      const fixedDamageToEnemy = Math.round(caster.currentHp * 0.10);
       battleLog(`✦스킬✦ 특정 조건을 만족하여 [차연]의 여파가 적들에게 전해집니다.`);
       enemies
         .filter((e) => e.isAlive)
         .forEach((enemy) => {
           enemy.takeDamage(fixedDamageToEnemy, battleLog, caster);
           battleLog(
-            `  ↪︎ ${enemy.name}: ${fixedDamageToEnemy} 고정 피해를 입었습니다.`
+            `  ↪︎ ${enemy.name}: 시전자의 현재 체력에 비례한 ${fixedDamageToEnemy} 고정 피해를 입었습니다.`
           );
         });
       
