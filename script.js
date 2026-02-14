@@ -2708,6 +2708,21 @@ function resolveDressRehearsalMission() {
 }
 
 // --- 3. 유틸리티 및 UI 관리 함수 ---
+// 좌표 문자열을 안전하게 객체 배열로 변환하는 헬퍼 함수
+function parseSafeCoords(coordsStr) {
+  if (!coordsStr || typeof coordsStr !== 'string') return [];
+  return coordsStr.split(";")
+    .map(s => s.trim()) // 세미콜론 앞뒤 공백 제거
+    .filter(s => s !== "" && s.includes(",")) // 빈 문자열 및 잘못된 형식 제외
+    .map(s => {
+      const parts = s.split(",");
+      const x = parseInt(parts[0].trim());
+      const y = parseInt(parts[1].trim());
+      return (!isNaN(x) && !isNaN(y)) ? { x, y } : null;
+    })
+    .filter(pos => pos !== null); // 유효한 숫자 좌표만 남김
+}
+  
 function logToBattleLog(message) {
   if (battleLogDiv) {
     const trimmedmessage =
@@ -3139,26 +3154,19 @@ function calculateDamage(
     defender.activeGimmick.startsWith("GIMMICK_Aegis_of_Earth")
   ) {
     const gimmickData = GIMMICK_DATA[defender.activeGimmick];
-    if (gimmickData) {
-      const safeZone = gimmickData.coords.split(";").map((s) => {
-        const [x, y] = s.split(",").map(Number);
-        return { x, y };
-      });
-
-      const isAttackerInSafeZone = safeZone.some(
-        (pos) => pos.x === attacker.posX && pos.y === attacker.posY
-      );
+      if (gimmickData && gimmickData.coords) {
+        const safeZone = parseSafeCoords(gimmickData.coords); 
+      
+        const isAttackerInSafeZone = safeZone.some(
+          (pos) => pos.x === attacker.posX && pos.y === attacker.posY
+        );
 
       if (isAttackerInSafeZone) {
-        logToBattleLog(
-          `\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다.`
-        );
-        skillPower *= 1.5;
-      } else {
-        logToBattleLog(
-          `\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다.`
-        );
-        return 0;
+          logToBattleLog(`\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 안에서 공격하여 피해량이 1.5배 증가합니다.`);
+          skillPower *= 1.5;
+        } else {
+          logToBattleLog(`\n✦기믹 효과✦ ${attacker.name}, [${gimmickData.name}]의 영역 밖에서 공격하여 피해가 무시됩니다.`);
+          return 0;
       }
     }
   }
@@ -4389,12 +4397,7 @@ function previewEnemyAction(enemyChar) {
   if (skillToUseId === "GIMMICK_Seed_of_Devour") {
     const subGimmickChoice = Math.floor(Math.random() * 3) + 1;
     const gimmickCoordsStr = skillDefinition.coords;
-    const availableCoords = gimmickCoordsStr
-      .split(";")
-      .map((s) => {
-        const [x, y] = s.split(",").map(Number);
-        return { x, y };
-      })
+    const availableCoords = parseSafeCoords(gimmickCoordsStr)
       .filter((pos) => !characterPositions[`${pos.x},${pos.y}`]);
 
     let objectsToSpawnInfo = [];
