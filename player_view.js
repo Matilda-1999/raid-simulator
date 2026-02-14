@@ -24,26 +24,28 @@ function createPlayerViewCharacterCard(character, team) {
     const card = document.createElement('div');
     card.className = 'character-stats';
 
+    // 데이터가 비어있을 경우를 대비해 기본값 할당
+    const buffs = character.buffs || [];
+    const debuffs = character.debuffs || [];
+
     let cardHTML = '';
 
     if (team === 'ally') {
-        // 아군은 모든 정보를 표시
         cardHTML = `
             <p><strong>${character.name} (${character.type}) (${character.job})</strong> ${character.posX !== -1 ? `[${character.posX},${character.posY}]` : ''}</p>
-            <p>HP: ${character.currentHp.toFixed(0)} / ${character.maxHp.toFixed(0)} ${character.shield > 0 ? `(+${character.shield.toFixed(0)}🛡️)` : ''}</p>
-            <p>공격력: ${character.atk.toFixed(0)} | 마법 공격력: ${character.matk.toFixed(0)}</p>
-            <p>방어력: ${character.def.toFixed(0)} | 마법 방어력: ${character.mdef.toFixed(0)}</p>
+            <p>HP: ${character.currentHp?.toFixed(0) || 0} / ${character.maxHp?.toFixed(0) || 0} ${character.shield > 0 ? `(+${character.shield.toFixed(0)}🛡️)` : ''}</p>
+            <p>공격력: ${character.atk?.toFixed(0) || 0} | 마법 공격력: ${character.matk?.toFixed(0) || 0}</p>
+            <p>방어력: ${character.def?.toFixed(0) || 0} | 마법 방어력: ${character.mdef?.toFixed(0) || 0}</p>
             <p>상태: ${character.isAlive ? '생존' : '<span style="color:red;">쓰러짐</span>'}</p>
-            ${character.buffs.length > 0 ? `<p>버프: ${character.buffs.map(b => `${b.name}(${b.turnsLeft}턴${b.stacks > 1 ? `x${b.stacks}` : ''})`).join(', ')}</p>` : ''}
-            ${character.debuffs.length > 0 ? `<p>디버프: ${character.debuffs.map(d => `${d.name}(${d.turnsLeft}턴${d.stacks > 1 ? `x${d.stacks}`:''})`).join(', ')}</p>` : ''}
+            ${buffs.length > 0 ? `<p>버프: ${buffs.map(b => `${b.name}(${b.turnsLeft}턴${b.stacks > 1 ? `x${b.stacks}` : ''})`).join(', ')}</p>` : ''}
+            ${debuffs.length > 0 ? `<p>디버프: ${debuffs.map(d => `${d.name}(${d.turnsLeft}턴${d.stacks > 1 ? `x${d.stacks}`:''})`).join(', ')}</p>` : ''}
         `;
-    } else { // team === 'enemy'
-        // 적군은 체력, 스탯을 제외한 정보만 표시
+    } else {
         cardHTML = `
             <p><strong>${character.name} (${character.type})</strong> ${character.posX !== -1 ? `[${character.posX},${character.posY}]` : ''}</p>
             <p>상태: ${character.isAlive ? '생존' : '<span style="color:red;">쓰러짐</span>'}</p>
-            ${character.buffs.length > 0 ? `<p>버프: ${character.buffs.map(b => `${b.name}(${b.turnsLeft}턴${b.stacks > 1 ? `x${b.stacks}` : ''})`).join(', ')}</p>` : ''}
-            ${character.debuffs.length > 0 ? `<p>디버프: ${character.debuffs.map(d => `${d.name}(${d.turnsLeft}턴${d.stacks > 1 ? `x${d.stacks}`:''})`).join(', ')}</p>` : ''}
+            ${buffs.length > 0 ? `<p>버프: ${buffs.map(b => `${b.name}(${b.turnsLeft}턴${b.stacks > 1 ? `x${b.stacks}` : ''})`).join(', ')}</p>` : ''}
+            ${debuffs.length > 0 ? `<p>디버프: ${debuffs.map(d => `${d.name}(${d.turnsLeft}턴${d.stacks > 1 ? `x${d.stacks}`:''})`).join(', ')}</p>` : ''}
         `;
     }
     card.innerHTML = cardHTML;
