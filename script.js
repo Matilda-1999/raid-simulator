@@ -5112,16 +5112,15 @@ function updatePlayerView() {
     mapObjects: mapObjects,
     mapWidth: MAP_WIDTH,
     mapHeight: MAP_HEIGHT,
-    // battleLog는 데이터 크기 최적화를 위해 제외하거나 필요 시 포함
     enemyPreviewAction: enemyPreviewAction, // 적의 다음 행동 예고 정보
   };
 
   try {
-    // 1. Firebase RTDB에 데이터 전송 (핵심 수정 사항)
+    // 1. Firebase RTDB에 데이터 전송
     // import한 db 객체와 'raid/state' 경로를 사용
     set(ref(db, 'raid/state'), gameState)
       .then(() => {
-        console.log("Firebase 데이터 업데이트 완료");
+        // 성공 시 별도의 로그를 남기지 않거나 간략하게 표시하여 콘솔 최적화
       })
       .catch((error) => {
         console.error("Firebase 전송 실패:", error);
