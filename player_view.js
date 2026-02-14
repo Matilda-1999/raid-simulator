@@ -51,24 +51,38 @@ function createPlayerViewCharacterCard(character, team) {
 }
 
 // --- 화면 표시 업데이트 (플레이어 뷰 전용) ---
-function displayPlayerViewCharacters(allyChars, enemyChars) {
+function displayPlayerViewCharacters(allyChars = [], enemyChars = []) {
     const allyDisplay = document.getElementById('allyCharacters');
     const enemyDisplay = document.getElementById('enemyCharacters');
 
-    allyDisplay.innerHTML = allyChars.length === 0 ? '<p>아군 캐릭터가 없습니다.</p>' : '';
-    allyChars.forEach(char => allyDisplay.appendChild(createPlayerViewCharacterCard(char, 'ally')));
+    // allyChars가 undefined일 경우를 대비해 안전하게 체크
+    if (!Array.isArray(allyChars) || allyChars.length === 0) {
+        allyDisplay.innerHTML = '<p>아군 캐릭터가 없습니다.</p>';
+    } else {
+        allyDisplay.innerHTML = '';
+        allyChars.forEach(char => allyDisplay.appendChild(createPlayerViewCharacterCard(char, 'ally')));
+    }
 
-    enemyDisplay.innerHTML = enemyChars.length === 0 ? '<p>적군 캐릭터가 없습니다.</p>' : '';
-    enemyChars.forEach(char => enemyDisplay.appendChild(createPlayerViewCharacterCard(char, 'enemy')));
+    if (!Array.isArray(enemyChars) || enemyChars.length === 0) {
+        enemyDisplay.innerHTML = '<p>적군 캐릭터가 없습니다.</p>';
+    } else {
+        enemyDisplay.innerHTML = '';
+        enemyChars.forEach(char => enemyDisplay.appendChild(createPlayerViewCharacterCard(char, 'enemy')));
+    }
 }
 
 
-// --- localStorage의 데이터를 읽어와 전체 화면을 갱신하는 함수 ---
+// --- 데이터를 읽어와 전체 화면을 갱신하는 함수 ---
 function renderGameState(state) {
     if (!state) return;
     
-    // battleLog는 더 이상 사용하지 않으므로 state에서 받지 않음
-    const { allies, enemies, mapObjects, mapWidth, mapHeight, enemyPreviewAction } = state;
+    // 데이터가 없을 경우를 대비해 기본값 []를 설정
+    const allies = state.allies || []; 
+    const enemies = state.enemies || [];
+    const mapObjects = state.mapObjects || [];
+    const mapWidth = state.mapWidth || 5;
+    const mapHeight = state.mapHeight || 5;
+    const enemyPreviewAction = state.enemyPreviewAction || null;
     
     MAP_WIDTH = mapWidth;
     MAP_HEIGHT = mapHeight;
@@ -81,7 +95,6 @@ function renderGameState(state) {
     const previewedHitArea = enemyPreviewAction ? enemyPreviewAction.hitArea : [];
     const previewedSkillId = enemyPreviewAction ? enemyPreviewAction.skillId : null;
     
-    // `renderMapGrid` 함수는 Mapdata.js에 정의되어 있으므로 호출 가능
     renderMapGrid(mapGridContainer, allies, enemies, mapObjects, [], previewedHitArea, previewedSkillId, MAP_WIDTH, MAP_HEIGHT);
 }
 
@@ -95,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = snapshot.val();
         if (data) {
             try {
-                // 수신된 데이터를 기반으로 화면을 갱신합니다.
+                // 수신된 데이터를 기반으로 화면을 갱신
                 renderGameState(data);
             } catch (e) {
                 console.error("화면 갱신 중 오류 발생:", e);
