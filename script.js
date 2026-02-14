@@ -1087,17 +1087,29 @@ const SKILLS = {
     execute: (caster, allies, enemies, battleLog) => {
       battleLog(`✦스킬✦ ${caster.name}, [차연] 발동.`);
 
+      // --- 시전자 자신에게 고정 피해 ---
       const selfDamage = Math.round(caster.maxHp * 0.15);
       caster.takeDamage(selfDamage, battleLog, null);
       battleLog(
         `✦소모✦ ${caster.name}: 스킬 사용을 위해 ${selfDamage}의 피해를 입습니다.`
       );
-
+  
       if (!caster.isAlive) return true;
 
+      // --- [추가] 모든 적군에게 시전자의 전체 체력 15%만큼 고정 피해 ---
+      const fixedDamageToEnemy = Math.round(caster.maxHp * 0.15);
+      battleLog(`✦스킬✦ 특정 조건을 만족하여 [차연]의 여파가 적들에게 전해집니다.`);
+      enemies
+        .filter((e) => e.isAlive)
+        .forEach((enemy) => {
+          enemy.takeDamage(fixedDamageToEnemy, battleLog, caster);
+          battleLog(
+            `  ↪︎ ${enemy.name}: ${fixedDamageToEnemy} 고정 피해를 입었습니다.`
+          );
+        });
+      
+      // --- 시전자 회복 로직 ---
       let selfHeal = Math.round(caster.maxHp * 0.3);
-
-      // 힐러 직군 효과 체크
       if (
         caster.job === "힐러" &&
         caster.currentHp <= caster.maxHp * 0.5 &&
@@ -1106,26 +1118,26 @@ const SKILLS = {
         selfHeal = Math.round(selfHeal * 1.1);
         caster.healerBoostCount++;
         battleLog(
-          `✦직군 효과(힐러)✦ [은총의 방패] 발동. 회복량이 10% 증가합니다. (남은 횟수: ${
-            2 - caster.healerBoostCount
-          })`
+          `✦직군 효과(힐러)✦ [은총의 방패] 발동. 회복량이 10% 증가합니다.`
         );
       }
       applyHeal(caster, selfHeal, battleLog, "차연");
 
-      const allCharacters = [...allies, ...enemies];
-      allCharacters
-        .filter((c) => c.isAlive)
-        .forEach((character) => {
-          character.addBuff("trace", "[흔적]", 3, {
-            description:
-              "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
-            originalCasterId: caster.id,
+      allies
+          .filter((a) => a.isAlive)
+          .forEach((ally) => {
+            ally.addBuff("trace", "[흔적]", 3, {
+              description:
+                "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
+              originalCasterId: caster.id,
+            });
+            battleLog(`✦버프✦ ${ally.name}: [흔적] 상태가 되었습니다. (3턴)`);
           });
-          battleLog(
-            `✦버프✦ ${character.name}: [흔적] 상태가 되었습니다. (3턴)`
-          );
-        });
+    
+        caster.checkSupporterPassive(battleLog);
+        return true;
+      },
+    },
 
       // 서포터 직군 효과
       caster.checkSupporterPassive(battleLog);
