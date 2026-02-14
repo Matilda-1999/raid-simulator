@@ -4671,6 +4671,65 @@ function resolveClownGimmick() {
   }
 }
 
+async function performEnemyAction(enemyChar) {
+  if (!enemyChar || !enemyChar.isAlive) return false;
+
+  // 1. 살아있는 아군(플레이어) 목록 확인
+  const aliveAllies = allyCharacters.filter((a) => a.isAlive);
+  if (aliveAllies.length === 0) return false;
+
+  // 2. [핵심] 타겟 고정/도발 상태 확인
+  // 적군에게 걸린 'provoked' 디버프를 찾습니다.
+  const provokeDebuff = enemyChar.debuffs.find(d => d.id === "provoked" && d.turnsLeft > 0);
+  let targetAlly = null;
+
+  if (provokeDebuff) {
+    // 디버프에 저장된 'targetId'(시전자)가 살아있는지 확인하여 타겟 고정
+    targetAlly = aliveAllies.find(a => a.id === provokeDebuff.effect.targetId);
+    if (targetAlly) {
+      logToBattleLog(`✦타겟 고정✦ ${enemyChar.name}이(가) 타겟이 고정된 ${targetAlly.name}을 공격합니다.`);
+    }
+  }
+
+  // 3. 행동 실행 로직
+  if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
+    // --- 예고된 스킬이 있는 경우 ---
+    const allSkills = { ...SKILLS, ...MONSTER_SKILLS };
+    const skillToExecute = allSkills[enemyPreviewAction.skillId] || GIMMICK_DATA[enemyPreviewAction.skillId];
+
+    if (enemyPreviewAction.skillId.startsWith("GIMMICK_Aegis_of_Earth")) {
+      enemyChar.activeGimmick = enemyPreviewAction.skillId;
+      logToBattleLog(`${enemyChar.name}, [${skillToExecute.name}] 활성화.`);
+    } else if (skillToExecute && skillToExecute.execute) {
+      // [타겟 고정 시 패턴 변경] 광역기/디버프를 취소하고 고정된 대상에게 단일 공격 강제
+      if (targetAlly && skillToExecute.type && (skillToExecute.type.includes("광역") || skillToExecute.type.includes("디버프") || skillToExecute.type.includes("복합"))) {
+        logToBattleLog(`✦도발 효과✦ ${enemyChar.name}의 패턴이 취소되고, ${targetAlly.name}에게 단일 공격을 가합니다!`);
+        const damage = calculateDamage(enemyChar, targetAlly, 1.0, enemyChar.atk >= enemyChar.matk ? "physical" : "magical");
+        targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+      } else {
+        // 도발이 없거나 일반 스킬인 경우 예고대로 실행
+        logToBattleLog(`${enemyChar.name}, [${skillToExecute.name}] 시전.`);
+        skillToExecute.execute(enemyChar, enemyCharacters, allyCharacters, logToBattleLog, enemyPreviewAction.dynamicData);
+      }
+    }
+  } else {
+    // --- 예고가 없거나 기본 공격 패턴 ---
+    if (!targetAlly) {
+      // 도발자가 없으면 체력이 가장 낮은 아군 선택
+      targetAlly = aliveAllies.reduce((min, curr) => curr.currentHp < min.currentHp ? curr : min, aliveAllies[0]);
+    }
+
+    logToBattleLog(`✦공격✦ ${enemyChar.name}의 타겟: ${targetAlly.name}.`);
+    const damage = calculateDamage(enemyChar, targetAlly, 1.0, enemyChar.atk >= enemyChar.matk ? "physical" : "magical");
+    targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
+  }
+
+  // 4. 후처리 및 종료 확인
+  updatePlayerView();
+  processEndOfTurnEffects(enemyChar);
+  return checkBattleEnd();
+}
+
 if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
     if (enemyPreviewAction.skillId.startsWith("GIMMICK_Aegis_of_Earth")) {
       enemyChar.activeGimmick = enemyPreviewAction.skillId;
@@ -4816,7 +4875,8 @@ if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
       logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) 이번 턴에서 관찰하며 기회를 엿봅니다.`);
     }
   }
-
+  updatePlayerView();
+  
   processEndOfTurnEffects(enemyChar);
   return checkBattleEnd();
 }
@@ -5019,17 +5079,27 @@ function updatePlayerView() {
       name: enemy.name,
       type: enemy.type,
       isAlive: enemy.isAlive,
-      buffs: enemy.buffs,      
-      debuffs: enemy.debuffs,  
-      posX: enemy.posX,
-      posY: enemy.posY,
+      buffs: [...enemy.buffs],   // [점검] 배열을 복사하여 최신 상태 보장
+      debuffs: [...enemy.debuffs], // [점검] 배열을 복사하여 최신 상태 보장
+      posX: enemy.posX,          // 현재 메모리의 최신 X 좌표
+      posY: enemy.posY,          // 현재 메모리의 최신 Y 좌표
     };
   });
 
+  // 2. 아군 정보: 
+  const gameState = {
+    allies: allyCharacters,
+    enemies: sanitizedEnemies,
+    mapObjects: mapObjects,
+    mapWidth: MAP_WIDTH,
+    mapHeight: MAP_HEIGHT,
+    enemyPreviewAction: enemyPreviewAction, 
+  };
+  
   // 2. 뷰어용 예고 행동 필터링
   let viewerPreviewAction = null;
   if (enemyPreviewAction) {
-    // [조건] '대지의 수호' 기믹인 경우 뷰어에는 정보를 보내지 않음 (null 처리)
+    // [조건] '대지의 수호' 기믹인 경우 뷰어에는 정보를 보내지 않음
     if (!enemyPreviewAction.skillId.startsWith("GIMMICK_Aegis_of_Earth")) {
       viewerPreviewAction = {
         ...enemyPreviewAction,
@@ -5050,17 +5120,15 @@ function updatePlayerView() {
   };
 
   try {
-    // 1. Firebase RTDB에 데이터 전송
-    // import한 db 객체와 'raid/state' 경로를 사용
+    // Firebase에 전송 시 gameState가 가장 최신의 데이터를 담고 있는지 확인합니다.
     set(ref(db, 'raid/state'), gameState)
       .then(() => {
-        // 성공 시 별도의 로그를 남기지 않거나 간략하게 표시하여 콘솔 최적화
+        // 전송 성공
       })
       .catch((error) => {
         console.error("Firebase 전송 실패:", error);
       });
 
-    // 2. 기존 로컬스토리지 저장 (백업용)
     localStorage.setItem("raidSimulatorState", JSON.stringify(gameState));
     
   } catch (e) {
