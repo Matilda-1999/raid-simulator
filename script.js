@@ -2565,6 +2565,7 @@ class Character {
   if (melancholyDebuff) {
     if (statName === "atk" || statName === "matk") value *= 0.9;
   }
+  }
 
   // 2. 버프 처리 (수치 누락 시 기본값 1 또는 0 설정)
   this.buffs.forEach((buff) => {
