@@ -1092,11 +1092,11 @@ const SKILLS = {
     execute: (caster, allies, enemies, battleLog) => {
       battleLog(`✦스킬✦ ${caster.name}, [차연] 발동.`);
 
-      // --- 시전자 자신에게 고정 피해 ---
-      const selfDamage = Math.round(caster.maxHp * 0.15);
+      // --- 시전자 자신에게 고정 피해 (현재 체력의 15%) ---
+      const selfDamage = Math.round(caster.currentHp * 0.15);
       caster.takeDamage(selfDamage, battleLog, null);
       battleLog(
-        `✦소모✦ ${caster.name}: 스킬 사용을 위해 ${selfDamage}의 피해를 입습니다.`
+        `✦소모✦ ${caster.name}: 스킬 사용을 위해 현재 체력의 15%인 ${selfDamage}의 피해를 입습니다.`
       );
   
       if (!caster.isAlive) return true;
