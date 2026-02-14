@@ -2169,7 +2169,7 @@ class Character {
     }
   }
 
-  takeDamage(rawDamage, logFn, attacker = null, currentOpponentList = null) {
+  takeDamage(rawDamage, logFn, attacker = null, isCounter = false) {
     if (!this.isAlive) return;
 
     // 공격자(attacker)가 있고, 그 공격자가 '아군' 캐릭터 목록에 포함되어 있다면
@@ -2222,10 +2222,9 @@ class Character {
             0
           )}가 [철옹성] 효과를 지닌 ${ironFortressAlly.name}에게 이전됩니다.`
         );
-        ironFortressAlly.takeDamage(rawDamage, logFn, attacker);
+        ironFortressAlly.takeDamage(rawDamage, logFn, attacker, isCounter); 
         return;
       }
-    }
 
     let finalDamage = rawDamage;
     const initialHp = this.currentHp;
@@ -2366,7 +2365,7 @@ class Character {
           logFn(
             `✦반격✦ ${this.name} ([응수]), ${targetEnemy.name}에게 ${counterDmg} 피해.`
           );
-          targetEnemy.takeDamage(counterDmg, logFn, this);
+          targetEnemy.takeDamage(counterDmg, logFn, allyCaster, true);
         }
       } else if (this.hasBuff("fury_stance")) {
         const counterDmg = Math.round(actualHpLoss * 1.5);
@@ -2447,7 +2446,7 @@ class Character {
               attacker.name
             }에게 ${reversalDamage} ${reversalDamageTypeKr} 피해.`
           );
-          attacker.takeDamage(reversalDamage, logFn, this);
+          attacker.takeDamage(reversalDamage, logFn, this, true);
         }
         this.aggroDamageStored = 0;
         this.removeBuffById("reversal_active");
@@ -2465,7 +2464,7 @@ class Character {
             attacker.name
           }에게 ${reflectedDamage.toFixed(0)} 피해 반사.`
         );
-        attacker.takeDamage(reflectedDamage, logFn, this);
+        attacker.takeDamage(reflectedDamage, logFn, this, true);
       }
     }
 
@@ -2553,84 +2552,67 @@ class Character {
   }
 
   getEffectiveStat(statName) {
-    let value = this[statName];
+  let value = this[statName];
 
-    const melancholyDebuff = this.debuffs.find(
-      (d) => d.id === "melancholy_brand"
-    );
-    const ecstasyDebuff = this.debuffs.find((d) => d.id === "ecstasy_brand");
+  // 1. 낙인 효과 (Optional Chaining 활용으로 안전하게 참조)
+  const melancholyDebuff = this.debuffs.find((d) => d.id === "melancholy_brand");
+  const ecstasyDebuff = this.debuffs.find((d) => d.id === "ecstasy_brand");
 
-    if (ecstasyDebuff) {
-      // [환희 낙인] 효과
-      if (statName === "atk" || statName === "matk") {
-        value *= 1.1; // 공격력/마법 공격력 10% 증폭
-      }
-      if (statName === "def" || statName === "mdef") {
-        value *= 0.8; // 방어력/마법 방어력 20% 감소
-      }
-    }
-    if (melancholyDebuff) {
-      // [우울 낙인] 효과
-      if (statName === "atk" || statName === "matk") {
-        value *= 0.9; // 공격력/마법 공격력 10% 감소
-      }
-    }
-
-    this.buffs.forEach((buff) => {
-    if (buff.turnsLeft > 0 && buff.effect) {
-        // 1. 기본 배수 및 고정 수치 버프 처리
-        if (buff.effect.type === `${statName}_boost_multiplier`) {
-            value *= buff.effect.value;
-        }
-        if (buff.effect.type === `${statName}_boost_flat`) {
-            value += buff.effect.value;
-        }
-
-        // 2. [실재] 버프 효과 처리 (아군 개별 적용)
-        // 시전자가 부여한 'reality_ally_boost' 버프
-        if (buff.effect.type === 'reality_boost') {
-            // 방어력과 마법 방어력 수치를 증가시킴
-            if (statName === 'def' || statName === 'mdef') {
-                value += buff.effect.value;
-            }
-        }
-    }
-});
-
-    this.debuffs.forEach((debuff) => {
-      if (debuff.turnsLeft > 0 && debuff.effect) {
-        // 흠집으로 인한 방어력/마법방어력 감소
-        if (
-          debuff.id === "scratch" &&
-          debuff.effect.reductionType === statName &&
-          debuff.stacks > 0
-        ) {
-          const reductionPerStack = debuff.effect.reductionValue || 0.1;
-          value *= 1 - reductionPerStack * debuff.stacks;
-        }
-
-        // 서포터로 인한 방어력 감소
-        if (
-          debuff.id === "supporter_def_shred" &&
-          statName === "def" &&
-          debuff.effect.type === "def_boost_multiplier"
-        ) {
-          value *= debuff.effect.value;
-        }
-
-        // [붕괴] 디버프
-        if (debuff.id === "rupture_debuff") {
-          if (statName === "def" && debuff.effect.defReduction) {
-            value *= 1 - debuff.effect.defReduction;
-          }
-          if (statName === "mdef" && debuff.effect.mdefReduction) {
-            value *= 1 - debuff.effect.mdefReduction;
-          }
-        }
-      }
-    });
-    return Math.max(0, value);
+  if (ecstasyDebuff) {
+    if (statName === "atk" || statName === "matk") value *= 1.1;
+    if (statName === "def" || statName === "mdef") value *= 0.8;
   }
+  if (melancholyDebuff) {
+    if (statName === "atk" || statName === "matk") value *= 0.9;
+  }
+
+  // 2. 버프 처리 (수치 누락 시 기본값 1 또는 0 설정)
+  this.buffs.forEach((buff) => {
+    if (buff.turnsLeft > 0 && buff.effect) {
+      if (buff.effect.type === `${statName}_boost_multiplier`) {
+        // value가 없을 경우를 대비해 기본값 1을 곱함
+        value *= (buff.effect.value !== undefined ? buff.effect.value : 1);
+      }
+      if (buff.effect.type === `${statName}_boost_flat`) {
+        // value가 없을 경우를 대비해 0을 더함
+        value += (buff.effect.value || 0);
+      }
+      if (buff.effect.type === 'reality_boost' && (statName === 'def' || statName === 'mdef')) {
+        value += (buff.effect.value || 0);
+      }
+    }
+  });
+
+  // 3. 디버프 처리 (방어적 수치 계산)
+  this.debuffs.forEach((debuff) => {
+    if (debuff.turnsLeft > 0 && debuff.effect) {
+      // 흠집 (중첩 및 감소 수치 안전성 강화)
+      if (debuff.id === "scratch" && debuff.effect.reductionType === statName) {
+        const reductionPerStack = debuff.effect.reductionValue || 0.1;
+        const stacks = debuff.stacks || 1;
+        value *= (1 - (reductionPerStack * stacks));
+      }
+
+      // 서포터 방어력 감소 (배수 누락 시 기본값 0.95 적용)
+      if (debuff.id === "supporter_def_shred" && statName === "def") {
+        value *= (debuff.effect.value !== undefined ? debuff.effect.value : 0.95);
+      }
+
+      // 붕괴 (속성별 수치 존재 여부 확인)
+      if (debuff.id === "rupture_debuff") {
+        if (statName === "def" && debuff.effect.defReduction) {
+          value *= (1 - debuff.effect.defReduction);
+        }
+        if (statName === "mdef" && debuff.effect.mdefReduction) {
+          value *= (1 - debuff.effect.mdefReduction);
+        }
+      }
+    }
+  });
+
+  // 4. 최종 결과값이 NaN이 되지 않도록 하고 최소 0을 보장
+  return isNaN(value) ? Math.max(0, this[statName]) : Math.max(0, value);
+}
 }
 
 function resolveDressRehearsalMission() {
@@ -4182,15 +4164,32 @@ async function executeBattleTurn() {
     }
   }
 
+  // 1. 아군 행동이 모두 끝난 직후, 적군 행동 '준비' 전에 기믹을 먼저 판정합니다.
   if (checkBattleEnd()) return;
 
-  logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 준비 ---`);
-
-  resolveDressRehearsalMission(); // 플레이어 턴 종료 후 미션 성공 여부 판정
-  resolveMinionGimmicks(); // 쫄병 기믹 확인 함수
-
+  // 플레이어의 이번 턴 행동 결과가 기믹 성공 여부에 즉시 반영됩니다.
+  resolveDressRehearsalMission(); 
+  resolveMinionGimmicks(); 
   resolveGimmickEffects();
   resolveClownGimmick();
+
+  if (checkBattleEnd()) return;
+
+  logToBattleLog(`\n--- ${currentTurn} 턴 적군 행동 실행 ---`);
+
+  // 2. 모든 적군 캐릭터가 순서대로 행동하도록 await를 사용합니다.
+  for (const enemyChar of enemyCharacters) {
+    if (enemyChar.isAlive) {
+      // performEnemyAction이 async 함수여야 하며, 여기서 반드시 await로 기다려줍니다.
+      const battleEnded = await performEnemyAction(enemyChar); 
+      if (battleEnded) return; // 적군 행동 중 전투가 끝나면 즉시 종료
+    }
+  }
+
+  // 3. 모든 적의 행동이 물리적으로 끝난 뒤에만 다음 턴을 준비합니다.
+  if (!checkBattleEnd() && isBattleStarted) {
+    prepareNewTurnCycle();
+  }
 
   enemyCharacters.forEach((enemy) => {
     const telegraphBuff = enemy.buffs.find(
@@ -4312,26 +4311,40 @@ function previewEnemyAction(enemyChar) {
   if (isBoss) {
     let availableActions = [];
     
-    // [추가된 로직] 현재 글로벌 기믹이나 시전자 본인의 기믹 버프가 활성화되어 있는지 확인
+    // 1. 현재 진행 중인 기믹이 있는지 엄격하게 확인
     const isGimmickActive = activeGimmickState !== null || 
-                            enemyChar.activeGimmick != null || 
+                            enemyChar.activeGimmick !== null || 
                             enemyChar.hasBuff("path_of_ruin_telegraph");
 
     if (isGimmickActive) {
-        // 기믹이 진행 중이라면 스킬만 후보로 제한하여 기믹 중복 방지
+        // 기믹이 진행 중이라면 '일반 스킬' 중에서만 선택하여 기믹 중복 및 동시 사용 방지
         availableActions = [...(enemyChar.skills || [])];
+        console.log(`[DEBUG] 기믹 활성 상태: 스킬 목록에서만 선택합니다.`);
     } else {
-        // 진행 중인 기믹이 없다면 기믹과 스킬 모두 포함
-        availableActions = [
-            ...(enemyChar.gimmicks || []),
-            ...(enemyChar.skills || []),
-        ];
+        // 2. 진행 중인 기믹이 없을 때: 확률적으로 기믹을 예약하거나 일반 스킬을 사용
+        const triggerGimmick = Math.random() < 0.3; 
+        
+        if (triggerGimmick && enemyChar.gimmicks && enemyChar.gimmicks.length > 0) {
+            availableActions = [...enemyChar.gimmicks];
+            console.log(`[DEBUG] 새로운 기믹 발동 결정.`);
+        } else {
+            availableActions = [...(enemyChar.skills || [])];
+            console.log(`[DEBUG] 일반 스킬 사용 결정.`);
+        }
     }
     
+    // 3. 최종 행동 결정 및 Fallback(예외 처리)
     if (availableActions.length > 0) {
-      skillToUseId = availableActions[Math.floor(Math.random() * availableActions.length)];
-      console.log(`[DEBUG] 보스 행동 결정: ${skillToUseId}`);
+        skillToUseId = availableActions[Math.floor(Math.random() * availableActions.length)];
+    } else if (enemyChar.skills && enemyChar.skills.length > 0) {
+        // 만약 조건에 맞는 행동이 없다면 가장 기본 스킬을 선택하여 행동이 증발하는 것 방지
+        skillToUseId = enemyChar.skills[0];
     }
+    
+    if (skillToUseId) {
+        console.log(`[DEBUG] 보스 최종 행동 ID: ${skillToUseId}`);
+    }
+
   } else if (isClownOrPierrot) {
 
   if (!skillToUseId) {
@@ -4797,24 +4810,9 @@ if (enemyPreviewAction && enemyPreviewAction.casterId === enemyChar.id) {
           logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
         }
       }
-    } else {
-      // 그 외 모든 몬스터의 기본 공격 로직
-      const aliveAllies = allyCharacters.filter((a) => a.isAlive);
-      if (aliveAllies.length > 0) {
-        let targetAlly = null;
-        const provokeDebuff = enemyChar.debuffs.find(d => d.id === "provoked" && d.turnsLeft > 0);
-        if (provokeDebuff) {
-          targetAlly = aliveAllies.find(a => a.id === provokeDebuff.effect.targetId);
-        }
-        if (!targetAlly) {
-          targetAlly = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
-        }
-        logToBattleLog(`✦정보✦ ${enemyChar.name}, ${targetAlly.name}에게 기본 공격.`);
-        const damage = calculateDamage(enemyChar, targetAlly, 1.0, enemyChar.atk >= enemyChar.matk ? "physical" : "magical");
-        targetAlly.takeDamage(damage, logToBattleLog, enemyChar);
-      } else {
-        logToBattleLog(`✦정보✦ ${enemyChar.name}: 공격할 대상이 없습니다.`);
-      }
+    } } else {
+      // 기본 공격을 제거하고, 행동이 없을 경우 '대기' 처리
+      logToBattleLog(`✦정보✦ ${enemyChar.name}은(는) 이번 턴에서 관찰하며 기회를 엿봅니다.`);
     }
   }
 
