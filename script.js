@@ -168,6 +168,7 @@ const SKILLS = {
       return true;
     },
   },
+  
   // [도발]
   SKILL_PROVOKE: {
     id: "SKILL_PROVOKE",
@@ -1128,20 +1129,15 @@ const SKILLS = {
       applyHeal(caster, selfHeal, battleLog, "차연");
 
       allies
-          .filter((a) => a.isAlive)
-          .forEach((ally) => {
-            ally.addBuff("trace", "[흔적]", 3, {
-              description:
-                "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
-              originalCasterId: caster.id,
-            });
-            battleLog(`✦버프✦ ${ally.name}: [흔적] 상태가 되었습니다. (3턴)`);
+        .filter((a) => a.isAlive)
+        .forEach((ally) => {
+          ally.addBuff("trace", "[흔적]", 3, {
+            description:
+              "체력이 50% 이하일 때 피격 시, [차연] 시전자가 희생하여 자신을 회복시킴 (3턴).",
+            originalCasterId: caster.id,
           });
-    
-        caster.checkSupporterPassive(battleLog);
-        return true;
-      },
-    },
+          battleLog(`✦버프✦ ${ally.name}: [흔적] 상태가 되었습니다. (3턴)`);
+        });
 
       // 서포터 직군 효과
       caster.checkSupporterPassive(battleLog);
