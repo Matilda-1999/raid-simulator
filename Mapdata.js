@@ -349,14 +349,20 @@ function renderMapGrid(
 
       // 안전지대 판정
       if (previewCoordSet.has(key)) {
-        if (
-          previewedSkillId &&
-          (previewedSkillId === "GIMMICK_Script_Reversal" ||
-            previewedSkillId.startsWith("GIMMICK_Aegis_of_Earth"))
-        ) {
-          cellDiv.classList.add("safe-zone"); // 파란색 표시
-        } else {
-          cellDiv.classList.add("skill-preview-zone"); // 주황색 표시
+        if (previewedSkillId) {
+          // 1. 대지의 수호(Aegis) 기믹인 경우
+          if (previewedSkillId.startsWith("GIMMICK_Aegis_of_Earth")) {
+            // 실행창(시뮬레이터)에서만 'safe-zone' 클래스를 추가하여 표시합니다.
+            cellDiv.classList.add("safe-zone"); 
+          } 
+          // 2. 대본의 반역(Script_Reversal) 등 다른 파란색 장판 기믹
+          else if (previewedSkillId === "GIMMICK_Script_Reversal") {
+            cellDiv.classList.add("safe-zone");
+          } 
+          // 3. 그 외 일반 공격 예고는 주황색 표시
+          else {
+            cellDiv.classList.add("skill-preview-zone");
+          }
         }
       }
 
